@@ -10,11 +10,11 @@ const Index = () => {
       
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 relative z-10">
         {/* Logo */}
-        <div className="mb-8">
+        <div className="mb-4">
           <img
             src={tavindoLogo}
             alt="TáVindo - Sistema de Delivery"
-            className="h-20 md:h-28 w-auto object-contain"
+            className="h-28 md:h-40 w-auto object-contain"
           />
         </div>
 
