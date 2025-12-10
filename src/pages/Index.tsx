@@ -8,18 +8,20 @@ const Index = () => {
     <div className="h-screen flex flex-col bg-background relative overflow-hidden">
       <FoodPatternBackground />
       
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-4 relative z-10">
-        {/* Logo */}
-        <div className="mb-6">
+      <main className="flex-1 flex flex-col md:flex-row items-center justify-center px-6 md:px-12 lg:px-24 py-4 relative z-10 gap-8 md:gap-16 lg:gap-24">
+        {/* Logo - Left side */}
+        <div className="flex-1 flex items-center justify-center md:justify-end">
           <img
             src={tavindoLogo}
             alt="TáVindo - Sistema de Delivery"
-            className="h-24 md:h-32 w-auto object-contain"
+            className="h-28 md:h-40 lg:h-48 w-auto object-contain"
           />
         </div>
 
-        {/* Login Card */}
-        <LoginCard />
+        {/* Login Card - Right side */}
+        <div className="flex-1 flex items-center justify-center md:justify-start">
+          <LoginCard />
+        </div>
       </main>
 
       <LoginFooter />
