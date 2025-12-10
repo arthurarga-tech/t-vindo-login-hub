@@ -24,7 +24,7 @@ const LoginCard = () => {
 
   return (
     <Card className="w-full max-w-md shadow-lg border-border/50 bg-card/95 backdrop-blur-sm">
-      <CardHeader className="space-y-2 text-center pb-4">
+      <CardHeader className="space-y-3 text-center pt-6 pb-2">
         <CardTitle className="text-xl md:text-2xl font-semibold text-foreground">
           Bem-vindo ao TáVindo – Painel do Estabelecimento
         </CardTitle>
@@ -33,7 +33,7 @@ const LoginCard = () => {
         </CardDescription>
       </CardHeader>
       
-      <CardContent className="space-y-5">
+      <CardContent className="space-y-6 px-6 pb-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email" className="text-foreground font-medium">

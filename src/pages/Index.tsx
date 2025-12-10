@@ -5,16 +5,16 @@ import LoginFooter from "@/components/login/LoginFooter";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-background relative">
+    <div className="h-screen flex flex-col bg-background relative overflow-hidden">
       <FoodPatternBackground />
       
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 relative z-10">
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-4 relative z-10">
         {/* Logo */}
-        <div className="mb-4">
+        <div className="mb-6">
           <img
             src={tavindoLogo}
             alt="TáVindo - Sistema de Delivery"
-            className="h-28 md:h-40 w-auto object-contain"
+            className="h-24 md:h-32 w-auto object-contain"
           />
         </div>
 
