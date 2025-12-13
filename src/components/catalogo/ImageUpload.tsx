@@ -73,20 +73,37 @@ export function ImageUpload({ value, onChange, folder = "products" }: ImageUploa
       />
 
       {value ? (
-        <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-border">
-          <img
-            src={value}
-            alt="Preview"
-            className="w-full h-full object-cover"
-          />
+        <div className="space-y-2">
+          <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-border">
+            <img
+              src={value}
+              alt="Preview"
+              className="w-full h-full object-cover"
+            />
+            <Button
+              type="button"
+              variant="destructive"
+              size="icon"
+              className="absolute top-1 right-1 h-6 w-6"
+              onClick={handleRemove}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
           <Button
             type="button"
-            variant="destructive"
-            size="icon"
-            className="absolute top-1 right-1 h-6 w-6"
-            onClick={handleRemove}
+            variant="outline"
+            size="sm"
+            className="w-32"
+            onClick={() => inputRef.current?.click()}
+            disabled={isUploading}
           >
-            <X className="h-3 w-3" />
+            {isUploading ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+            ) : (
+              <Upload className="h-4 w-4 mr-1" />
+            )}
+            Trocar
           </Button>
         </div>
       ) : (
