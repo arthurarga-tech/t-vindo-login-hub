@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      categories: {
+        Row: {
+          active: boolean | null
+          created_at: string
+          description: string | null
+          establishment_id: string
+          id: string
+          image_url: string | null
+          name: string
+          order_position: number | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string
+          description?: string | null
+          establishment_id: string
+          id?: string
+          image_url?: string | null
+          name: string
+          order_position?: number | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string
+          description?: string | null
+          establishment_id?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          order_position?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       establishment_members: {
         Row: {
           created_at: string
@@ -55,6 +99,7 @@ export type Database = {
           id: string
           name: string
           owner_id: string
+          slug: string | null
           updated_at: string
         }
         Insert: {
@@ -62,6 +107,7 @@ export type Database = {
           id?: string
           name: string
           owner_id: string
+          slug?: string | null
           updated_at?: string
         }
         Update: {
@@ -69,9 +115,67 @@ export type Database = {
           id?: string
           name?: string
           owner_id?: string
+          slug?: string | null
           updated_at?: string
         }
         Relationships: []
+      }
+      products: {
+        Row: {
+          active: boolean | null
+          category_id: string | null
+          created_at: string
+          description: string | null
+          establishment_id: string
+          id: string
+          image_url: string | null
+          name: string
+          order_position: number | null
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean | null
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          establishment_id: string
+          id?: string
+          image_url?: string | null
+          name: string
+          order_position?: number | null
+          price?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean | null
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          establishment_id?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          order_position?: number | null
+          price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
