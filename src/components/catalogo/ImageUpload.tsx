@@ -58,8 +58,10 @@ export function ImageUpload({ value, onChange, folder = "products" }: ImageUploa
     }
   };
 
-  const handleRemove = () => {
-    onChange(undefined);
+  const handleRemove = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onChange("");
   };
 
   return (
