@@ -4,6 +4,7 @@ import {
   BookOpen,
   Building2,
   Users,
+  UserCog,
   Package,
   Truck,
   Settings,
@@ -34,6 +35,7 @@ const menuItems = [
   { title: "Clientes", url: "/dashboard/clientes", icon: Users },
   { title: "Estoque", url: "/dashboard/estoque", icon: Package },
   { title: "Delivery", url: "/dashboard/delivery", icon: Truck },
+  { title: "Usuários", url: "/dashboard/usuarios", icon: UserCog },
   { title: "Configurações", url: "/dashboard/configuracoes", icon: Settings },
 ];
 

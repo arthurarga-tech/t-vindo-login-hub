@@ -14,10 +14,70 @@ export type Database = {
   }
   public: {
     Tables: {
+      establishment_members: {
+        Row: {
+          created_at: string
+          establishment_id: string
+          id: string
+          role: Database["public"]["Enums"]["establishment_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          establishment_id: string
+          id?: string
+          role?: Database["public"]["Enums"]["establishment_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          establishment_id?: string
+          id?: string
+          role?: Database["public"]["Enums"]["establishment_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "establishment_members_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      establishments: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
+          establishment_id: string | null
           establishment_name: string | null
           id: string
           phone: string | null
@@ -27,6 +87,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          establishment_id?: string | null
           establishment_name?: string | null
           id?: string
           phone?: string | null
@@ -36,23 +97,40 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          establishment_id?: string | null
           establishment_name?: string | null
           id?: string
           phone?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_establishment_id: { Args: { _user_id: string }; Returns: string }
+      is_establishment_member: {
+        Args: { _establishment_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_establishment_owner: {
+        Args: { _establishment_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      establishment_role: "owner" | "manager" | "employee"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -179,6 +257,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      establishment_role: ["owner", "manager", "employee"],
+    },
   },
 } as const
