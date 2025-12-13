@@ -16,6 +16,8 @@ import Delivery from "./pages/dashboard/Delivery";
 import Usuarios from "./pages/dashboard/Usuarios";
 import Configuracoes from "./pages/dashboard/Configuracoes";
 import StorePage from "./pages/loja/StorePage";
+import CheckoutPage from "./pages/loja/CheckoutPage";
+import OrderConfirmationPage from "./pages/loja/OrderConfirmationPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +44,8 @@ const App = () => (
               <Route path="configuracoes" element={<Configuracoes />} />
             </Route>
             <Route path="/loja/:slug" element={<StorePage />} />
+            <Route path="/loja/:slug/checkout" element={<CheckoutPage />} />
+            <Route path="/loja/:slug/pedido/:orderId" element={<OrderConfirmationPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

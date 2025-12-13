@@ -1,11 +1,13 @@
-import { ShoppingCart, Plus, Minus, Trash2, X } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Trash2 } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { useCart } from "@/hooks/useCart";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 
 export function CartDrawer() {
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const { items, totalItems, totalPrice, updateQuantity, removeItem, clearCart } = useCart();
 
   const formatPrice = (price: number) => {
@@ -98,9 +100,11 @@ export function CartDrawer() {
                 <span className="font-semibold">{formatPrice(totalPrice)}</span>
               </div>
               
-              <Button className="w-full" size="lg">
-                Finalizar Pedido
-              </Button>
+              <SheetClose asChild>
+                <Button className="w-full" size="lg" onClick={() => navigate(`/loja/${slug}/checkout`)}>
+                  Finalizar Pedido
+                </Button>
+              </SheetClose>
               
               <Button
                 variant="ghost"
