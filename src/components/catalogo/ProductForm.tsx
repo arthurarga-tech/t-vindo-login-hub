@@ -1,4 +1,5 @@
 import { useForm } from "react-hook-form";
+import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -64,14 +65,27 @@ export function ProductForm({
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: {
-      name: product?.name || "",
-      description: product?.description || "",
-      price: product?.price || 0,
-      category_id: product?.category_id || "",
-      image_url: product?.image_url || "",
-      active: product?.active ?? true,
+      name: "",
+      description: "",
+      price: 0,
+      category_id: "",
+      image_url: "",
+      active: true,
     },
   });
+
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        name: product?.name || "",
+        description: product?.description || "",
+        price: product?.price || 0,
+        category_id: product?.category_id || "",
+        image_url: product?.image_url || "",
+        active: product?.active ?? true,
+      });
+    }
+  }, [open, product, form]);
 
   const handleSubmit = (data: ProductFormValues) => {
     onSubmit(data);
