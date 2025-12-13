@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -52,12 +53,23 @@ export function CategoryForm({
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(categorySchema),
     defaultValues: {
-      name: category?.name || "",
-      description: category?.description || "",
-      image_url: category?.image_url || "",
-      active: category?.active ?? true,
+      name: "",
+      description: "",
+      image_url: "",
+      active: true,
     },
   });
+
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        name: category?.name || "",
+        description: category?.description || "",
+        image_url: category?.image_url || "",
+        active: category?.active ?? true,
+      });
+    }
+  }, [open, category, form]);
 
   const handleSubmit = (data: CategoryFormValues) => {
     onSubmit(data);
