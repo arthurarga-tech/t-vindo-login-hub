@@ -1,17 +1,27 @@
 import type { PublicProduct } from "@/hooks/usePublicStore";
 import { Card, CardContent } from "@/components/ui/card";
-import { ImageIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ImageIcon, Plus } from "lucide-react";
+import { useCart } from "@/hooks/useCart";
+import { toast } from "sonner";
 
 interface ProductCardProps {
   product: PublicProduct;
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  const { addItem } = useCart();
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
     }).format(price);
+  };
+
+  const handleAddToCart = () => {
+    addItem(product);
+    toast.success(`${product.name} adicionado ao carrinho`);
   };
 
   return (
@@ -27,9 +37,15 @@ export function ProductCard({ product }: ProductCardProps) {
                 {product.description}
               </p>
             )}
-            <p className="text-primary font-semibold mt-2">
-              {formatPrice(product.price)}
-            </p>
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-primary font-semibold">
+                {formatPrice(product.price)}
+              </p>
+              <Button size="sm" onClick={handleAddToCart}>
+                <Plus className="h-4 w-4 mr-1" />
+                Adicionar
+              </Button>
+            </div>
           </div>
           
           <div className="w-24 h-24 flex-shrink-0">

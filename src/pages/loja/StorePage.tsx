@@ -3,6 +3,7 @@ import { usePublicEstablishment, usePublicCategories, usePublicProducts } from "
 import { Skeleton } from "@/components/ui/skeleton";
 import { StoreHeader } from "@/components/loja/StoreHeader";
 import { CategorySection } from "@/components/loja/CategorySection";
+import { CartProvider } from "@/hooks/useCart";
 import { AlertCircle } from "lucide-react";
 
 export default function StorePage() {
@@ -58,55 +59,57 @@ export default function StorePage() {
   const uncategorizedProducts = products?.filter((p) => !p.category_id) || [];
 
   return (
-    <div className="min-h-screen bg-background">
-      <StoreHeader establishmentName={establishment.name} />
-      
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        {isLoading ? (
-          <div className="space-y-8">
-            {[1, 2].map((i) => (
-              <div key={i}>
-                <Skeleton className="h-8 w-48 mb-4" />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {[1, 2, 3, 4].map((j) => (
-                    <Skeleton key={j} className="h-32" />
-                  ))}
+    <CartProvider establishmentSlug={slug || ""}>
+      <div className="min-h-screen bg-background">
+        <StoreHeader establishmentName={establishment.name} />
+        
+        <main className="max-w-4xl mx-auto px-4 py-8">
+          {isLoading ? (
+            <div className="space-y-8">
+              {[1, 2].map((i) => (
+                <div key={i}>
+                  <Skeleton className="h-8 w-48 mb-4" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {[1, 2, 3, 4].map((j) => (
+                      <Skeleton key={j} className="h-32" />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {categories?.map((category) => {
-              const categoryProducts = productsByCategory?.[category.id] || [];
-              if (categoryProducts.length === 0) return null;
-              
-              return (
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {categories?.map((category) => {
+                const categoryProducts = productsByCategory?.[category.id] || [];
+                if (categoryProducts.length === 0) return null;
+                
+                return (
+                  <CategorySection
+                    key={category.id}
+                    category={category}
+                    products={categoryProducts}
+                  />
+                );
+              })}
+
+              {uncategorizedProducts.length > 0 && (
                 <CategorySection
-                  key={category.id}
-                  category={category}
-                  products={categoryProducts}
+                  category={{ id: "uncategorized", name: "Outros", image_url: null }}
+                  products={uncategorizedProducts}
                 />
-              );
-            })}
+              )}
 
-            {uncategorizedProducts.length > 0 && (
-              <CategorySection
-                category={{ id: "uncategorized", name: "Outros", image_url: null }}
-                products={uncategorizedProducts}
-              />
-            )}
-
-            {(!products || products.length === 0) && (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">
-                  Nenhum produto disponível no momento.
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-      </main>
-    </div>
+              {(!products || products.length === 0) && (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">
+                    Nenhum produto disponível no momento.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </main>
+      </div>
+    </CartProvider>
   );
 }
