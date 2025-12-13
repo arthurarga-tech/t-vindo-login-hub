@@ -13,6 +13,7 @@ import MeuNegocio from "./pages/dashboard/MeuNegocio";
 import Clientes from "./pages/dashboard/Clientes";
 import Estoque from "./pages/dashboard/Estoque";
 import Delivery from "./pages/dashboard/Delivery";
+import Usuarios from "./pages/dashboard/Usuarios";
 import Configuracoes from "./pages/dashboard/Configuracoes";
 import NotFound from "./pages/NotFound";
 
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="clientes" element={<Clientes />} />
               <Route path="estoque" element={<Estoque />} />
               <Route path="delivery" element={<Delivery />} />
+              <Route path="usuarios" element={<Usuarios />} />
               <Route path="configuracoes" element={<Configuracoes />} />
             </Route>
             <Route path="*" element={<NotFound />} />
