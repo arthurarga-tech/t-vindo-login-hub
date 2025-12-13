@@ -144,3 +144,22 @@ export function useDeleteProduct(establishmentId: string | undefined) {
     },
   });
 }
+
+export function useReorderProducts(establishmentId: string | undefined) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (products: { id: string; order_position: number }[]) => {
+      const updates = products.map(({ id, order_position }) =>
+        supabase.from("products").update({ order_position }).eq("id", id)
+      );
+      await Promise.all(updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products", establishmentId] });
+    },
+    onError: (error) => {
+      toast.error("Erro ao reordenar produtos: " + error.message);
+    },
+  });
+}
