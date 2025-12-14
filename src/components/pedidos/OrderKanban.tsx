@@ -18,8 +18,9 @@ const columns: KanbanColumn[] = [
   { status: "pending", label: "Pendentes", color: "bg-red-500" },
   { status: "confirmed", label: "Confirmados", color: "bg-blue-500" },
   { status: "preparing", label: "Preparando", color: "bg-orange-500" },
-  { status: "ready", label: "Prontos", color: "bg-green-500" },
+  { status: "ready", label: "Prontos", color: "bg-yellow-500" },
   { status: "out_for_delivery", label: "Em Entrega", color: "bg-purple-500" },
+  { status: "delivered", label: "Entregues", color: "bg-green-500" },
 ];
 
 export function OrderKanban({ orders, onOrderClick }: OrderKanbanProps) {

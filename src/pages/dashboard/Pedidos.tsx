@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { ClipboardList, LayoutGrid, List, Volume2, VolumeX, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,29 +8,35 @@ import { Order, useOrders } from "@/hooks/useOrders";
 import { OrderKanban } from "@/components/pedidos/OrderKanban";
 import { OrderList } from "@/components/pedidos/OrderList";
 import { OrderDetailModal } from "@/components/pedidos/OrderDetailModal";
+import { OrderFilters, OrderFiltersState } from "@/components/pedidos/OrderFilters";
+import { startOfDay, startOfWeek, subDays, isAfter } from "date-fns";
 
 export default function Pedidos() {
   const { data: orders, isLoading, refetch } = useOrders();
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [previousPendingCount, setPreviousPendingCount] = useState(0);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const previousPendingCountRef = useRef<number | null>(null);
+  const [filters, setFilters] = useState<OrderFiltersState>({
+    search: "",
+    status: "all",
+    dateRange: "all",
+    showFinished: true,
+  });
 
   const pendingOrders = orders?.filter((o) => o.status === "pending") || [];
   const pendingCount = pendingOrders.length;
 
-  // Play notification sound when new pending orders arrive
+  // Play notification sound when new pending orders arrive (fixed for first order)
   useEffect(() => {
-    if (pendingCount > previousPendingCount && previousPendingCount > 0 && soundEnabled) {
+    if (previousPendingCountRef.current !== null && pendingCount > previousPendingCountRef.current && soundEnabled) {
       playNotificationSound();
     }
-    setPreviousPendingCount(pendingCount);
-  }, [pendingCount, previousPendingCount, soundEnabled]);
+    previousPendingCountRef.current = pendingCount;
+  }, [pendingCount, soundEnabled]);
 
   const playNotificationSound = () => {
     try {
-      // Create audio context for notification sound
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
@@ -45,7 +51,6 @@ export default function Pedidos() {
       oscillator.start();
       oscillator.stop(audioContext.currentTime + 0.3);
 
-      // Second beep
       setTimeout(() => {
         const osc2 = audioContext.createOscillator();
         const gain2 = audioContext.createGain();
@@ -61,6 +66,64 @@ export default function Pedidos() {
       console.log("Audio notification not supported");
     }
   };
+
+  // Filter orders
+  const filteredOrders = useMemo(() => {
+    if (!orders) return [];
+
+    let result = [...orders];
+
+    // Search filter
+    if (filters.search) {
+      const search = filters.search.toLowerCase();
+      result = result.filter(
+        (o) =>
+          o.customer?.name?.toLowerCase().includes(search) ||
+          o.customer?.phone?.includes(filters.search) ||
+          o.order_number.toString().includes(filters.search)
+      );
+    }
+
+    // Status filter
+    if (filters.status !== "all") {
+      result = result.filter((o) => o.status === filters.status);
+    }
+
+    // Date range filter
+    if (filters.dateRange !== "all") {
+      const now = new Date();
+      let startDate: Date;
+
+      switch (filters.dateRange) {
+        case "today":
+          startDate = startOfDay(now);
+          break;
+        case "yesterday":
+          startDate = startOfDay(subDays(now, 1));
+          result = result.filter((o) => {
+            const orderDate = new Date(o.created_at);
+            return orderDate >= startDate && orderDate < startOfDay(now);
+          });
+          break;
+        case "week":
+          startDate = startOfWeek(now, { weekStartsOn: 0 });
+          break;
+        default:
+          startDate = new Date(0);
+      }
+
+      if (filters.dateRange !== "yesterday") {
+        result = result.filter((o) => isAfter(new Date(o.created_at), startDate));
+      }
+    }
+
+    // Hide finished orders (delivered/cancelled)
+    if (!filters.showFinished) {
+      result = result.filter((o) => o.status !== "delivered" && o.status !== "cancelled");
+    }
+
+    return result;
+  }, [orders, filters]);
 
   if (isLoading) {
     return (
@@ -117,6 +180,9 @@ export default function Pedidos() {
         </div>
       </div>
 
+      {/* Filters */}
+      <OrderFilters filters={filters} onChange={setFilters} />
+
       {orders && orders.length === 0 ? (
         <div className="text-center py-12">
           <ClipboardList className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
@@ -127,12 +193,12 @@ export default function Pedidos() {
         </div>
       ) : viewMode === "kanban" ? (
         <OrderKanban 
-          orders={orders || []} 
+          orders={filteredOrders} 
           onOrderClick={setSelectedOrder}
         />
       ) : (
         <OrderList 
-          orders={orders || []} 
+          orders={filteredOrders} 
           onOrderClick={setSelectedOrder}
         />
       )}
