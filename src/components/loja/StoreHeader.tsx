@@ -24,6 +24,7 @@ interface StoreHeaderProps {
   bannerUrl?: string | null;
   phone?: string | null;
   openingHours?: OpeningHours | null;
+  primaryColor?: string | null;
 }
 
 const dayKeys: Array<keyof OpeningHours> = [
@@ -66,8 +67,11 @@ function getCurrentDayStatus(openingHours?: OpeningHours | null): {
   }
 }
 
-export function StoreHeader({ establishmentName, logoUrl, bannerUrl, phone, openingHours }: StoreHeaderProps) {
+export function StoreHeader({ establishmentName, logoUrl, bannerUrl, phone, openingHours, primaryColor }: StoreHeaderProps) {
   const status = getCurrentDayStatus(openingHours);
+  
+  // Use custom primary color or fallback
+  const headerStyle = primaryColor ? { backgroundColor: primaryColor } : undefined;
 
   return (
     <header className="sticky top-0 z-50">
@@ -84,7 +88,10 @@ export function StoreHeader({ establishmentName, logoUrl, bannerUrl, phone, open
       )}
       
       {/* Header bar */}
-      <div className={`bg-primary text-primary-foreground py-4 shadow-md ${bannerUrl ? '-mt-16 relative' : ''}`}>
+      <div 
+        className={`bg-primary text-primary-foreground py-4 shadow-md ${bannerUrl ? '-mt-16 relative' : ''}`}
+        style={headerStyle}
+      >
         <div className="max-w-4xl mx-auto px-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
