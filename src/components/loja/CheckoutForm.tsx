@@ -47,6 +47,12 @@ export function CheckoutForm() {
   const [notes, setNotes] = useState("");
   const [shareLocationViaWhatsApp, setShareLocationViaWhatsApp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [changeFor, setChangeFor] = useState<string>("");
+
+  // Calculate change
+  const changeForValue = parseFloat(changeFor.replace(",", ".")) || 0;
+  const changeAmount = changeForValue > totalPrice ? changeForValue - totalPrice : 0;
+  const needsChange = paymentMethod === "cash" && changeForValue > 0;
 
   // Get available service modalities
   const serviceDelivery = (establishment as any)?.service_delivery ?? true;
@@ -168,6 +174,7 @@ export function CheckoutForm() {
           total: totalPrice,
           notes: notes || null,
           status: "pending",
+          change_for: paymentMethod === "cash" && changeForValue > 0 ? changeForValue : null,
         })
         .select()
         .single();
@@ -563,6 +570,41 @@ export function CheckoutForm() {
                 </Label>
               </div>
             </RadioGroup>
+
+            {/* Change calculation for cash */}
+            {paymentMethod === "cash" && (
+              <div className="mt-4 space-y-3 p-4 border rounded-lg bg-muted/30">
+                <div className="space-y-2">
+                  <Label htmlFor="changeFor">Troco para quanto?</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">R$</span>
+                    <Input
+                      id="changeFor"
+                      placeholder="0,00"
+                      value={changeFor}
+                      onChange={(e) => setChangeFor(e.target.value)}
+                      className="max-w-32"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Deixe em branco se não precisar de troco
+                  </p>
+                </div>
+                {needsChange && (
+                  <div className="flex justify-between items-center pt-2 border-t">
+                    <span className="text-sm font-medium">Troco:</span>
+                    <span className="text-lg font-bold text-primary">
+                      {formatPrice(changeAmount)}
+                    </span>
+                  </div>
+                )}
+                {changeForValue > 0 && changeForValue < totalPrice && (
+                  <p className="text-sm text-destructive">
+                    O valor deve ser maior que o total do pedido ({formatPrice(totalPrice)})
+                  </p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 

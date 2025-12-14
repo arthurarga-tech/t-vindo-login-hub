@@ -184,6 +184,12 @@ export function usePrintOrder() {
         <span>TOTAL</span>
         <span>R$ ${order.total.toFixed(2).replace(".", ",")}</span>
       </div>
+      ${order.payment_method === "cash" && (order as any).change_for && (order as any).change_for > 0 ? `
+        <div style="margin-top: 8px; padding: 4px; border: 1px solid #000; text-align: center;">
+          <div><strong>TROCO PARA:</strong> R$ ${((order as any).change_for).toFixed(2).replace(".", ",")}</div>
+          <div style="font-size: 14px; font-weight: bold;">LEVAR: R$ ${((order as any).change_for - order.total).toFixed(2).replace(".", ",")}</div>
+        </div>
+      ` : ""}
     </div>
   </div>
 
