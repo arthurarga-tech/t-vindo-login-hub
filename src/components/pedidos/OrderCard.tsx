@@ -1,7 +1,7 @@
-import { Clock, User, MapPin, Phone, CreditCard, MessageSquare } from "lucide-react";
+import { Clock, User, MapPin, Phone, CreditCard, MessageSquare, Truck, Package, UtensilsCrossed } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Order, OrderStatus } from "@/hooks/useOrders";
+import { Order, OrderStatus, OrderType, orderTypeLabels } from "@/hooks/useOrders";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -17,6 +17,10 @@ const statusConfig: Record<OrderStatus, { label: string; variant: "default" | "s
   ready: { label: "Pronto", variant: "default" },
   out_for_delivery: { label: "Saiu p/ Entrega", variant: "secondary" },
   delivered: { label: "Entregue", variant: "outline" },
+  ready_for_pickup: { label: "Pronto p/ Retirada", variant: "default" },
+  picked_up: { label: "Retirado", variant: "outline" },
+  ready_to_serve: { label: "Pronto p/ Servir", variant: "default" },
+  served: { label: "Servido", variant: "outline" },
   cancelled: { label: "Cancelado", variant: "destructive" },
 };
 
@@ -35,10 +39,23 @@ export function OrderCard({ order, onClick }: OrderCardProps) {
   };
 
   const status = statusConfig[order.status as OrderStatus] || statusConfig.pending;
+  const orderType = (order.order_type || "delivery") as OrderType;
+  const typeInfo = orderTypeLabels[orderType];
   const timeAgo = formatDistanceToNow(new Date(order.created_at), {
     addSuffix: true,
     locale: ptBR,
   });
+
+  const getOrderTypeIcon = () => {
+    switch (orderType) {
+      case "pickup":
+        return <Package className="h-4 w-4" />;
+      case "dine_in":
+        return <UtensilsCrossed className="h-4 w-4" />;
+      default:
+        return <Truck className="h-4 w-4" />;
+    }
+  };
 
   return (
     <Card 
@@ -48,9 +65,12 @@ export function OrderCard({ order, onClick }: OrderCardProps) {
     >
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-bold text-lg">#{order.order_number}</span>
             <Badge variant={status.variant}>{status.label}</Badge>
+            <Badge variant="outline" className="text-xs flex items-center gap-1">
+              {getOrderTypeIcon()} {typeInfo.label}
+            </Badge>
           </div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Clock className="h-3 w-3" />
@@ -69,7 +89,7 @@ export function OrderCard({ order, onClick }: OrderCardProps) {
           <span>{order.customer?.phone}</span>
         </div>
 
-        {order.customer?.address && (
+        {orderType === "delivery" && order.customer?.address && (
           <div className="flex items-start gap-2 text-sm text-muted-foreground">
             <MapPin className="h-4 w-4 mt-0.5" />
             <span className="line-clamp-1">

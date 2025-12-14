@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useCart } from "@/hooks/useCart";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, MapPin, ShoppingBag } from "lucide-react";
+import { ArrowLeft, MapPin, ShoppingBag, Truck, Package, UtensilsCrossed } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { usePublicEstablishment } from "@/hooks/usePublicStore";
 
 type PaymentMethod = "cash" | "card" | "pix";
+type OrderType = "delivery" | "pickup" | "dine_in";
 
 interface CustomerForm {
   name: string;
@@ -42,9 +43,33 @@ export function CheckoutForm() {
     city: "",
   });
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
+  const [orderType, setOrderType] = useState<OrderType>("delivery");
   const [notes, setNotes] = useState("");
   const [shareLocationViaWhatsApp, setShareLocationViaWhatsApp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Get available service modalities
+  const serviceDelivery = (establishment as any)?.service_delivery ?? true;
+  const servicePickup = (establishment as any)?.service_pickup ?? false;
+  const serviceDineIn = (establishment as any)?.service_dine_in ?? false;
+
+  // Set default order type based on available modalities
+  useEffect(() => {
+    if (establishment) {
+      if (serviceDelivery) {
+        setOrderType("delivery");
+      } else if (servicePickup) {
+        setOrderType("pickup");
+      } else if (serviceDineIn) {
+        setOrderType("dine_in");
+      }
+    }
+  }, [establishment, serviceDelivery, servicePickup, serviceDineIn]);
+
+  // Count enabled modalities
+  const enabledModalitiesCount = [serviceDelivery, servicePickup, serviceDineIn].filter(Boolean).length;
+  const showModalitySelector = enabledModalitiesCount > 1;
+  const needsAddress = orderType === "delivery";
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -66,18 +91,20 @@ export function CheckoutForm() {
       toast.error("Informe seu telefone");
       return false;
     }
-    if (!customer.addressNumber.trim()) {
-      toast.error("Informe o número da casa ou s/n");
-      return false;
-    }
-    if (!shareLocationViaWhatsApp) {
-      if (!customer.address.trim()) {
-        toast.error("Informe seu endereço");
+    if (needsAddress) {
+      if (!customer.addressNumber.trim()) {
+        toast.error("Informe o número da casa ou s/n");
         return false;
       }
-      if (!customer.neighborhood.trim()) {
-        toast.error("Informe o bairro");
-        return false;
+      if (!shareLocationViaWhatsApp) {
+        if (!customer.address.trim()) {
+          toast.error("Informe seu endereço");
+          return false;
+        }
+        if (!customer.neighborhood.trim()) {
+          toast.error("Informe o bairro");
+          return false;
+        }
       }
     }
     if (items.length === 0) {
@@ -92,6 +119,18 @@ export function CheckoutForm() {
 
     setSubmitting(true);
     try {
+      // Prepare customer address based on order type
+      const customerAddress = needsAddress
+        ? shareLocationViaWhatsApp
+          ? "Localização via WhatsApp"
+          : customer.address
+        : null;
+      const customerNeighborhood = needsAddress
+        ? shareLocationViaWhatsApp
+          ? "Localização via WhatsApp"
+          : customer.neighborhood
+        : null;
+
       // Create customer
       const { data: customerData, error: customerError } = await supabase
         .from("customers")
@@ -99,24 +138,25 @@ export function CheckoutForm() {
           establishment_id: establishment.id,
           name: customer.name,
           phone: customer.phone,
-          address: shareLocationViaWhatsApp ? "Localização via WhatsApp" : customer.address,
-          address_number: customer.addressNumber,
-          address_complement: customer.addressComplement || null,
-          neighborhood: shareLocationViaWhatsApp ? "Localização via WhatsApp" : customer.neighborhood,
-          city: customer.city || null,
+          address: customerAddress,
+          address_number: needsAddress ? customer.addressNumber : null,
+          address_complement: needsAddress ? customer.addressComplement || null : null,
+          neighborhood: customerNeighborhood,
+          city: needsAddress ? customer.city || null : null,
         })
         .select()
         .single();
 
       if (customerError) throw customerError;
 
-      // Create order
+      // Create order with order_type
       const { data: orderData, error: orderError } = await supabase
         .from("orders")
         .insert({
           establishment_id: establishment.id,
           customer_id: customerData.id,
           payment_method: paymentMethod,
+          order_type: orderType,
           subtotal: totalPrice,
           delivery_fee: 0,
           total: totalPrice,
@@ -275,6 +315,97 @@ export function CheckoutForm() {
           </CardContent>
         </Card>
 
+        {/* Order Type Selection */}
+        {showModalitySelector && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Como deseja receber?</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RadioGroup
+                value={orderType}
+                onValueChange={(value) => setOrderType(value as OrderType)}
+                className="space-y-3"
+              >
+                {serviceDelivery && (
+                  <div className="flex items-center space-x-3 p-3 border rounded-lg">
+                    <RadioGroupItem value="delivery" id="delivery" />
+                    <Label htmlFor="delivery" className="flex-1 cursor-pointer flex items-center gap-3">
+                      <Truck className="h-5 w-5 text-primary" />
+                      <div>
+                        <span className="font-medium">Entrega</span>
+                        <p className="text-sm text-muted-foreground">Receba no seu endereço</p>
+                      </div>
+                    </Label>
+                  </div>
+                )}
+                {servicePickup && (
+                  <div className="flex items-center space-x-3 p-3 border rounded-lg">
+                    <RadioGroupItem value="pickup" id="pickup" />
+                    <Label htmlFor="pickup" className="flex-1 cursor-pointer flex items-center gap-3">
+                      <Package className="h-5 w-5 text-primary" />
+                      <div>
+                        <span className="font-medium">Retirada</span>
+                        <p className="text-sm text-muted-foreground">Retire no estabelecimento</p>
+                      </div>
+                    </Label>
+                  </div>
+                )}
+                {serviceDineIn && (
+                  <div className="flex items-center space-x-3 p-3 border rounded-lg">
+                    <RadioGroupItem value="dine_in" id="dine_in" />
+                    <Label htmlFor="dine_in" className="flex-1 cursor-pointer flex items-center gap-3">
+                      <UtensilsCrossed className="h-5 w-5 text-primary" />
+                      <div>
+                        <span className="font-medium">Comer no Local</span>
+                        <p className="text-sm text-muted-foreground">Consuma no estabelecimento</p>
+                      </div>
+                    </Label>
+                  </div>
+                )}
+              </RadioGroup>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Info for pickup/dine-in */}
+        {orderType === "pickup" && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent className="pt-4">
+              <div className="flex items-start gap-3">
+                <Package className="h-5 w-5 text-primary mt-0.5" />
+                <div>
+                  <p className="font-medium">Retirada no Local</p>
+                  <p className="text-sm text-muted-foreground">
+                    Você poderá retirar seu pedido em: <br />
+                    <span className="font-medium text-foreground">
+                      {(establishment as any)?.address || "Endereço do estabelecimento"}
+                      {(establishment as any)?.neighborhood && `, ${(establishment as any).neighborhood}`}
+                      {(establishment as any)?.city && ` - ${(establishment as any).city}`}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {orderType === "dine_in" && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent className="pt-4">
+              <div className="flex items-start gap-3">
+                <UtensilsCrossed className="h-5 w-5 text-primary mt-0.5" />
+                <div>
+                  <p className="font-medium">Consumo no Local</p>
+                  <p className="text-sm text-muted-foreground">
+                    Seu pedido será preparado para consumo no estabelecimento.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Customer Info */}
         <Card>
           <CardHeader>
@@ -303,87 +434,89 @@ export function CheckoutForm() {
           </CardContent>
         </Card>
 
-        {/* Address */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Endereço de Entrega</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Share location option */}
-            <div className="flex items-start space-x-3 p-3 border rounded-lg bg-muted/30">
-              <Checkbox
-                id="shareLocation"
-                checked={shareLocationViaWhatsApp}
-                onCheckedChange={(checked) => setShareLocationViaWhatsApp(checked === true)}
-              />
-              <div className="space-y-1">
-                <Label htmlFor="shareLocation" className="cursor-pointer flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-primary" />
-                  <span className="font-medium">Compartilhar localização via WhatsApp</span>
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Após o pedido, envie sua localização pelo WhatsApp. Informe apenas o número da casa.
-                </p>
-              </div>
-            </div>
-
-            {!shareLocationViaWhatsApp && (
-              <div className="space-y-2">
-                <Label htmlFor="address">Rua *</Label>
-                <Input
-                  id="address"
-                  placeholder="Nome da rua"
-                  value={customer.address}
-                  onChange={(e) => handleInputChange("address", e.target.value)}
+        {/* Address - only for delivery */}
+        {needsAddress && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Endereço de Entrega</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Share location option */}
+              <div className="flex items-start space-x-3 p-3 border rounded-lg bg-muted/30">
+                <Checkbox
+                  id="shareLocation"
+                  checked={shareLocationViaWhatsApp}
+                  onCheckedChange={(checked) => setShareLocationViaWhatsApp(checked === true)}
                 />
+                <div className="space-y-1">
+                  <Label htmlFor="shareLocation" className="cursor-pointer flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    <span className="font-medium">Compartilhar localização via WhatsApp</span>
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Após o pedido, envie sua localização pelo WhatsApp. Informe apenas o número da casa.
+                  </p>
+                </div>
               </div>
-            )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="addressNumber">Número *</Label>
-                <Input
-                  id="addressNumber"
-                  placeholder="123 ou s/n"
-                  value={customer.addressNumber}
-                  onChange={(e) => handleInputChange("addressNumber", e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="addressComplement">Complemento</Label>
-                <Input
-                  id="addressComplement"
-                  placeholder="Apto, bloco..."
-                  value={customer.addressComplement}
-                  onChange={(e) => handleInputChange("addressComplement", e.target.value)}
-                />
-              </div>
-            </div>
+              {!shareLocationViaWhatsApp && (
+                <div className="space-y-2">
+                  <Label htmlFor="address">Rua *</Label>
+                  <Input
+                    id="address"
+                    placeholder="Nome da rua"
+                    value={customer.address}
+                    onChange={(e) => handleInputChange("address", e.target.value)}
+                  />
+                </div>
+              )}
 
-            {!shareLocationViaWhatsApp && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="neighborhood">Bairro *</Label>
+                  <Label htmlFor="addressNumber">Número *</Label>
                   <Input
-                    id="neighborhood"
-                    placeholder="Seu bairro"
-                    value={customer.neighborhood}
-                    onChange={(e) => handleInputChange("neighborhood", e.target.value)}
+                    id="addressNumber"
+                    placeholder="123 ou s/n"
+                    value={customer.addressNumber}
+                    onChange={(e) => handleInputChange("addressNumber", e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="city">Cidade</Label>
+                  <Label htmlFor="addressComplement">Complemento</Label>
                   <Input
-                    id="city"
-                    placeholder="Sua cidade"
-                    value={customer.city}
-                    onChange={(e) => handleInputChange("city", e.target.value)}
+                    id="addressComplement"
+                    placeholder="Apto, bloco..."
+                    value={customer.addressComplement}
+                    onChange={(e) => handleInputChange("addressComplement", e.target.value)}
                   />
                 </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
+
+              {!shareLocationViaWhatsApp && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="neighborhood">Bairro *</Label>
+                    <Input
+                      id="neighborhood"
+                      placeholder="Seu bairro"
+                      value={customer.neighborhood}
+                      onChange={(e) => handleInputChange("neighborhood", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="city">Cidade</Label>
+                    <Input
+                      id="city"
+                      placeholder="Sua cidade"
+                      value={customer.city}
+                      onChange={(e) => handleInputChange("city", e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Payment Method */}
         <Card>
@@ -400,21 +533,27 @@ export function CheckoutForm() {
                 <RadioGroupItem value="pix" id="pix" />
                 <Label htmlFor="pix" className="flex-1 cursor-pointer">
                   <span className="font-medium">Pix</span>
-                  <p className="text-sm text-muted-foreground">Pague na entrega</p>
+                  <p className="text-sm text-muted-foreground">
+                    {orderType === "delivery" ? "Pague na entrega" : "Pague no local"}
+                  </p>
                 </Label>
               </div>
               <div className="flex items-center space-x-3 p-3 border rounded-lg">
                 <RadioGroupItem value="card" id="card" />
                 <Label htmlFor="card" className="flex-1 cursor-pointer">
                   <span className="font-medium">Cartão</span>
-                  <p className="text-sm text-muted-foreground">Débito ou crédito na entrega</p>
+                  <p className="text-sm text-muted-foreground">
+                    {orderType === "delivery" ? "Débito ou crédito na entrega" : "Débito ou crédito no local"}
+                  </p>
                 </Label>
               </div>
               <div className="flex items-center space-x-3 p-3 border rounded-lg">
                 <RadioGroupItem value="cash" id="cash" />
                 <Label htmlFor="cash" className="flex-1 cursor-pointer">
                   <span className="font-medium">Dinheiro</span>
-                  <p className="text-sm text-muted-foreground">Pague na entrega</p>
+                  <p className="text-sm text-muted-foreground">
+                    {orderType === "delivery" ? "Pague na entrega" : "Pague no local"}
+                  </p>
                 </Label>
               </div>
             </RadioGroup>

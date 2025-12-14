@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Order, OrderStatus, useUpdateOrderStatus } from "@/hooks/useOrders";
+import { Order, OrderStatus, useUpdateOrderStatus, orderTypeLabels, getStatusFlow } from "@/hooks/useOrders";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -32,10 +32,12 @@ const statusConfig: Record<OrderStatus, { label: string; variant: "default" | "s
   ready: { label: "Pronto", variant: "default" },
   out_for_delivery: { label: "Saiu p/ Entrega", variant: "secondary" },
   delivered: { label: "Entregue", variant: "outline" },
+  ready_for_pickup: { label: "Pronto p/ Retirada", variant: "default" },
+  picked_up: { label: "Retirado", variant: "outline" },
+  ready_to_serve: { label: "Pronto p/ Servir", variant: "default" },
+  served: { label: "Servido", variant: "outline" },
   cancelled: { label: "Cancelado", variant: "destructive" },
 };
-
-const statusFlow: OrderStatus[] = ["pending", "confirmed", "preparing", "ready", "out_for_delivery", "delivered"];
 
 const paymentLabels: Record<string, string> = {
   pix: "Pix",
@@ -57,6 +59,10 @@ export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps
   };
 
   const status = statusConfig[order.status as OrderStatus] || statusConfig.pending;
+  const orderType = order.order_type || "delivery";
+  const typeInfo = orderTypeLabels[orderType];
+  const statusFlow = getStatusFlow(orderType);
+  
   const currentStatusIndex = statusFlow.indexOf(order.status as OrderStatus);
   const nextStatus = currentStatusIndex >= 0 && currentStatusIndex < statusFlow.length - 1 
     ? statusFlow[currentStatusIndex + 1] 
@@ -88,6 +94,10 @@ export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps
     ready: "Marcar como Pronto",
     out_for_delivery: "Saiu para Entrega",
     delivered: "Marcar como Entregue",
+    ready_for_pickup: "Pronto p/ Retirada",
+    picked_up: "Marcar como Retirado",
+    ready_to_serve: "Pronto p/ Servir",
+    served: "Marcar como Servido",
     cancelled: "Cancelar",
   };
 
@@ -98,6 +108,10 @@ export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps
     ready: "Voltar para Pronto",
     out_for_delivery: "Voltar para Saiu p/ Entrega",
     delivered: "",
+    ready_for_pickup: "Voltar para Pronto p/ Retirada",
+    picked_up: "",
+    ready_to_serve: "Voltar para Pronto p/ Servir",
+    served: "",
     cancelled: "",
   };
 
@@ -105,10 +119,13 @@ export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
+        <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span>Pedido #{order.order_number}</span>
               <Badge variant={status.variant}>{status.label}</Badge>
+              <Badge variant="outline" className="ml-1">
+                {typeInfo.icon} {typeInfo.label}
+              </Badge>
             </div>
           </DialogTitle>
         </DialogHeader>

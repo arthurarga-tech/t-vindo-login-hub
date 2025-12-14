@@ -3,7 +3,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEstablishment } from "./useEstablishment";
 import { useEffect } from "react";
 
-export type OrderStatus = "pending" | "confirmed" | "preparing" | "ready" | "out_for_delivery" | "delivered" | "cancelled";
+export type OrderStatus = 
+  | "pending" 
+  | "confirmed" 
+  | "preparing" 
+  | "ready" 
+  | "out_for_delivery" 
+  | "delivered" 
+  | "ready_for_pickup" 
+  | "picked_up" 
+  | "ready_to_serve" 
+  | "served" 
+  | "cancelled";
+
+export type OrderType = "delivery" | "pickup" | "dine_in";
 
 export interface OrderItem {
   id: string;
@@ -23,6 +36,7 @@ export interface Order {
   id: string;
   order_number: number;
   status: OrderStatus;
+  order_type: OrderType;
   payment_method: string;
   subtotal: number;
   delivery_fee: number;
@@ -41,6 +55,22 @@ export interface Order {
     city: string | null;
   };
   items: OrderItem[];
+}
+
+export const orderTypeLabels: Record<OrderType, { label: string; icon: string }> = {
+  delivery: { label: "Entrega", icon: "🚚" },
+  pickup: { label: "Retirada", icon: "📦" },
+  dine_in: { label: "No Local", icon: "🍽️" },
+};
+
+export const statusFlowByOrderType: Record<OrderType, OrderStatus[]> = {
+  delivery: ["pending", "confirmed", "preparing", "ready", "out_for_delivery", "delivered"],
+  pickup: ["pending", "confirmed", "preparing", "ready_for_pickup", "picked_up"],
+  dine_in: ["pending", "confirmed", "preparing", "ready_to_serve", "served"],
+};
+
+export function getStatusFlow(orderType: OrderType): OrderStatus[] {
+  return statusFlowByOrderType[orderType] || statusFlowByOrderType.delivery;
 }
 
 export function useOrders() {
