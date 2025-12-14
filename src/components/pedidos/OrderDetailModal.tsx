@@ -240,10 +240,22 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, prin
           <Separator />
 
           {/* Payment */}
-          <div className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">{paymentLabels[order.payment_method] || order.payment_method}</span>
-            <span className="text-muted-foreground">• Pagamento na entrega</span>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">{paymentLabels[order.payment_method] || order.payment_method}</span>
+              <span className="text-muted-foreground">• Pagamento na entrega</span>
+            </div>
+            {order.payment_method === "cash" && (order as any).change_for && (order as any).change_for > 0 && (
+              <div className="pl-6 text-sm space-y-0.5">
+                <p className="text-muted-foreground">
+                  Troco para: <span className="font-medium text-foreground">{formatPrice((order as any).change_for)}</span>
+                </p>
+                <p className="text-primary font-medium">
+                  Levar troco: {formatPrice((order as any).change_for - order.total)}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Notes */}

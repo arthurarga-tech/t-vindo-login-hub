@@ -181,9 +181,19 @@ export default function OrderConfirmationPage() {
           <CardHeader>
             <CardTitle className="text-lg">Pagamento</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-2">
             <p className="font-medium">{paymentMethodLabels[order.payment_method]}</p>
             <p className="text-sm text-muted-foreground">Pagamento na entrega</p>
+            {order.payment_method === "cash" && (order as any).change_for && (order as any).change_for > 0 && (
+              <div className="pt-2 border-t space-y-1">
+                <p className="text-sm">
+                  Troco para: <span className="font-medium">{formatPrice((order as any).change_for)}</span>
+                </p>
+                <p className="text-sm text-primary font-medium">
+                  Troco: {formatPrice((order as any).change_for - order.total)}
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
