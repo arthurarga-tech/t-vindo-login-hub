@@ -49,11 +49,14 @@ export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps
   const nextStatus = currentStatusIndex >= 0 && currentStatusIndex < statusFlow.length - 1 
     ? statusFlow[currentStatusIndex + 1] 
     : null;
+  const previousStatus = currentStatusIndex > 0 
+    ? statusFlow[currentStatusIndex - 1] 
+    : null;
 
   const handleStatusChange = async (newStatus: OrderStatus) => {
-    // Block invalid transitions from cancelled or delivered orders
-    if (order.status === "cancelled" || order.status === "delivered") {
-      toast.error("Não é possível alterar o status de pedidos finalizados");
+    // Block transitions from cancelled orders only
+    if (order.status === "cancelled") {
+      toast.error("Não é possível alterar o status de pedidos cancelados");
       return;
     }
 
@@ -65,28 +68,24 @@ export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps
     }
   };
 
-  const getNextStatusButton = () => {
-    if (!nextStatus) return null;
-    
-    const labels: Record<OrderStatus, string> = {
-      pending: "",
-      confirmed: "Confirmar Pedido",
-      preparing: "Iniciar Preparo",
-      ready: "Marcar como Pronto",
-      out_for_delivery: "Saiu para Entrega",
-      delivered: "Marcar como Entregue",
-      cancelled: "Cancelar",
-    };
+  const nextStatusLabels: Record<OrderStatus, string> = {
+    pending: "",
+    confirmed: "Confirmar Pedido",
+    preparing: "Iniciar Preparo",
+    ready: "Marcar como Pronto",
+    out_for_delivery: "Saiu para Entrega",
+    delivered: "Marcar como Entregue",
+    cancelled: "Cancelar",
+  };
 
-    return (
-      <Button 
-        className="flex-1"
-        onClick={() => handleStatusChange(nextStatus)}
-        disabled={updateStatus.isPending}
-      >
-        {labels[nextStatus]}
-      </Button>
-    );
+  const previousStatusLabels: Record<OrderStatus, string> = {
+    pending: "Voltar para Pendente",
+    confirmed: "Voltar para Confirmado",
+    preparing: "Voltar para Preparando",
+    ready: "Voltar para Pronto",
+    out_for_delivery: "Voltar para Saiu p/ Entrega",
+    delivered: "",
+    cancelled: "",
   };
 
   return (
@@ -221,9 +220,26 @@ export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps
 
           {/* Actions */}
           <div className="flex gap-2">
-            {order.status !== "delivered" && order.status !== "cancelled" && (
+            {order.status !== "cancelled" && (
               <>
-                {getNextStatusButton()}
+                {previousStatus && (
+                  <Button 
+                    variant="outline"
+                    onClick={() => handleStatusChange(previousStatus)}
+                    disabled={updateStatus.isPending}
+                  >
+                    {previousStatusLabels[previousStatus]}
+                  </Button>
+                )}
+                {nextStatus && (
+                  <Button 
+                    className="flex-1"
+                    onClick={() => handleStatusChange(nextStatus)}
+                    disabled={updateStatus.isPending}
+                  >
+                    {nextStatusLabels[nextStatus]}
+                  </Button>
+                )}
                 <Button 
                   variant="destructive" 
                   onClick={() => handleStatusChange("cancelled")}
