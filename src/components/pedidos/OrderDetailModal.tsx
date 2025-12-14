@@ -75,6 +75,7 @@ export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps
     try {
       await updateStatus.mutateAsync({ orderId: order.id, status: newStatus });
       toast.success(`Status atualizado para: ${statusConfig[newStatus].label}`);
+      onClose(); // Fecha o modal para mostrar dados atualizados
     } catch (error) {
       toast.error("Erro ao atualizar status");
     }
