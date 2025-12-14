@@ -62,10 +62,17 @@ export function CartDrawer() {
                     
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-sm line-clamp-2">{item.product.name}</h4>
+                      <p className="text-xs text-muted-foreground">
+                        {formatPrice(item.product.price)}
+                      </p>
                       {item.selectedAddons && item.selectedAddons.length > 0 && (
-                        <p className="text-xs text-muted-foreground">
-                          + {item.selectedAddons.map(a => a.name).join(", ")}
-                        </p>
+                        <div className="mt-1 space-y-0.5">
+                          {item.selectedAddons.map((addon) => (
+                            <p key={addon.id} className="text-xs text-muted-foreground">
+                              + {addon.quantity}x {addon.name} ({formatPrice(addon.price * addon.quantity)})
+                            </p>
+                          ))}
+                        </div>
                       )}
                       <p className="text-primary font-semibold text-sm mt-1">
                         {formatPrice(itemPrice)}
