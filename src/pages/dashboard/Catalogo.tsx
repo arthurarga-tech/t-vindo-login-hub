@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import { BookOpen, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CategoryList } from "@/components/catalogo/CategoryList";
 import { CategoryForm } from "@/components/catalogo/CategoryForm";
 import { ProductList } from "@/components/catalogo/ProductList";
 import { ProductForm } from "@/components/catalogo/ProductForm";
+import { AddonGroupManager } from "@/components/catalogo/AddonGroupManager";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import {
   useCategories,
@@ -194,12 +196,26 @@ export default function Catalogo() {
                 Selecione uma categoria para ver os produtos
               </div>
             ) : (
-              <ProductList
-                products={products}
-                onEdit={handleEditProduct}
-                establishmentId={establishmentId}
-                isLoading={isLoadingProducts}
-              />
+              <Tabs defaultValue="products">
+                <TabsList className="mb-4">
+                  <TabsTrigger value="products">Produtos</TabsTrigger>
+                  <TabsTrigger value="addons">Adicionais</TabsTrigger>
+                </TabsList>
+                <TabsContent value="products">
+                  <ProductList
+                    products={products}
+                    onEdit={handleEditProduct}
+                    establishmentId={establishmentId}
+                    isLoading={isLoadingProducts}
+                  />
+                </TabsContent>
+                <TabsContent value="addons">
+                  <AddonGroupManager
+                    categoryId={selectedCategory.id}
+                    establishmentId={establishmentId!}
+                  />
+                </TabsContent>
+              </Tabs>
             )}
           </CardContent>
         </Card>

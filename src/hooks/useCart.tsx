@@ -1,16 +1,24 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import type { PublicProduct } from "@/hooks/usePublicStore";
 
+export interface CartAddon {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
 export interface CartItem {
   product: PublicProduct;
   quantity: number;
+  selectedAddons?: CartAddon[];
 }
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (product: PublicProduct) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  addItem: (product: PublicProduct, selectedAddons?: CartAddon[], quantity?: number) => void;
+  removeItem: (productId: string, itemIndex: number) => void;
+  updateQuantity: (itemIndex: number, quantity: number) => void;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
@@ -45,32 +53,25 @@ export function CartProvider({ children, establishmentSlug }: { children: ReactN
     }
   }, [items, storageKey]);
 
-  const addItem = (product: PublicProduct) => {
+  const addItem = (product: PublicProduct, selectedAddons?: CartAddon[], quantity: number = 1) => {
     setItems((prev) => {
-      const existing = prev.find((item) => item.product.id === product.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-      return [...prev, { product, quantity: 1 }];
+      // Each item with addons is treated as unique
+      return [...prev, { product, quantity, selectedAddons }];
     });
   };
 
-  const removeItem = (productId: string) => {
-    setItems((prev) => prev.filter((item) => item.product.id !== productId));
+  const removeItem = (productId: string, itemIndex: number) => {
+    setItems((prev) => prev.filter((_, index) => index !== itemIndex));
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = (itemIndex: number, quantity: number) => {
     if (quantity <= 0) {
-      removeItem(productId);
+      setItems((prev) => prev.filter((_, index) => index !== itemIndex));
       return;
     }
     setItems((prev) =>
-      prev.map((item) =>
-        item.product.id === productId ? { ...item, quantity } : item
+      prev.map((item, index) =>
+        index === itemIndex ? { ...item, quantity } : item
       )
     );
   };
@@ -80,10 +81,10 @@ export function CartProvider({ children, establishmentSlug }: { children: ReactN
   };
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce(
-    (sum, item) => sum + item.product.price * item.quantity,
-    0
-  );
+  const totalPrice = items.reduce((sum, item) => {
+    const addonsTotal = item.selectedAddons?.reduce((a, addon) => a + addon.price * addon.quantity, 0) ?? 0;
+    return sum + (item.product.price + addonsTotal) * item.quantity;
+  }, 0);
 
   return (
     <CartContext.Provider
