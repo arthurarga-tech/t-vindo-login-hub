@@ -1,5 +1,16 @@
+import { useState } from "react";
 import { Clock, User, MapPin, Phone, CreditCard, MessageSquare, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -33,6 +44,7 @@ const paymentLabels: Record<string, string> = {
 };
 
 export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps) {
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const updateStatus = useUpdateOrderStatus();
 
   if (!order) return null;
@@ -242,7 +254,7 @@ export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps
                 )}
                 <Button 
                   variant="destructive" 
-                  onClick={() => handleStatusChange("cancelled")}
+                  onClick={() => setShowCancelConfirm(true)}
                   disabled={updateStatus.isPending}
                 >
                   <X className="h-4 w-4" />
@@ -252,6 +264,29 @@ export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps
           </div>
         </div>
       </DialogContent>
+
+      <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar pedido #{order.order_number}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. O pedido será marcado como cancelado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                handleStatusChange("cancelled");
+                setShowCancelConfirm(false);
+              }}
+            >
+              Cancelar Pedido
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
