@@ -51,6 +51,12 @@ export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps
     : null;
 
   const handleStatusChange = async (newStatus: OrderStatus) => {
+    // Block invalid transitions from cancelled or delivered orders
+    if (order.status === "cancelled" || order.status === "delivered") {
+      toast.error("Não é possível alterar o status de pedidos finalizados");
+      return;
+    }
+
     try {
       await updateStatus.mutateAsync({ orderId: order.id, status: newStatus });
       toast.success(`Status atualizado para: ${statusConfig[newStatus].label}`);

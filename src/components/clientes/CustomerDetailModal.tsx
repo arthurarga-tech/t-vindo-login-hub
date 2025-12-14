@@ -1,0 +1,191 @@
+import { User, Phone, MapPin, ShoppingBag, TrendingUp, Clock, MessageCircle, ExternalLink } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { CustomerWithStats, useCustomerOrders } from "@/hooks/useCustomers";
+import { format, formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+interface CustomerDetailModalProps {
+  customer: CustomerWithStats | null;
+  open: boolean;
+  onClose: () => void;
+}
+
+const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  pending: { label: "Pendente", variant: "destructive" },
+  confirmed: { label: "Confirmado", variant: "default" },
+  preparing: { label: "Preparando", variant: "secondary" },
+  ready: { label: "Pronto", variant: "default" },
+  out_for_delivery: { label: "Em Entrega", variant: "secondary" },
+  delivered: { label: "Entregue", variant: "outline" },
+  cancelled: { label: "Cancelado", variant: "destructive" },
+};
+
+const paymentLabels: Record<string, string> = {
+  pix: "Pix",
+  card: "Cartão",
+  cash: "Dinheiro",
+};
+
+export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailModalProps) {
+  const { data: orders, isLoading } = useCustomerOrders(customer?.id || null);
+
+  if (!customer) return null;
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(price);
+  };
+
+  const ticketMedio = customer.total_orders > 0 
+    ? customer.total_spent / customer.total_orders 
+    : 0;
+
+  const openWhatsApp = () => {
+    const phone = customer.phone.replace(/\D/g, "");
+    const phoneWithCountry = phone.startsWith("55") ? phone : `55${phone}`;
+    window.open(`https://wa.me/${phoneWithCountry}`, "_blank");
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            {customer.name}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-hidden flex flex-col space-y-4">
+          {/* Customer Info */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                <span>{customer.phone}</span>
+                <Button variant="ghost" size="sm" onClick={openWhatsApp}>
+                  <MessageCircle className="h-4 w-4 text-green-600" />
+                </Button>
+              </div>
+              
+              {customer.address && (
+                <div className="flex items-start gap-2 text-sm">
+                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    {customer.address === "Localização via WhatsApp" ? (
+                      <span className="text-primary">📍 Localização via WhatsApp</span>
+                    ) : (
+                      <>
+                        <p>{customer.address}, {customer.address_number}</p>
+                        {customer.address_complement && (
+                          <p className="text-muted-foreground">{customer.address_complement}</p>
+                        )}
+                        <p className="text-muted-foreground">
+                          {customer.neighborhood}
+                          {customer.city && `, ${customer.city}`}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span>Cliente desde {format(new Date(customer.created_at), "dd/MM/yyyy")}</span>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-muted/50 rounded-lg p-3 text-center">
+                <ShoppingBag className="h-5 w-5 mx-auto mb-1 text-primary" />
+                <p className="text-2xl font-bold">{customer.total_orders}</p>
+                <p className="text-xs text-muted-foreground">Pedidos</p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-3 text-center">
+                <TrendingUp className="h-5 w-5 mx-auto mb-1 text-green-600" />
+                <p className="text-lg font-bold">{formatPrice(customer.total_spent)}</p>
+                <p className="text-xs text-muted-foreground">Total Gasto</p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-3 text-center">
+                <ShoppingBag className="h-5 w-5 mx-auto mb-1 text-blue-600" />
+                <p className="text-lg font-bold">{formatPrice(ticketMedio)}</p>
+                <p className="text-xs text-muted-foreground">Ticket Médio</p>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Order History */}
+          <div className="flex-1 overflow-hidden">
+            <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4" />
+              Histórico de Pedidos
+            </h4>
+
+            {isLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-20 w-full" />
+                ))}
+              </div>
+            ) : orders && orders.length > 0 ? (
+              <ScrollArea className="h-[300px] pr-4">
+                <div className="space-y-3">
+                  {orders.map((order) => {
+                    const status = statusConfig[order.status] || statusConfig.pending;
+                    return (
+                      <div 
+                        key={order.id} 
+                        className="border rounded-lg p-3 hover:bg-muted/30 transition-colors"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">#{order.order_number}</span>
+                            <Badge variant={status.variant}>{status.label}</Badge>
+                          </div>
+                          <span className="font-bold text-primary">{formatPrice(order.total)}</span>
+                        </div>
+                        
+                        <div className="text-sm text-muted-foreground mb-2">
+                          {format(new Date(order.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                          {" • "}
+                          {paymentLabels[order.payment_method] || order.payment_method}
+                        </div>
+                        
+                        <div className="text-sm">
+                          {order.items.slice(0, 3).map((item, index) => (
+                            <span key={item.id}>
+                              {item.quantity}x {item.product_name}
+                              {index < Math.min(order.items.length - 1, 2) && ", "}
+                            </span>
+                          ))}
+                          {order.items.length > 3 && (
+                            <span className="text-muted-foreground"> +{order.items.length - 3} mais</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">
+                Nenhum pedido encontrado
+              </p>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
