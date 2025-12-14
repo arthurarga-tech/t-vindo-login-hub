@@ -1,26 +1,96 @@
-import { Building2, Link2, Check, Copy } from "lucide-react";
+import { Building2, Link2, Check, Copy, Clock, MapPin, Phone, FileText, Image, Truck } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { ImageUpload } from "@/components/catalogo/ImageUpload";
+
+interface DayHours {
+  open: string;
+  close: string;
+  closed: boolean;
+}
+
+interface OpeningHours {
+  monday: DayHours;
+  tuesday: DayHours;
+  wednesday: DayHours;
+  thursday: DayHours;
+  friday: DayHours;
+  saturday: DayHours;
+  sunday: DayHours;
+}
+
+const defaultOpeningHours: OpeningHours = {
+  monday: { open: "08:00", close: "22:00", closed: false },
+  tuesday: { open: "08:00", close: "22:00", closed: false },
+  wednesday: { open: "08:00", close: "22:00", closed: false },
+  thursday: { open: "08:00", close: "22:00", closed: false },
+  friday: { open: "08:00", close: "23:00", closed: false },
+  saturday: { open: "10:00", close: "23:00", closed: false },
+  sunday: { open: "10:00", close: "20:00", closed: true },
+};
+
+const dayLabels: Record<keyof OpeningHours, string> = {
+  monday: "Segunda-feira",
+  tuesday: "Terça-feira",
+  wednesday: "Quarta-feira",
+  thursday: "Quinta-feira",
+  friday: "Sexta-feira",
+  saturday: "Sábado",
+  sunday: "Domingo",
+};
 
 export default function MeuNegocio() {
   const { data: establishment, isLoading } = useEstablishment();
   const queryClient = useQueryClient();
-  const [slug, setSlug] = useState("");
+  
+  // Basic info
   const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [description, setDescription] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
+  
+  // Contact info
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [neighborhood, setNeighborhood] = useState("");
+  const [city, setCity] = useState("");
+  
+  // Delivery info
+  const [deliveryInfo, setDeliveryInfo] = useState("");
+  const [minOrderValue, setMinOrderValue] = useState("");
+  
+  // Opening hours
+  const [openingHours, setOpeningHours] = useState<OpeningHours>(defaultOpeningHours);
+  
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (establishment) {
-      setSlug(establishment.slug || "");
       setName(establishment.name || "");
+      setSlug(establishment.slug || "");
+      setDescription((establishment as any).description || "");
+      setLogoUrl((establishment as any).logo_url || "");
+      setPhone((establishment as any).phone || "");
+      setAddress((establishment as any).address || "");
+      setNeighborhood((establishment as any).neighborhood || "");
+      setCity((establishment as any).city || "");
+      setDeliveryInfo((establishment as any).delivery_info || "");
+      setMinOrderValue((establishment as any).min_order_value?.toString() || "");
+      
+      const hours = (establishment as any).opening_hours;
+      if (hours && typeof hours === "object") {
+        setOpeningHours({ ...defaultOpeningHours, ...hours });
+      }
     }
   }, [establishment]);
 
@@ -36,6 +106,16 @@ export default function MeuNegocio() {
 
   const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSlug(formatSlug(e.target.value));
+  };
+
+  const handleDayChange = (day: keyof OpeningHours, field: keyof DayHours, value: string | boolean) => {
+    setOpeningHours((prev) => ({
+      ...prev,
+      [day]: {
+        ...prev[day],
+        [field]: value,
+      },
+    }));
   };
 
   const handleSave = async () => {
@@ -68,7 +148,19 @@ export default function MeuNegocio() {
 
       const { error } = await supabase
         .from("establishments")
-        .update({ name, slug })
+        .update({
+          name,
+          slug,
+          description,
+          logo_url: logoUrl,
+          phone,
+          address,
+          neighborhood,
+          city,
+          delivery_info: deliveryInfo,
+          min_order_value: minOrderValue ? parseFloat(minOrderValue) : 0,
+          opening_hours: JSON.parse(JSON.stringify(openingHours)),
+        })
         .eq("id", establishment.id);
 
       if (error) throw error;
@@ -124,37 +216,220 @@ export default function MeuNegocio() {
         <h1 className="text-2xl font-bold text-foreground">Meu Negócio</h1>
       </div>
       
+      {/* Card 1 - Informações Básicas */}
       <Card>
         <CardHeader>
-          <CardTitle>Informações do Estabelecimento</CardTitle>
-          <CardDescription>Gerencie as informações do seu negócio</CardDescription>
+          <div className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            <CardTitle>Informações Básicas</CardTitle>
+          </div>
+          <CardDescription>Nome, descrição e logo do seu estabelecimento</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome do Estabelecimento</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Nome do seu estabelecimento"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Logo</Label>
+              <ImageUpload
+                value={logoUrl}
+                onChange={(url) => setLogoUrl(url || "")}
+                folder="logos"
+              />
+            </div>
+          </div>
+          
           <div className="space-y-2">
-            <Label htmlFor="name">Nome do Estabelecimento</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Nome do seu estabelecimento"
+            <Label htmlFor="description">Descrição</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Descreva seu estabelecimento..."
+              rows={3}
             />
           </div>
+        </CardContent>
+      </Card>
 
-          <div className="space-y-2">
-            <Label htmlFor="slug">Link da Loja (slug)</Label>
-            <div className="flex gap-2">
-              <div className="flex-1">
+      {/* Card 2 - Contato e Endereço */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-primary" />
+            <CardTitle>Contato e Endereço</CardTitle>
+          </div>
+          <CardDescription>Informações de contato e localização</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="phone">Telefone / WhatsApp</Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  id="slug"
-                  value={slug}
-                  onChange={handleSlugChange}
-                  placeholder="minha-loja"
-                  className="lowercase"
+                  id="phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="(00) 00000-0000"
+                  className="pl-10"
                 />
               </div>
             </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="city">Cidade</Label>
+              <Input
+                id="city"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="Sua cidade"
+              />
+            </div>
+          </div>
+          
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="address">Endereço</Label>
+              <Input
+                id="address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Rua, número"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="neighborhood">Bairro</Label>
+              <Input
+                id="neighborhood"
+                value={neighborhood}
+                onChange={(e) => setNeighborhood(e.target.value)}
+                placeholder="Bairro"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Card 3 - Horários de Funcionamento */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-primary" />
+            <CardTitle>Horários de Funcionamento</CardTitle>
+          </div>
+          <CardDescription>Configure os horários de abertura e fechamento</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {(Object.keys(dayLabels) as Array<keyof OpeningHours>).map((day) => (
+              <div
+                key={day}
+                className="flex items-center gap-4 p-3 rounded-lg bg-muted/50"
+              >
+                <div className="w-32 font-medium text-sm">{dayLabels[day]}</div>
+                
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={!openingHours[day].closed}
+                    onCheckedChange={(checked) => handleDayChange(day, "closed", !checked)}
+                  />
+                  <span className="text-sm text-muted-foreground w-16">
+                    {openingHours[day].closed ? "Fechado" : "Aberto"}
+                  </span>
+                </div>
+                
+                {!openingHours[day].closed && (
+                  <div className="flex items-center gap-2 ml-auto">
+                    <Input
+                      type="time"
+                      value={openingHours[day].open}
+                      onChange={(e) => handleDayChange(day, "open", e.target.value)}
+                      className="w-28"
+                    />
+                    <span className="text-muted-foreground">às</span>
+                    <Input
+                      type="time"
+                      value={openingHours[day].close}
+                      onChange={(e) => handleDayChange(day, "close", e.target.value)}
+                      className="w-28"
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Card 4 - Delivery */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Truck className="h-5 w-5 text-primary" />
+            <CardTitle>Informações de Entrega</CardTitle>
+          </div>
+          <CardDescription>Configure informações sobre delivery</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="minOrderValue">Pedido Mínimo (R$)</Label>
+              <Input
+                id="minOrderValue"
+                type="number"
+                min="0"
+                step="0.01"
+                value={minOrderValue}
+                onChange={(e) => setMinOrderValue(e.target.value)}
+                placeholder="0,00"
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="deliveryInfo">Informações de Entrega</Label>
+            <Textarea
+              id="deliveryInfo"
+              value={deliveryInfo}
+              onChange={(e) => setDeliveryInfo(e.target.value)}
+              placeholder="Ex: Entregamos em toda a cidade. Taxa de entrega a partir de R$ 5,00..."
+              rows={3}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Card 5 - Link da Loja */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Link2 className="h-5 w-5 text-primary" />
+            <CardTitle>Link da Loja</CardTitle>
+          </div>
+          <CardDescription>Configure o link público da sua loja</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="slug">Slug da Loja</Label>
+            <Input
+              id="slug"
+              value={slug}
+              onChange={handleSlugChange}
+              placeholder="minha-loja"
+              className="lowercase"
+            />
             <p className="text-sm text-muted-foreground">
-              Use apenas letras minúsculas, números e hífens. Este será o link da sua loja pública.
+              Use apenas letras minúsculas, números e hífens.
             </p>
           </div>
 
@@ -179,12 +454,15 @@ export default function MeuNegocio() {
               </div>
             </div>
           )}
-
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Salvando..." : "Salvar Alterações"}
-          </Button>
         </CardContent>
       </Card>
+
+      {/* Save Button */}
+      <div className="flex justify-end">
+        <Button onClick={handleSave} disabled={saving} size="lg">
+          {saving ? "Salvando..." : "Salvar Alterações"}
+        </Button>
+      </div>
     </div>
   );
 }
