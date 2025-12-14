@@ -244,6 +244,7 @@ export type Database = {
       establishments: {
         Row: {
           address: string | null
+          banner_url: string | null
           city: string | null
           created_at: string
           delivery_info: string | null
@@ -261,6 +262,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          banner_url?: string | null
           city?: string | null
           created_at?: string
           delivery_info?: string | null
@@ -278,6 +280,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          banner_url?: string | null
           city?: string | null
           created_at?: string
           delivery_info?: string | null

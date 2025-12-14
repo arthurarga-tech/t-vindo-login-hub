@@ -65,6 +65,7 @@ export default function StorePage() {
         <StoreHeader 
           establishmentName={establishment.name}
           logoUrl={(establishment as any).logo_url}
+          bannerUrl={(establishment as any).banner_url}
           phone={(establishment as any).phone}
           openingHours={(establishment as any).opening_hours}
         />
