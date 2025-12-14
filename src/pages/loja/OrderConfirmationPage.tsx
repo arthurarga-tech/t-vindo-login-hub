@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle, Clock, Package, Truck, Home, ArrowLeft } from "lucide-react";
+import { CheckCircle, Clock, Package, Truck, Home, ArrowLeft, MessageCircle } from "lucide-react";
 
 const statusConfig: Record<string, { label: string; icon: React.ComponentType<any>; color: string }> = {
   pending: { label: "Pendente", icon: Clock, color: "bg-yellow-500" },
@@ -65,7 +65,6 @@ export default function OrderConfirmationPage() {
       </div>
     );
   }
-
   if (!order) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -101,14 +100,18 @@ export default function OrderConfirmationPage() {
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         {/* Success Message */}
         <Card className="border-green-200 bg-green-50 dark:bg-green-950/20">
-          <CardContent className="pt-6 text-center space-y-2">
-            <CheckCircle className="h-12 w-12 text-green-600 mx-auto" />
-            <h2 className="text-xl font-semibold text-green-800 dark:text-green-400">
-              Pedido enviado com sucesso!
+          <CardContent className="pt-6 text-center space-y-3">
+            <CheckCircle className="h-16 w-16 text-green-600 mx-auto" />
+            <h2 className="text-2xl font-bold text-green-800 dark:text-green-400">
+              Pedido #{(order as any).order_number || order.id.slice(0, 6).toUpperCase()} enviado!
             </h2>
             <p className="text-green-700 dark:text-green-500">
               O estabelecimento foi notificado e em breve entrará em contato.
             </p>
+            <div className="flex items-center justify-center gap-2 pt-2 text-primary">
+              <MessageCircle className="h-5 w-5" />
+              <span className="font-medium">Você receberá atualizações no WhatsApp</span>
+            </div>
           </CardContent>
         </Card>
 
@@ -125,7 +128,7 @@ export default function OrderConfirmationPage() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Pedido #{order.id.slice(0, 8).toUpperCase()}
+              Pedido #{(order as any).order_number || order.id.slice(0, 8).toUpperCase()}
             </p>
           </CardContent>
         </Card>

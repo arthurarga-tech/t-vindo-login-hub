@@ -434,6 +434,7 @@ export type Database = {
           establishment_id: string
           id: string
           notes: string | null
+          order_number: number
           payment_method: string
           status: string
           subtotal: number
@@ -447,6 +448,7 @@ export type Database = {
           establishment_id: string
           id?: string
           notes?: string | null
+          order_number?: number
           payment_method: string
           status?: string
           subtotal?: number
@@ -460,6 +462,7 @@ export type Database = {
           establishment_id?: string
           id?: string
           notes?: string | null
+          order_number?: number
           payment_method?: string
           status?: string
           subtotal?: number
