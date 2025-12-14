@@ -131,19 +131,25 @@ export function CheckoutForm() {
           : customer.neighborhood
         : null;
 
-      // Create customer
+      // Create or update customer (upsert based on phone + establishment)
       const { data: customerData, error: customerError } = await supabase
         .from("customers")
-        .insert({
-          establishment_id: establishment.id,
-          name: customer.name,
-          phone: customer.phone,
-          address: customerAddress,
-          address_number: needsAddress ? customer.addressNumber : null,
-          address_complement: needsAddress ? customer.addressComplement || null : null,
-          neighborhood: customerNeighborhood,
-          city: needsAddress ? customer.city || null : null,
-        })
+        .upsert(
+          {
+            establishment_id: establishment.id,
+            name: customer.name,
+            phone: customer.phone,
+            address: customerAddress,
+            address_number: needsAddress ? customer.addressNumber : null,
+            address_complement: needsAddress ? customer.addressComplement || null : null,
+            neighborhood: customerNeighborhood,
+            city: needsAddress ? customer.city || null : null,
+          },
+          {
+            onConflict: "phone,establishment_id",
+            ignoreDuplicates: false,
+          }
+        )
         .select()
         .single();
 
