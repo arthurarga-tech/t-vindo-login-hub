@@ -1,4 +1,4 @@
-import { Building2, Link2, Check, Copy, Clock, MapPin, Phone, FileText, Image, Truck, Palette } from "lucide-react";
+import { Building2, Link2, Check, Copy, Clock, MapPin, Phone, FileText, Image, Truck, Palette, Package, Store, UtensilsCrossed } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -76,6 +76,11 @@ export default function MeuNegocio() {
   // Opening hours
   const [openingHours, setOpeningHours] = useState<OpeningHours>(defaultOpeningHours);
   
+  // Service modalities
+  const [serviceDelivery, setServiceDelivery] = useState(true);
+  const [servicePickup, setServicePickup] = useState(false);
+  const [serviceDineIn, setServiceDineIn] = useState(false);
+  
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -99,6 +104,11 @@ export default function MeuNegocio() {
       if (hours && typeof hours === "object") {
         setOpeningHours({ ...defaultOpeningHours, ...hours });
       }
+      
+      // Service modalities
+      setServiceDelivery((establishment as any).service_delivery ?? true);
+      setServicePickup((establishment as any).service_pickup ?? false);
+      setServiceDineIn((establishment as any).service_dine_in ?? false);
     }
   }, [establishment]);
 
@@ -150,6 +160,12 @@ export default function MeuNegocio() {
       return;
     }
 
+    // Validate at least one service modality is enabled
+    if (!serviceDelivery && !servicePickup && !serviceDineIn) {
+      toast.error("Habilite pelo menos uma modalidade de atendimento");
+      return;
+    }
+
     setSaving(true);
     try {
       // Check if slug is already taken
@@ -182,6 +198,9 @@ export default function MeuNegocio() {
           opening_hours: JSON.parse(JSON.stringify(openingHours)),
           theme_primary_color: themePrimaryColor,
           theme_secondary_color: themeSecondaryColor,
+          service_delivery: serviceDelivery,
+          service_pickup: servicePickup,
+          service_dine_in: serviceDineIn,
         })
         .eq("id", establishment.id);
 
@@ -405,7 +424,69 @@ export default function MeuNegocio() {
         </CardContent>
       </Card>
 
-      {/* Card 4 - Delivery */}
+      {/* Card 4 - Service Modalities */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Store className="h-5 w-5 text-primary" />
+            <CardTitle>Modalidades de Atendimento</CardTitle>
+          </div>
+          <CardDescription>Escolha como você atende seus clientes</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-3">
+                <Truck className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium">Entrega</p>
+                  <p className="text-sm text-muted-foreground">Pedidos entregues no endereço do cliente</p>
+                </div>
+              </div>
+              <Switch
+                checked={serviceDelivery}
+                onCheckedChange={setServiceDelivery}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-3">
+                <Package className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium">Retirada no Local</p>
+                  <p className="text-sm text-muted-foreground">Cliente retira o pedido no estabelecimento</p>
+                </div>
+              </div>
+              <Switch
+                checked={servicePickup}
+                onCheckedChange={setServicePickup}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-3">
+                <UtensilsCrossed className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium">Comer no Local</p>
+                  <p className="text-sm text-muted-foreground">Cliente consome no estabelecimento</p>
+                </div>
+              </div>
+              <Switch
+                checked={serviceDineIn}
+                onCheckedChange={setServiceDineIn}
+              />
+            </div>
+          </div>
+          
+          {!serviceDelivery && !servicePickup && !serviceDineIn && (
+            <p className="text-sm text-destructive">
+              Selecione pelo menos uma modalidade de atendimento
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Card 5 - Delivery Info */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -443,7 +524,7 @@ export default function MeuNegocio() {
         </CardContent>
       </Card>
 
-      {/* Card 5 - Link da Loja */}
+      {/* Card 6 - Link da Loja */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -491,7 +572,7 @@ export default function MeuNegocio() {
         </CardContent>
       </Card>
 
-      {/* Card 6 - Personalização */}
+      {/* Card 7 - Personalização */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">

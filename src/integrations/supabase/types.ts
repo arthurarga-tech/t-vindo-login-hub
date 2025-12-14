@@ -257,6 +257,9 @@ export type Database = {
           opening_hours: Json | null
           owner_id: string
           phone: string | null
+          service_delivery: boolean
+          service_dine_in: boolean
+          service_pickup: boolean
           slug: string | null
           theme_primary_color: string | null
           theme_secondary_color: string | null
@@ -277,6 +280,9 @@ export type Database = {
           opening_hours?: Json | null
           owner_id: string
           phone?: string | null
+          service_delivery?: boolean
+          service_dine_in?: boolean
+          service_pickup?: boolean
           slug?: string | null
           theme_primary_color?: string | null
           theme_secondary_color?: string | null
@@ -297,6 +303,9 @@ export type Database = {
           opening_hours?: Json | null
           owner_id?: string
           phone?: string | null
+          service_delivery?: boolean
+          service_dine_in?: boolean
+          service_pickup?: boolean
           slug?: string | null
           theme_primary_color?: string | null
           theme_secondary_color?: string | null
@@ -435,6 +444,7 @@ export type Database = {
           id: string
           notes: string | null
           order_number: number
+          order_type: string
           payment_method: string
           status: string
           subtotal: number
@@ -449,6 +459,7 @@ export type Database = {
           id?: string
           notes?: string | null
           order_number?: number
+          order_type?: string
           payment_method: string
           status?: string
           subtotal?: number
@@ -463,6 +474,7 @@ export type Database = {
           id?: string
           notes?: string | null
           order_number?: number
+          order_type?: string
           payment_method?: string
           status?: string
           subtotal?: number
