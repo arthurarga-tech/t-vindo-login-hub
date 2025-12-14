@@ -57,6 +57,7 @@ export default function MeuNegocio() {
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
+  const [bannerUrl, setBannerUrl] = useState("");
   
   // Contact info
   const [phone, setPhone] = useState("");
@@ -80,6 +81,7 @@ export default function MeuNegocio() {
       setSlug(establishment.slug || "");
       setDescription((establishment as any).description || "");
       setLogoUrl((establishment as any).logo_url || "");
+      setBannerUrl((establishment as any).banner_url || "");
       setPhone((establishment as any).phone || "");
       setAddress((establishment as any).address || "");
       setNeighborhood((establishment as any).neighborhood || "");
@@ -164,6 +166,7 @@ export default function MeuNegocio() {
           slug,
           description,
           logo_url: logoUrl,
+          banner_url: bannerUrl,
           phone,
           address,
           neighborhood,
@@ -267,6 +270,18 @@ export default function MeuNegocio() {
               placeholder="Descreva seu estabelecimento..."
               rows={3}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Banner / Capa</Label>
+            <ImageUpload
+              value={bannerUrl}
+              onChange={(url) => setBannerUrl(url || "")}
+              folder="banners"
+            />
+            <p className="text-sm text-muted-foreground">
+              Imagem de capa exibida no topo da página da loja.
+            </p>
           </div>
         </CardContent>
       </Card>

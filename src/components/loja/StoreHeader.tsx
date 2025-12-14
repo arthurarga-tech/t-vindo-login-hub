@@ -1,5 +1,6 @@
 import { Store, Clock, Phone } from "lucide-react";
 import { CartDrawer } from "./CartDrawer";
+import { Badge } from "@/components/ui/badge";
 
 interface DayHours {
   open: string;
@@ -20,6 +21,7 @@ interface OpeningHours {
 interface StoreHeaderProps {
   establishmentName: string;
   logoUrl?: string | null;
+  bannerUrl?: string | null;
   phone?: string | null;
   openingHours?: OpeningHours | null;
 }
@@ -64,46 +66,71 @@ function getCurrentDayStatus(openingHours?: OpeningHours | null): {
   }
 }
 
-export function StoreHeader({ establishmentName, logoUrl, phone, openingHours }: StoreHeaderProps) {
+export function StoreHeader({ establishmentName, logoUrl, bannerUrl, phone, openingHours }: StoreHeaderProps) {
   const status = getCurrentDayStatus(openingHours);
 
   return (
-    <header className="bg-primary text-primary-foreground py-4 shadow-md sticky top-0 z-50">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt={establishmentName}
-                className="h-10 w-10 rounded-full object-cover bg-primary-foreground/10"
-              />
-            ) : (
-              <Store className="h-7 w-7" />
-            )}
-            <div>
-              <h1 className="text-xl font-bold">{establishmentName}</h1>
-              <div className="flex items-center gap-3 text-xs opacity-90">
-                {openingHours && (
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    <span
-                      className={status.isOpen ? "text-green-300" : "text-red-300"}
-                    >
-                      {status.text}
-                    </span>
-                  </div>
-                )}
-                {phone && (
-                  <div className="flex items-center gap-1">
-                    <Phone className="h-3 w-3" />
-                    <span>{phone}</span>
-                  </div>
-                )}
+    <header className="sticky top-0 z-50">
+      {/* Banner */}
+      {bannerUrl && (
+        <div className="relative h-40 sm:h-52 w-full overflow-hidden">
+          <img
+            src={bannerUrl}
+            alt={`Banner de ${establishmentName}`}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent" />
+        </div>
+      )}
+      
+      {/* Header bar */}
+      <div className={`bg-primary text-primary-foreground py-4 shadow-md ${bannerUrl ? '-mt-16 relative' : ''}`}>
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt={establishmentName}
+                  className="h-12 w-12 rounded-full object-cover bg-primary-foreground/10 border-2 border-primary-foreground/20"
+                />
+              ) : (
+                <Store className="h-7 w-7" />
+              )}
+              <div>
+                <h1 className="text-xl font-bold">{establishmentName}</h1>
+                <div className="flex items-center gap-3 text-xs">
+                  {phone && (
+                    <div className="flex items-center gap-1 opacity-90">
+                      <Phone className="h-3 w-3" />
+                      <span>{phone}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
+            
+            <div className="flex items-center gap-3">
+              {/* Status badge in highlight */}
+              {openingHours && (
+                <Badge 
+                  variant={status.isOpen ? "default" : "destructive"}
+                  className={`text-xs px-3 py-1 ${status.isOpen ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                >
+                  <Clock className="h-3 w-3 mr-1" />
+                  {status.isOpen ? "Aberto" : "Fechado"}
+                </Badge>
+              )}
+              <CartDrawer />
+            </div>
           </div>
-          <CartDrawer />
+          
+          {/* Status text below header on mobile */}
+          {openingHours && status.text && (
+            <div className="mt-2 text-xs opacity-80 text-center sm:text-left">
+              {status.text}
+            </div>
+          )}
         </div>
       </div>
     </header>
