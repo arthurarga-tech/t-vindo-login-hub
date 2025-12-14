@@ -61,7 +61,12 @@ export default function StorePage() {
   return (
     <CartProvider establishmentSlug={slug || ""}>
       <div className="min-h-screen bg-background">
-        <StoreHeader establishmentName={establishment.name} />
+        <StoreHeader 
+          establishmentName={establishment.name}
+          logoUrl={(establishment as any).logo_url}
+          phone={(establishment as any).phone}
+          openingHours={(establishment as any).opening_hours}
+        />
         
         <main className="max-w-4xl mx-auto px-4 py-8">
           {isLoading ? (

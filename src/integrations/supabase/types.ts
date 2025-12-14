@@ -243,26 +243,53 @@ export type Database = {
       }
       establishments: {
         Row: {
+          address: string | null
+          city: string | null
           created_at: string
+          delivery_info: string | null
+          description: string | null
           id: string
+          logo_url: string | null
+          min_order_value: number | null
           name: string
+          neighborhood: string | null
+          opening_hours: Json | null
           owner_id: string
+          phone: string | null
           slug: string | null
           updated_at: string
         }
         Insert: {
+          address?: string | null
+          city?: string | null
           created_at?: string
+          delivery_info?: string | null
+          description?: string | null
           id?: string
+          logo_url?: string | null
+          min_order_value?: number | null
           name: string
+          neighborhood?: string | null
+          opening_hours?: Json | null
           owner_id: string
+          phone?: string | null
           slug?: string | null
           updated_at?: string
         }
         Update: {
+          address?: string | null
+          city?: string | null
           created_at?: string
+          delivery_info?: string | null
+          description?: string | null
           id?: string
+          logo_url?: string | null
+          min_order_value?: number | null
           name?: string
+          neighborhood?: string | null
+          opening_hours?: Json | null
           owner_id?: string
+          phone?: string | null
           slug?: string | null
           updated_at?: string
         }
