@@ -10,13 +10,18 @@ import { OrderList } from "@/components/pedidos/OrderList";
 import { OrderDetailModal } from "@/components/pedidos/OrderDetailModal";
 import { OrderFilters, OrderFiltersState } from "@/components/pedidos/OrderFilters";
 import { startOfDay, startOfWeek, subDays, isAfter } from "date-fns";
+import { useEstablishment } from "@/hooks/useEstablishment";
+import { usePrintOrder } from "@/hooks/usePrintOrder";
 
 export default function Pedidos() {
   const { data: orders, isLoading, refetch } = useOrders();
+  const { data: establishment } = useEstablishment();
+  const { printOrder } = usePrintOrder();
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const previousPendingCountRef = useRef<number | null>(null);
+  const printedOrdersRef = useRef<Set<string>>(new Set());
   const [filters, setFilters] = useState<OrderFiltersState>({
     search: "",
     status: "all",
@@ -26,14 +31,29 @@ export default function Pedidos() {
 
   const pendingOrders = orders?.filter((o) => o.status === "pending") || [];
   const pendingCount = pendingOrders.length;
+  const printMode = ((establishment as any)?.print_mode || "none") as "none" | "on_order" | "on_confirm";
+  const establishmentName = establishment?.name || "Estabelecimento";
 
-  // Play notification sound when new pending orders arrive (fixed for first order)
+  // Play notification sound and auto-print when new pending orders arrive
   useEffect(() => {
     if (previousPendingCountRef.current !== null && pendingCount > previousPendingCountRef.current && soundEnabled) {
       playNotificationSound();
     }
+    
+    // Auto print on new order if configured
+    if (printMode === "on_order" && orders) {
+      const newPendingOrders = orders.filter(
+        (o) => o.status === "pending" && !printedOrdersRef.current.has(o.id)
+      );
+      
+      newPendingOrders.forEach((order) => {
+        printedOrdersRef.current.add(order.id);
+        printOrder({ order, establishmentName });
+      });
+    }
+    
     previousPendingCountRef.current = pendingCount;
-  }, [pendingCount, soundEnabled]);
+  }, [pendingCount, soundEnabled, orders, printMode, establishmentName, printOrder]);
 
   const playNotificationSound = () => {
     try {
@@ -207,6 +227,8 @@ export default function Pedidos() {
         order={selectedOrder}
         open={!!selectedOrder}
         onClose={() => setSelectedOrder(null)}
+        establishmentName={establishmentName}
+        printMode={printMode}
       />
     </div>
   );

@@ -257,6 +257,7 @@ export type Database = {
           opening_hours: Json | null
           owner_id: string
           phone: string | null
+          print_mode: string | null
           service_delivery: boolean
           service_dine_in: boolean
           service_pickup: boolean
@@ -280,6 +281,7 @@ export type Database = {
           opening_hours?: Json | null
           owner_id: string
           phone?: string | null
+          print_mode?: string | null
           service_delivery?: boolean
           service_dine_in?: boolean
           service_pickup?: boolean
@@ -303,6 +305,7 @@ export type Database = {
           opening_hours?: Json | null
           owner_id?: string
           phone?: string | null
+          print_mode?: string | null
           service_delivery?: boolean
           service_dine_in?: boolean
           service_pickup?: boolean

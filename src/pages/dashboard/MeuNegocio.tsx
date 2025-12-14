@@ -1,4 +1,4 @@
-import { Building2, Link2, Check, Copy, Clock, MapPin, Phone, FileText, Image, Truck, Palette, Package, Store, UtensilsCrossed } from "lucide-react";
+import { Building2, Link2, Check, Copy, Clock, MapPin, Phone, FileText, Truck, Package, Store, UtensilsCrossed } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -69,10 +69,6 @@ export default function MeuNegocio() {
   const [deliveryInfo, setDeliveryInfo] = useState("");
   const [minOrderValue, setMinOrderValue] = useState("");
   
-  // Theme colors
-  const [themePrimaryColor, setThemePrimaryColor] = useState("#ea580c");
-  const [themeSecondaryColor, setThemeSecondaryColor] = useState("#1e293b");
-  
   // Opening hours
   const [openingHours, setOpeningHours] = useState<OpeningHours>(defaultOpeningHours);
   
@@ -97,8 +93,6 @@ export default function MeuNegocio() {
       setCity((establishment as any).city || "");
       setDeliveryInfo((establishment as any).delivery_info || "");
       setMinOrderValue((establishment as any).min_order_value?.toString() || "");
-      setThemePrimaryColor((establishment as any).theme_primary_color || "#ea580c");
-      setThemeSecondaryColor((establishment as any).theme_secondary_color || "#1e293b");
       
       const hours = (establishment as any).opening_hours;
       if (hours && typeof hours === "object") {
@@ -196,8 +190,6 @@ export default function MeuNegocio() {
           delivery_info: deliveryInfo,
           min_order_value: minOrderValue ? parseFloat(minOrderValue) : 0,
           opening_hours: JSON.parse(JSON.stringify(openingHours)),
-          theme_primary_color: themePrimaryColor,
-          theme_secondary_color: themeSecondaryColor,
           service_delivery: serviceDelivery,
           service_pickup: servicePickup,
           service_dine_in: serviceDineIn,
@@ -571,84 +563,6 @@ export default function MeuNegocio() {
           )}
         </CardContent>
       </Card>
-
-      {/* Card 7 - Personalização */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Palette className="h-5 w-5 text-primary" />
-            <CardTitle>Personalização</CardTitle>
-          </div>
-          <CardDescription>Defina as cores do tema da sua loja pública</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="themePrimaryColor">Cor Principal</Label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  id="themePrimaryColor"
-                  value={themePrimaryColor}
-                  onChange={(e) => setThemePrimaryColor(e.target.value)}
-                  className="h-10 w-16 rounded border border-input cursor-pointer"
-                />
-                <Input
-                  value={themePrimaryColor}
-                  onChange={(e) => setThemePrimaryColor(e.target.value)}
-                  placeholder="#ea580c"
-                  className="flex-1 font-mono"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Usada no cabeçalho e botões principais
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="themeSecondaryColor">Cor Secundária</Label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  id="themeSecondaryColor"
-                  value={themeSecondaryColor}
-                  onChange={(e) => setThemeSecondaryColor(e.target.value)}
-                  className="h-10 w-16 rounded border border-input cursor-pointer"
-                />
-                <Input
-                  value={themeSecondaryColor}
-                  onChange={(e) => setThemeSecondaryColor(e.target.value)}
-                  placeholder="#1e293b"
-                  className="flex-1 font-mono"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Usada em textos e elementos secundários
-              </p>
-            </div>
-          </div>
-          
-          {/* Preview */}
-          <div className="mt-4 p-4 rounded-lg border">
-            <p className="text-sm font-medium mb-3">Pré-visualização</p>
-            <div className="flex items-center gap-3">
-              <div 
-                className="h-12 w-24 rounded-md flex items-center justify-center text-white text-sm font-medium"
-                style={{ backgroundColor: themePrimaryColor }}
-              >
-                Principal
-              </div>
-              <div 
-                className="h-12 w-24 rounded-md flex items-center justify-center text-white text-sm font-medium"
-                style={{ backgroundColor: themeSecondaryColor }}
-              >
-                Secundária
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Save Button */}
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={saving} size="lg">
