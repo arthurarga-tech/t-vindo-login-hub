@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { usePublicEstablishment, usePublicCategories, usePublicProducts } from "@/hooks/usePublicStore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StoreHeader } from "@/components/loja/StoreHeader";
+import { StoreInfo } from "@/components/loja/StoreInfo";
 import { CategorySection } from "@/components/loja/CategorySection";
 import { CartProvider } from "@/hooks/useCart";
 import { AlertCircle } from "lucide-react";
@@ -68,7 +69,17 @@ export default function StorePage() {
           openingHours={(establishment as any).opening_hours}
         />
         
-        <main className="max-w-4xl mx-auto px-4 py-8">
+        <main className="max-w-4xl mx-auto px-4 py-6">
+          <StoreInfo
+            description={(establishment as any).description}
+            phone={(establishment as any).phone}
+            address={(establishment as any).address}
+            neighborhood={(establishment as any).neighborhood}
+            city={(establishment as any).city}
+            openingHours={(establishment as any).opening_hours}
+            deliveryInfo={(establishment as any).delivery_info}
+            minOrderValue={(establishment as any).min_order_value}
+          />
           {isLoading ? (
             <div className="space-y-8">
               {[1, 2].map((i) => (
