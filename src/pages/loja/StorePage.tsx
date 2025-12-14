@@ -6,6 +6,41 @@ import { StoreInfo } from "@/components/loja/StoreInfo";
 import { CategorySection } from "@/components/loja/CategorySection";
 import { CartProvider } from "@/hooks/useCart";
 import { AlertCircle } from "lucide-react";
+import { useMemo } from "react";
+
+// Convert hex to HSL for CSS variables
+function hexToHSL(hex: string): string {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return "0 0% 0%";
+
+  let r = parseInt(result[1], 16) / 255;
+  let g = parseInt(result[2], 16) / 255;
+  let b = parseInt(result[3], 16) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        break;
+      case g:
+        h = ((b - r) / d + 2) / 6;
+        break;
+      case b:
+        h = ((r - g) / d + 4) / 6;
+        break;
+    }
+  }
+
+  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+}
 
 export default function StorePage() {
   const { slug } = useParams<{ slug: string }>();
@@ -15,6 +50,17 @@ export default function StorePage() {
   const { data: products, isLoading: loadingProducts } = usePublicProducts(establishment?.id);
 
   const isLoading = loadingEstablishment || loadingCategories || loadingProducts;
+
+  // Generate custom CSS variables for theme
+  const customStyles = useMemo(() => {
+    const primaryColor = (establishment as any)?.theme_primary_color || "#ea580c";
+    const secondaryColor = (establishment as any)?.theme_secondary_color || "#1e293b";
+    
+    return {
+      "--store-primary": hexToHSL(primaryColor),
+      "--store-secondary": hexToHSL(secondaryColor),
+    } as React.CSSProperties;
+  }, [establishment]);
 
   if (loadingEstablishment) {
     return (
@@ -61,13 +107,14 @@ export default function StorePage() {
 
   return (
     <CartProvider establishmentSlug={slug || ""}>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background" style={customStyles}>
         <StoreHeader 
           establishmentName={establishment.name}
           logoUrl={(establishment as any).logo_url}
           bannerUrl={(establishment as any).banner_url}
           phone={(establishment as any).phone}
           openingHours={(establishment as any).opening_hours}
+          primaryColor={(establishment as any).theme_primary_color}
         />
         
         <main className="max-w-4xl mx-auto px-4 py-6">

@@ -20,7 +20,7 @@ export function usePublicEstablishment(slug: string | undefined) {
 
       const { data, error } = await supabase
         .from("establishments")
-        .select("id, name, slug, description, logo_url, banner_url, phone, address, neighborhood, city, opening_hours, delivery_info, min_order_value")
+        .select("id, name, slug, description, logo_url, banner_url, phone, address, neighborhood, city, opening_hours, delivery_info, min_order_value, theme_primary_color, theme_secondary_color")
         .eq("slug", slug)
         .maybeSingle();
 
