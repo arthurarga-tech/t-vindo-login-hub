@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { ClipboardList, LayoutGrid, List, Volume2, VolumeX, RefreshCw } from "lucide-react";
+import { ClipboardList, LayoutGrid, List, Volume2, VolumeX, RefreshCw, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,10 +12,12 @@ import { OrderFilters, OrderFiltersState } from "@/components/pedidos/OrderFilte
 import { startOfDay, startOfWeek, subDays, isAfter } from "date-fns";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { usePrintOrder } from "@/hooks/usePrintOrder";
+import { usePreparationTime } from "@/hooks/usePreparationTime";
 
 export default function Pedidos() {
   const { data: orders, isLoading, refetch } = useOrders();
   const { data: establishment } = useEstablishment();
+  const { data: preparationTime } = usePreparationTime();
   const { printOrder } = usePrintOrder();
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -161,12 +163,18 @@ export default function Pedidos() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <ClipboardList className="h-8 w-8 text-primary" />
           <h1 className="text-2xl font-bold text-foreground">Gestão de Pedidos</h1>
           {pendingCount > 0 && (
             <Badge variant="destructive" className="animate-pulse">
               {pendingCount} novo{pendingCount > 1 ? "s" : ""}
+            </Badge>
+          )}
+          {preparationTime && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <Timer className="h-3 w-3" />
+              Preparo: ~{preparationTime.averageMinutes} min
             </Badge>
           )}
         </div>
