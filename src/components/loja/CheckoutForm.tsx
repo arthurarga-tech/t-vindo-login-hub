@@ -3,12 +3,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useCart } from "@/hooks/useCart";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, ShoppingBag } from "lucide-react";
+import { ArrowLeft, MapPin, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { usePublicEstablishment } from "@/hooks/usePublicStore";
@@ -42,6 +43,7 @@ export function CheckoutForm() {
   });
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
   const [notes, setNotes] = useState("");
+  const [shareLocationViaWhatsApp, setShareLocationViaWhatsApp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const formatPrice = (price: number) => {
@@ -64,17 +66,19 @@ export function CheckoutForm() {
       toast.error("Informe seu telefone");
       return false;
     }
-    if (!customer.address.trim()) {
-      toast.error("Informe seu endereço");
-      return false;
-    }
     if (!customer.addressNumber.trim()) {
-      toast.error("Informe o número do endereço");
+      toast.error("Informe o número da casa ou s/n");
       return false;
     }
-    if (!customer.neighborhood.trim()) {
-      toast.error("Informe o bairro");
-      return false;
+    if (!shareLocationViaWhatsApp) {
+      if (!customer.address.trim()) {
+        toast.error("Informe seu endereço");
+        return false;
+      }
+      if (!customer.neighborhood.trim()) {
+        toast.error("Informe o bairro");
+        return false;
+      }
     }
     if (items.length === 0) {
       toast.error("Seu carrinho está vazio");
@@ -95,10 +99,10 @@ export function CheckoutForm() {
           establishment_id: establishment.id,
           name: customer.name,
           phone: customer.phone,
-          address: customer.address,
+          address: shareLocationViaWhatsApp ? "Localização via WhatsApp" : customer.address,
           address_number: customer.addressNumber,
           address_complement: customer.addressComplement || null,
-          neighborhood: customer.neighborhood,
+          neighborhood: shareLocationViaWhatsApp ? "Localização via WhatsApp" : customer.neighborhood,
           city: customer.city || null,
         })
         .select()
@@ -305,22 +309,42 @@ export function CheckoutForm() {
             <CardTitle className="text-lg">Endereço de Entrega</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="address">Rua *</Label>
-              <Input
-                id="address"
-                placeholder="Nome da rua"
-                value={customer.address}
-                onChange={(e) => handleInputChange("address", e.target.value)}
+            {/* Share location option */}
+            <div className="flex items-start space-x-3 p-3 border rounded-lg bg-muted/30">
+              <Checkbox
+                id="shareLocation"
+                checked={shareLocationViaWhatsApp}
+                onCheckedChange={(checked) => setShareLocationViaWhatsApp(checked === true)}
               />
+              <div className="space-y-1">
+                <Label htmlFor="shareLocation" className="cursor-pointer flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <span className="font-medium">Compartilhar localização via WhatsApp</span>
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Após o pedido, envie sua localização pelo WhatsApp. Informe apenas o número da casa.
+                </p>
+              </div>
             </div>
+
+            {!shareLocationViaWhatsApp && (
+              <div className="space-y-2">
+                <Label htmlFor="address">Rua *</Label>
+                <Input
+                  id="address"
+                  placeholder="Nome da rua"
+                  value={customer.address}
+                  onChange={(e) => handleInputChange("address", e.target.value)}
+                />
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="addressNumber">Número *</Label>
                 <Input
                   id="addressNumber"
-                  placeholder="123"
+                  placeholder="123 ou s/n"
                   value={customer.addressNumber}
                   onChange={(e) => handleInputChange("addressNumber", e.target.value)}
                 />
@@ -336,26 +360,28 @@ export function CheckoutForm() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="neighborhood">Bairro *</Label>
-                <Input
-                  id="neighborhood"
-                  placeholder="Seu bairro"
-                  value={customer.neighborhood}
-                  onChange={(e) => handleInputChange("neighborhood", e.target.value)}
-                />
+            {!shareLocationViaWhatsApp && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="neighborhood">Bairro *</Label>
+                  <Input
+                    id="neighborhood"
+                    placeholder="Seu bairro"
+                    value={customer.neighborhood}
+                    onChange={(e) => handleInputChange("neighborhood", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="city">Cidade</Label>
+                  <Input
+                    id="city"
+                    placeholder="Sua cidade"
+                    value={customer.city}
+                    onChange={(e) => handleInputChange("city", e.target.value)}
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="city">Cidade</Label>
-                <Input
-                  id="city"
-                  placeholder="Sua cidade"
-                  value={customer.city}
-                  onChange={(e) => handleInputChange("city", e.target.value)}
-                />
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
