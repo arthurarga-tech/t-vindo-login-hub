@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Clock, User, MapPin, Phone, CreditCard, MessageSquare, X } from "lucide-react";
+import { Clock, User, MapPin, Phone, CreditCard, MessageSquare, X, Printer } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -18,11 +18,14 @@ import { Order, OrderStatus, useUpdateOrderStatus, orderTypeLabels, getStatusFlo
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { usePrintOrder } from "@/hooks/usePrintOrder";
 
 interface OrderDetailModalProps {
   order: Order | null;
   open: boolean;
   onClose: () => void;
+  establishmentName: string;
+  printMode?: "none" | "on_order" | "on_confirm";
 }
 
 const statusConfig: Record<OrderStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -45,9 +48,10 @@ const paymentLabels: Record<string, string> = {
   cash: "Dinheiro",
 };
 
-export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps) {
+export function OrderDetailModal({ order, open, onClose, establishmentName, printMode = "none" }: OrderDetailModalProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const updateStatus = useUpdateOrderStatus();
+  const { printOrder } = usePrintOrder();
 
   if (!order) return null;
 
@@ -71,6 +75,10 @@ export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps
     ? statusFlow[currentStatusIndex - 1] 
     : null;
 
+  const handlePrint = () => {
+    printOrder({ order, establishmentName });
+  };
+
   const handleStatusChange = async (newStatus: OrderStatus) => {
     // Block transitions from cancelled orders only
     if (order.status === "cancelled") {
@@ -81,6 +89,12 @@ export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps
     try {
       await updateStatus.mutateAsync({ orderId: order.id, status: newStatus });
       toast.success(`Status atualizado para: ${statusConfig[newStatus].label}`);
+      
+      // Auto print on confirm if configured
+      if (printMode === "on_confirm" && newStatus === "confirmed") {
+        handlePrint();
+      }
+      
       onClose(); // Fecha o modal para mostrar dados atualizados
     } catch (error) {
       toast.error("Erro ao atualizar status");
@@ -250,6 +264,13 @@ export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps
 
           {/* Actions */}
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handlePrint}
+              title="Imprimir pedido"
+            >
+              <Printer className="h-4 w-4" />
+            </Button>
             {order.status !== "cancelled" && (
               <>
                 {previousStatus && (
