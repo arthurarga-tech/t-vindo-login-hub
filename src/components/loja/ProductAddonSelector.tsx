@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Plus, Minus } from "lucide-react";
 import type { AddonGroup, Addon } from "@/hooks/useAddons";
 
 export interface SelectedAddon {
@@ -34,29 +34,44 @@ export function ProductAddonSelector({
   };
 
   const getSelectedCountForGroup = (groupId: string) => {
-    return selectedAddons.filter(
-      (sa) => sa.addon.addon_group_id === groupId
-    ).reduce((sum, sa) => sum + sa.quantity, 0);
+    return selectedAddons
+      .filter((sa) => sa.addon.addon_group_id === groupId)
+      .reduce((sum, sa) => sum + sa.quantity, 0);
   };
 
-  const isAddonSelected = (addonId: string) => {
-    return selectedAddons.some((sa) => sa.addon.id === addonId);
+  const getAddonQuantity = (addonId: string) => {
+    const selected = selectedAddons.find((sa) => sa.addon.id === addonId);
+    return selected?.quantity ?? 0;
   };
 
-  const handleToggleAddon = (addon: Addon, group: AddonGroup) => {
-    const isSelected = isAddonSelected(addon.id);
+  const handleIncrease = (addon: Addon, group: AddonGroup) => {
     const currentCount = getSelectedCountForGroup(group.id);
+    if (currentCount >= group.max_selections) return;
 
-    if (isSelected) {
-      // Remove addon
+    const existing = selectedAddons.find((sa) => sa.addon.id === addon.id);
+    if (existing) {
+      onSelectionChange(
+        selectedAddons.map((sa) =>
+          sa.addon.id === addon.id ? { ...sa, quantity: sa.quantity + 1 } : sa
+        )
+      );
+    } else {
+      onSelectionChange([...selectedAddons, { addon, quantity: 1 }]);
+    }
+  };
+
+  const handleDecrease = (addon: Addon) => {
+    const existing = selectedAddons.find((sa) => sa.addon.id === addon.id);
+    if (!existing) return;
+
+    if (existing.quantity <= 1) {
       onSelectionChange(selectedAddons.filter((sa) => sa.addon.id !== addon.id));
     } else {
-      // Check if we can add more
-      if (currentCount >= group.max_selections) {
-        return; // Max reached
-      }
-      // Add addon
-      onSelectionChange([...selectedAddons, { addon, quantity: 1 }]);
+      onSelectionChange(
+        selectedAddons.map((sa) =>
+          sa.addon.id === addon.id ? { ...sa, quantity: sa.quantity - 1 } : sa
+        )
+      );
     }
   };
 
@@ -78,6 +93,7 @@ export function ProductAddonSelector({
         const groupAddons = getAddonsForGroup(group.id);
         const selectedCount = getSelectedCountForGroup(group.id);
         const isValid = isGroupValid(group);
+        const canAddMore = selectedCount < group.max_selections;
 
         return (
           <div key={group.id} className="space-y-2">
@@ -97,28 +113,58 @@ export function ProductAddonSelector({
 
             <div className="space-y-2">
               {groupAddons.map((addon) => {
-                const isSelected = isAddonSelected(addon.id);
-                const isDisabled = !isSelected && selectedCount >= group.max_selections;
+                const quantity = getAddonQuantity(addon.id);
 
                 return (
                   <div
                     key={addon.id}
-                    className={`flex items-center justify-between p-2 rounded-md border ${
-                      isSelected ? "border-primary bg-primary/5" : "border-border"
-                    } ${isDisabled ? "opacity-50" : "cursor-pointer hover:bg-muted/50"}`}
-                    onClick={() => !isDisabled && handleToggleAddon(addon, group)}
+                    className={`flex items-center justify-between p-3 rounded-md border ${
+                      quantity > 0 ? "border-primary bg-primary/5" : "border-border"
+                    }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        checked={isSelected}
-                        disabled={isDisabled}
-                        onCheckedChange={() => handleToggleAddon(addon, group)}
-                      />
-                      <Label className="cursor-pointer">{addon.name}</Label>
+                    <div className="flex-1">
+                      <span className="text-sm">{addon.name}</span>
+                      <span className="text-sm font-medium text-primary ml-2">
+                        +{formatPrice(addon.price)}
+                      </span>
                     </div>
-                    <span className="text-sm font-medium text-primary">
-                      +{formatPrice(addon.price)}
-                    </span>
+
+                    <div className="flex items-center gap-2">
+                      {quantity > 0 ? (
+                        <>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-7 w-7"
+                            onClick={() => handleDecrease(addon)}
+                          >
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <span className="w-6 text-center text-sm font-medium">
+                            {quantity}
+                          </span>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-7 w-7"
+                            disabled={!canAddMore}
+                            onClick={() => handleIncrease(addon, group)}
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="h-7 w-7"
+                          disabled={!canAddMore}
+                          onClick={() => handleIncrease(addon, group)}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -136,9 +182,9 @@ export function validateAddonSelection(
 ): { valid: boolean; message?: string } {
   for (const group of groups) {
     if (group.required) {
-      const count = selectedAddons.filter(
-        (sa) => sa.addon.addon_group_id === group.id
-      ).reduce((sum, sa) => sum + sa.quantity, 0);
+      const count = selectedAddons
+        .filter((sa) => sa.addon.addon_group_id === group.id)
+        .reduce((sum, sa) => sum + sa.quantity, 0);
 
       if (count < group.min_selections) {
         return {
