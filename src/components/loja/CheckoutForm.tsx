@@ -125,20 +125,56 @@ export function CheckoutForm() {
       if (orderError) throw orderError;
 
       // Create order items
-      const orderItems = items.map((item) => ({
-        order_id: orderData.id,
-        product_id: item.product.id,
-        product_name: item.product.name,
-        product_price: item.product.price,
-        quantity: item.quantity,
-        total: item.product.price * item.quantity,
-      }));
+      const orderItems = items.map((item) => {
+        const addonsTotal = item.selectedAddons?.reduce((sum, a) => sum + a.price * a.quantity, 0) ?? 0;
+        return {
+          order_id: orderData.id,
+          product_id: item.product.id,
+          product_name: item.product.name,
+          product_price: item.product.price,
+          quantity: item.quantity,
+          total: (item.product.price + addonsTotal) * item.quantity,
+        };
+      });
 
-      const { error: itemsError } = await supabase
+      const { data: insertedItems, error: itemsError } = await supabase
         .from("order_items")
-        .insert(orderItems);
+        .insert(orderItems)
+        .select();
 
       if (itemsError) throw itemsError;
+
+      // Create order item addons
+      const orderItemAddons: {
+        order_item_id: string;
+        addon_id: string;
+        addon_name: string;
+        addon_price: number;
+        quantity: number;
+      }[] = [];
+
+      items.forEach((item, index) => {
+        if (item.selectedAddons && item.selectedAddons.length > 0) {
+          const orderItemId = insertedItems[index].id;
+          item.selectedAddons.forEach((addon) => {
+            orderItemAddons.push({
+              order_item_id: orderItemId,
+              addon_id: addon.id,
+              addon_name: addon.name,
+              addon_price: addon.price,
+              quantity: addon.quantity,
+            });
+          });
+        }
+      });
+
+      if (orderItemAddons.length > 0) {
+        const { error: addonsError } = await supabase
+          .from("order_item_addons")
+          .insert(orderItemAddons);
+
+        if (addonsError) throw addonsError;
+      }
 
       // Create initial status history
       await supabase.from("order_status_history").insert({
@@ -201,16 +237,32 @@ export function CheckoutForm() {
             <CardTitle className="text-lg">Resumo do Pedido</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {items.map((item) => (
-              <div key={item.product.id} className="flex justify-between text-sm">
-                <span>
-                  {item.quantity}x {item.product.name}
-                </span>
-                <span className="font-medium">
-                  {formatPrice(item.product.price * item.quantity)}
-                </span>
-              </div>
-            ))}
+            {items.map((item, index) => {
+              const addonsTotal = item.selectedAddons?.reduce((sum, a) => sum + a.price * a.quantity, 0) ?? 0;
+              const itemTotal = (item.product.price + addonsTotal) * item.quantity;
+
+              return (
+                <div key={`${item.product.id}-${index}`} className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span>
+                      {item.quantity}x {item.product.name}
+                    </span>
+                    <span className="font-medium">
+                      {formatPrice(itemTotal)}
+                    </span>
+                  </div>
+                  {item.selectedAddons && item.selectedAddons.length > 0 && (
+                    <div className="pl-4">
+                      {item.selectedAddons.map((addon) => (
+                        <p key={addon.id} className="text-xs text-muted-foreground">
+                          + {addon.quantity}x {addon.name} ({formatPrice(addon.price * addon.quantity)})
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             <Separator />
             <div className="flex justify-between font-semibold">
               <span>Total</span>
