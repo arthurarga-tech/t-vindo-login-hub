@@ -50,7 +50,8 @@ export default function OrderConfirmationPage() {
 
   const paymentMethodLabels: Record<string, string> = {
     pix: "Pix",
-    card: "Cartão",
+    credit: "Cartão de Crédito",
+    debit: "Cartão de Débito",
     cash: "Dinheiro",
   };
 

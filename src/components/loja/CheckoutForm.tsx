@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { usePublicEstablishment } from "@/hooks/usePublicStore";
 
-type PaymentMethod = "cash" | "card" | "pix";
+type PaymentMethod = "cash" | "credit" | "debit" | "pix";
 type OrderType = "delivery" | "pickup" | "dine_in";
 
 interface CustomerForm {
@@ -552,11 +552,20 @@ export function CheckoutForm() {
                 </Label>
               </div>
               <div className="flex items-center space-x-3 p-3 border rounded-lg">
-                <RadioGroupItem value="card" id="card" />
-                <Label htmlFor="card" className="flex-1 cursor-pointer">
-                  <span className="font-medium">Cartão</span>
+                <RadioGroupItem value="credit" id="credit" />
+                <Label htmlFor="credit" className="flex-1 cursor-pointer">
+                  <span className="font-medium">Cartão de Crédito</span>
                   <p className="text-sm text-muted-foreground">
-                    {orderType === "delivery" ? "Débito ou crédito na entrega" : "Débito ou crédito no local"}
+                    {orderType === "delivery" ? "Pague na entrega" : "Pague no local"}
+                  </p>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-3 p-3 border rounded-lg">
+                <RadioGroupItem value="debit" id="debit" />
+                <Label htmlFor="debit" className="flex-1 cursor-pointer">
+                  <span className="font-medium">Cartão de Débito</span>
+                  <p className="text-sm text-muted-foreground">
+                    {orderType === "delivery" ? "Pague na entrega" : "Pague no local"}
                   </p>
                 </Label>
               </div>
