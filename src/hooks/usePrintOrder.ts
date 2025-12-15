@@ -17,7 +17,8 @@ export function usePrintOrder() {
 
     const paymentMethodLabels: Record<string, string> = {
       pix: "Pix",
-      card: "Cartão",
+      credit: "Crédito",
+      debit: "Débito",
       cash: "Dinheiro",
     };
 

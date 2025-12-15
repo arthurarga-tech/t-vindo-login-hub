@@ -44,7 +44,8 @@ const statusConfig: Record<OrderStatus, { label: string; variant: "default" | "s
 
 const paymentLabels: Record<string, string> = {
   pix: "Pix",
-  card: "Cartão",
+  credit: "Cartão de Crédito",
+  debit: "Cartão de Débito",
   cash: "Dinheiro",
 };
 

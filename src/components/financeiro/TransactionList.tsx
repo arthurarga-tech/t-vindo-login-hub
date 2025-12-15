@@ -49,6 +49,13 @@ export function TransactionList({ transactions, isLoading, onDelete }: Transacti
     );
   }
 
+  const paymentMethodLabels: Record<string, string> = {
+    pix: "Pix",
+    credit: "Crédito",
+    debit: "Débito",
+    cash: "Dinheiro",
+  };
+
   return (
     <div className="rounded-md border">
       <Table>
@@ -58,6 +65,7 @@ export function TransactionList({ transactions, isLoading, onDelete }: Transacti
             <TableHead className="w-[80px]">Tipo</TableHead>
             <TableHead>Categoria</TableHead>
             <TableHead>Descrição</TableHead>
+            <TableHead>Pagamento</TableHead>
             <TableHead className="text-right">Bruto</TableHead>
             <TableHead className="text-right">Taxa</TableHead>
             <TableHead className="text-right">Líquido</TableHead>
@@ -85,6 +93,9 @@ export function TransactionList({ transactions, isLoading, onDelete }: Transacti
               </TableCell>
               <TableCell>{t.category?.name || "-"}</TableCell>
               <TableCell className="max-w-[200px] truncate">{t.description}</TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                {t.payment_method ? paymentMethodLabels[t.payment_method] || t.payment_method : "-"}
+              </TableCell>
               <TableCell className="text-right font-mono">
                 {formatCurrency(t.gross_amount)}
               </TableCell>
