@@ -27,6 +27,7 @@ export default function Financeiro() {
   });
   const [type, setType] = useState<"all" | "income" | "expense">("all");
   const [categoryId, setCategoryId] = useState("all");
+  const [paymentMethod, setPaymentMethod] = useState("all");
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
 
@@ -45,6 +46,7 @@ export default function Financeiro() {
     endDate: dateRange.end,
     type: type === "all" ? undefined : type,
     categoryId: categoryId === "all" ? undefined : categoryId,
+    paymentMethod: paymentMethod === "all" ? undefined : paymentMethod,
   };
 
   const { data: transactions = [], isLoading: transactionsLoading } = useFinancialTransactions(filters);
@@ -88,6 +90,8 @@ export default function Financeiro() {
             onTypeChange={setType}
             categoryId={categoryId}
             onCategoryChange={setCategoryId}
+            paymentMethod={paymentMethod}
+            onPaymentMethodChange={setPaymentMethod}
             categories={categories}
             onAddExpense={() => setExpenseModalOpen(true)}
           />

@@ -20,6 +20,8 @@ interface FinancialFiltersProps {
   onTypeChange: (type: "all" | "income" | "expense") => void;
   categoryId: string;
   onCategoryChange: (categoryId: string) => void;
+  paymentMethod: string;
+  onPaymentMethodChange: (paymentMethod: string) => void;
   categories: FinancialCategory[];
   onAddExpense: () => void;
 }
@@ -33,6 +35,8 @@ export function FinancialFilters({
   onTypeChange,
   categoryId,
   onCategoryChange,
+  paymentMethod,
+  onPaymentMethodChange,
   categories,
   onAddExpense,
 }: FinancialFiltersProps) {
@@ -144,6 +148,20 @@ export function FinancialFilters({
                 {cat.name}
               </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+
+        {/* Payment method filter */}
+        <Select value={paymentMethod} onValueChange={onPaymentMethodChange}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Pagamento" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="pix">Pix</SelectItem>
+            <SelectItem value="credit">Crédito</SelectItem>
+            <SelectItem value="debit">Débito</SelectItem>
+            <SelectItem value="cash">Dinheiro</SelectItem>
           </SelectContent>
         </Select>
 
