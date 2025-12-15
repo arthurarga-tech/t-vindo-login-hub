@@ -36,6 +36,7 @@ export interface FinancialFilters {
   endDate: Date;
   type?: "income" | "expense" | "all";
   categoryId?: string;
+  paymentMethod?: string;
 }
 
 export interface FinancialSummary {
@@ -136,8 +137,12 @@ export function useFinancialTransactions(filters: FinancialFilters) {
         query = query.eq("type", filters.type);
       }
 
-      if (filters.categoryId) {
+      if (filters.categoryId && filters.categoryId !== "all") {
         query = query.eq("category_id", filters.categoryId);
+      }
+
+      if (filters.paymentMethod && filters.paymentMethod !== "all") {
+        query = query.eq("payment_method", filters.paymentMethod);
       }
 
       const { data, error } = await query;
