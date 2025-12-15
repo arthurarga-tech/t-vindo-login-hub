@@ -1,4 +1,4 @@
-import { Settings, Printer, Palette } from "lucide-react";
+import { Settings, Printer, Palette, CreditCard } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,10 @@ export default function Configuracoes() {
   // Theme colors
   const [themePrimaryColor, setThemePrimaryColor] = useState("#ea580c");
   const [themeSecondaryColor, setThemeSecondaryColor] = useState("#1e293b");
+
+  // Card fees
+  const [cardCreditFee, setCardCreditFee] = useState("0");
+  const [cardDebitFee, setCardDebitFee] = useState("0");
   
   const [saving, setSaving] = useState(false);
 
@@ -30,6 +34,8 @@ export default function Configuracoes() {
       setPrintMode(((establishment as any).print_mode as PrintMode) || "none");
       setThemePrimaryColor((establishment as any).theme_primary_color || "#ea580c");
       setThemeSecondaryColor((establishment as any).theme_secondary_color || "#1e293b");
+      setCardCreditFee(String((establishment as any).card_credit_fee || 0));
+      setCardDebitFee(String((establishment as any).card_debit_fee || 0));
     }
   }, [establishment]);
 
@@ -44,6 +50,8 @@ export default function Configuracoes() {
           print_mode: printMode,
           theme_primary_color: themePrimaryColor,
           theme_secondary_color: themeSecondaryColor,
+          card_credit_fee: parseFloat(cardCreditFee.replace(",", ".")) || 0,
+          card_debit_fee: parseFloat(cardDebitFee.replace(",", ".")) || 0,
         })
         .eq("id", establishment.id);
 
@@ -130,6 +138,55 @@ export default function Configuracoes() {
               </div>
             </div>
           </RadioGroup>
+        </CardContent>
+      </Card>
+
+      {/* Card - Taxas de Pagamento */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5 text-primary" />
+            <CardTitle>Taxas de Pagamento</CardTitle>
+          </div>
+          <CardDescription>
+            Configure as taxas da maquininha de cartão para cálculo automático do valor líquido das vendas
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="cardCreditFee">Taxa de Crédito (%)</Label>
+              <Input
+                id="cardCreditFee"
+                type="text"
+                placeholder="3.5"
+                value={cardCreditFee}
+                onChange={(e) => setCardCreditFee(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Ex: 3.5 para uma taxa de 3,5%
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cardDebitFee">Taxa de Débito (%)</Label>
+              <Input
+                id="cardDebitFee"
+                type="text"
+                placeholder="1.5"
+                value={cardDebitFee}
+                onChange={(e) => setCardDebitFee(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Ex: 1.5 para uma taxa de 1,5%
+              </p>
+            </div>
+          </div>
+          <div className="p-3 bg-muted/50 rounded-lg">
+            <p className="text-sm text-muted-foreground">
+              💡 As taxas serão descontadas automaticamente das vendas por cartão no módulo financeiro, 
+              exibindo o valor bruto e o valor líquido (após taxas).
+            </p>
+          </div>
         </CardContent>
       </Card>
 

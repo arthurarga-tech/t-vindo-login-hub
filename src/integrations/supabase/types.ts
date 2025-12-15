@@ -245,6 +245,8 @@ export type Database = {
         Row: {
           address: string | null
           banner_url: string | null
+          card_credit_fee: number | null
+          card_debit_fee: number | null
           city: string | null
           created_at: string
           delivery_info: string | null
@@ -269,6 +271,8 @@ export type Database = {
         Insert: {
           address?: string | null
           banner_url?: string | null
+          card_credit_fee?: number | null
+          card_debit_fee?: number | null
           city?: string | null
           created_at?: string
           delivery_info?: string | null
@@ -293,6 +297,8 @@ export type Database = {
         Update: {
           address?: string | null
           banner_url?: string | null
+          card_credit_fee?: number | null
+          card_debit_fee?: number | null
           city?: string | null
           created_at?: string
           delivery_info?: string | null
@@ -315,6 +321,120 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      financial_categories: {
+        Row: {
+          active: boolean | null
+          created_at: string
+          establishment_id: string
+          icon: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string
+          establishment_id: string
+          icon?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string
+          establishment_id?: string
+          icon?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_categories_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_transactions: {
+        Row: {
+          category_id: string
+          created_at: string
+          description: string
+          establishment_id: string
+          fee_amount: number | null
+          gross_amount: number
+          id: string
+          net_amount: number
+          order_id: string | null
+          payment_method: string | null
+          transaction_date: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          description: string
+          establishment_id: string
+          fee_amount?: number | null
+          gross_amount: number
+          id?: string
+          net_amount: number
+          order_id?: string | null
+          payment_method?: string | null
+          transaction_date?: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          description?: string
+          establishment_id?: string
+          fee_amount?: number | null
+          gross_amount?: number
+          id?: string
+          net_amount?: number
+          order_id?: string | null
+          payment_method?: string | null
+          transaction_date?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_transactions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "financial_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_item_addons: {
         Row: {
@@ -607,6 +727,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_default_financial_categories: {
+        Args: { est_id: string }
+        Returns: undefined
+      }
       get_user_establishment_id: { Args: { _user_id: string }; Returns: string }
       is_establishment_member: {
         Args: { _establishment_id: string; _user_id: string }
