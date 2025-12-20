@@ -49,13 +49,9 @@ export function OrderKanban({ orders, onOrderClick }: OrderKanbanProps) {
     return null;
   };
 
-  // Filter out empty columns to save space
-  const activeColumns = columns.filter(col => getOrdersByStatus(col.status).length > 0);
-  const displayColumns = activeColumns.length > 0 ? activeColumns : columns.slice(0, 3);
-
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2">
-      {displayColumns.map((column) => {
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+      {columns.map((column) => {
         const columnOrders = getOrdersByStatus(column.status);
         
         return (
