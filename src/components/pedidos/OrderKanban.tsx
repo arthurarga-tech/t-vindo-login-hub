@@ -49,28 +49,32 @@ export function OrderKanban({ orders, onOrderClick }: OrderKanbanProps) {
     return null;
   };
 
+  // Filter out empty columns to save space
+  const activeColumns = columns.filter(col => getOrdersByStatus(col.status).length > 0);
+  const displayColumns = activeColumns.length > 0 ? activeColumns : columns.slice(0, 3);
+
   return (
-    <div className="flex gap-3 overflow-x-auto pb-4">
-      {columns.map((column) => {
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2">
+      {displayColumns.map((column) => {
         const columnOrders = getOrdersByStatus(column.status);
         
         return (
           <div 
             key={column.status}
-            className="flex-shrink-0 w-72 bg-muted/30 rounded-lg"
+            className="bg-muted/30 rounded-lg min-h-[200px]"
           >
-            <div className="p-2 border-b flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className={`w-2.5 h-2.5 rounded-full ${column.color}`} />
-                <h3 className="font-semibold text-sm">{column.label}</h3>
+            <div className="p-1.5 border-b flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                <div className={`w-2 h-2 rounded-full ${column.color}`} />
+                <h3 className="font-semibold text-xs">{column.label}</h3>
               </div>
-              <Badge variant="secondary" className="text-xs">{columnOrders.length}</Badge>
+              <Badge variant="secondary" className="text-[10px] px-1 py-0">{columnOrders.length}</Badge>
             </div>
-            <ScrollArea className="h-[calc(100vh-260px)]">
-              <div className="p-2 space-y-2">
+            <ScrollArea className="h-[calc(100vh-280px)]">
+              <div className="p-1.5 space-y-1.5">
                 {columnOrders.length === 0 ? (
-                  <p className="text-center text-muted-foreground text-xs py-6">
-                    Nenhum pedido
+                  <p className="text-center text-muted-foreground text-[10px] py-4">
+                    Vazio
                   </p>
                 ) : (
                   columnOrders.map((order) => (
