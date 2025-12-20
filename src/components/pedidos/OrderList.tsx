@@ -1,5 +1,6 @@
-import { Order } from "@/hooks/useOrders";
+import { Order, OrderStatus, OrderType, getStatusFlow, useUpdateOrderStatus } from "@/hooks/useOrders";
 import { OrderCard } from "./OrderCard";
+import { toast } from "sonner";
 
 interface OrderListProps {
   orders: Order[];
@@ -7,6 +8,26 @@ interface OrderListProps {
 }
 
 export function OrderList({ orders, onOrderClick }: OrderListProps) {
+  const updateStatus = useUpdateOrderStatus();
+
+  const handleQuickStatusChange = async (order: Order, newStatus: OrderStatus) => {
+    try {
+      await updateStatus.mutateAsync({ orderId: order.id, status: newStatus });
+      toast.success(`Pedido #${order.order_number} atualizado`);
+    } catch (error) {
+      toast.error("Erro ao atualizar status");
+    }
+  };
+
+  const getNextStatus = (order: Order): OrderStatus | null => {
+    const flow = getStatusFlow(order.order_type as OrderType);
+    const currentIndex = flow.indexOf(order.status as OrderStatus);
+    if (currentIndex < flow.length - 1) {
+      return flow[currentIndex + 1];
+    }
+    return null;
+  };
+
   if (orders.length === 0) {
     return (
       <div className="text-center py-12">
@@ -16,12 +37,15 @@ export function OrderList({ orders, onOrderClick }: OrderListProps) {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {orders.map((order) => (
         <OrderCard 
           key={order.id} 
           order={order} 
           onClick={() => onOrderClick(order)}
+          onQuickStatusChange={handleQuickStatusChange}
+          nextStatus={getNextStatus(order)}
+          compact
         />
       ))}
     </div>
