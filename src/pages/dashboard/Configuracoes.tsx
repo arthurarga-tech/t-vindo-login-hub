@@ -1,9 +1,10 @@
-import { Settings, Printer, Palette, CreditCard } from "lucide-react";
+import { Settings, Printer, Palette, CreditCard, Bell } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +27,9 @@ export default function Configuracoes() {
   // Card fees
   const [cardCreditFee, setCardCreditFee] = useState("0");
   const [cardDebitFee, setCardDebitFee] = useState("0");
+
+  // Notification settings
+  const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(true);
   
   const [saving, setSaving] = useState(false);
 
@@ -36,6 +40,7 @@ export default function Configuracoes() {
       setThemeSecondaryColor((establishment as any).theme_secondary_color || "#1e293b");
       setCardCreditFee(String((establishment as any).card_credit_fee || 0));
       setCardDebitFee(String((establishment as any).card_debit_fee || 0));
+      setNotificationSoundEnabled((establishment as any).notification_sound_enabled !== false);
     }
   }, [establishment]);
 
@@ -52,6 +57,7 @@ export default function Configuracoes() {
           theme_secondary_color: themeSecondaryColor,
           card_credit_fee: parseFloat(cardCreditFee.replace(",", ".")) || 0,
           card_debit_fee: parseFloat(cardDebitFee.replace(",", ".")) || 0,
+          notification_sound_enabled: notificationSoundEnabled,
         })
         .eq("id", establishment.id);
 
@@ -89,6 +95,36 @@ export default function Configuracoes() {
         <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
       </div>
       
+      {/* Card - Notificações */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Bell className="h-5 w-5 text-primary" />
+            <CardTitle>Notificações</CardTitle>
+          </div>
+          <CardDescription>
+            Configure as notificações do sistema
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+            <div className="space-y-0.5">
+              <Label htmlFor="notification-sound" className="font-medium cursor-pointer">
+                Som de notificação
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Reproduzir som quando um novo pedido chegar
+              </p>
+            </div>
+            <Switch
+              id="notification-sound"
+              checked={notificationSoundEnabled}
+              onCheckedChange={setNotificationSoundEnabled}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Card - Impressão de Pedidos */}
       <Card>
         <CardHeader>

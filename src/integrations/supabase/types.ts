@@ -256,6 +256,7 @@ export type Database = {
           min_order_value: number | null
           name: string
           neighborhood: string | null
+          notification_sound_enabled: boolean | null
           opening_hours: Json | null
           owner_id: string
           phone: string | null
@@ -282,6 +283,7 @@ export type Database = {
           min_order_value?: number | null
           name: string
           neighborhood?: string | null
+          notification_sound_enabled?: boolean | null
           opening_hours?: Json | null
           owner_id: string
           phone?: string | null
@@ -308,6 +310,7 @@ export type Database = {
           min_order_value?: number | null
           name?: string
           neighborhood?: string | null
+          notification_sound_enabled?: boolean | null
           opening_hours?: Json | null
           owner_id?: string
           phone?: string | null
