@@ -1,21 +1,36 @@
-import { Settings, Printer, Palette, CreditCard, Bell } from "lucide-react";
+import { Settings, Printer, Palette, CreditCard, Bell, MessageCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useWhatsAppNotification } from "@/hooks/useWhatsAppNotification";
 
 type PrintMode = "none" | "on_order" | "on_confirm";
+
+const templateLabels: Record<string, { label: string; description: string }> = {
+  confirmed: { label: "Pedido Confirmado", description: "Quando o pedido é confirmado" },
+  preparing: { label: "Preparando", description: "Quando o preparo começa" },
+  ready_pickup: { label: "Pronto p/ Retirada", description: "Quando está pronto para retirar" },
+  ready_delivery: { label: "Pronto (Delivery)", description: "Quando está pronto aguardando motoboy" },
+  out_for_delivery: { label: "Saiu p/ Entrega", description: "Quando saiu para entrega" },
+  delivered: { label: "Entregue", description: "Quando foi entregue" },
+  picked_up: { label: "Retirado", description: "Quando foi retirado pelo cliente" },
+  served: { label: "Servido", description: "Quando foi servido no local" },
+};
 
 export default function Configuracoes() {
   const { data: establishment, isLoading } = useEstablishment();
   const queryClient = useQueryClient();
+  const { defaultTemplates } = useWhatsAppNotification();
   
   // Print settings
   const [printMode, setPrintMode] = useState<PrintMode>("none");
@@ -30,6 +45,11 @@ export default function Configuracoes() {
 
   // Notification settings
   const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(true);
+
+  // WhatsApp settings
+  const [whatsappEnabled, setWhatsappEnabled] = useState(false);
+  const [whatsappTemplates, setWhatsappTemplates] = useState<Record<string, string>>(defaultTemplates);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
   
   const [saving, setSaving] = useState(false);
 
@@ -41,8 +61,14 @@ export default function Configuracoes() {
       setCardCreditFee(String((establishment as any).card_credit_fee || 0));
       setCardDebitFee(String((establishment as any).card_debit_fee || 0));
       setNotificationSoundEnabled((establishment as any).notification_sound_enabled !== false);
+      setWhatsappEnabled((establishment as any).whatsapp_notifications_enabled === true);
+      
+      const savedTemplates = (establishment as any).whatsapp_message_templates;
+      if (savedTemplates && typeof savedTemplates === "object") {
+        setWhatsappTemplates({ ...defaultTemplates, ...savedTemplates });
+      }
     }
-  }, [establishment]);
+  }, [establishment, defaultTemplates]);
 
   const handleSave = async () => {
     if (!establishment?.id) return;
@@ -58,6 +84,8 @@ export default function Configuracoes() {
           card_credit_fee: parseFloat(cardCreditFee.replace(",", ".")) || 0,
           card_debit_fee: parseFloat(cardDebitFee.replace(",", ".")) || 0,
           notification_sound_enabled: notificationSoundEnabled,
+          whatsapp_notifications_enabled: whatsappEnabled,
+          whatsapp_message_templates: whatsappTemplates,
         })
         .eq("id", establishment.id);
 
@@ -72,6 +100,14 @@ export default function Configuracoes() {
     }
   };
 
+  const updateTemplate = (key: string, value: string) => {
+    setWhatsappTemplates((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const resetTemplate = (key: string) => {
+    setWhatsappTemplates((prev) => ({ ...prev, [key]: defaultTemplates[key] }));
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -82,8 +118,92 @@ export default function Configuracoes() {
         <Card>
           <CardContent className="p-6">
             <p className="text-muted-foreground">Carregando...</p>
-          </CardContent>
-        </Card>
+        </CardContent>
+      </Card>
+
+      {/* Card - WhatsApp Notifications */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <MessageCircle className="h-5 w-5 text-green-600" />
+            <CardTitle>Notificações WhatsApp</CardTitle>
+          </div>
+          <CardDescription>
+            Envie notificações automáticas de status do pedido para o WhatsApp do cliente
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+            <div className="space-y-0.5">
+              <Label htmlFor="whatsapp-enabled" className="font-medium cursor-pointer">
+                Ativar notificações por WhatsApp
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Ao mudar o status do pedido, abrirá o WhatsApp com a mensagem pronta para enviar
+              </p>
+            </div>
+            <Switch
+              id="whatsapp-enabled"
+              checked={whatsappEnabled}
+              onCheckedChange={setWhatsappEnabled}
+            />
+          </div>
+
+          {whatsappEnabled && (
+            <Collapsible open={templatesOpen} onOpenChange={setTemplatesOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full justify-between">
+                  <span>Personalizar mensagens</span>
+                  {templatesOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-4 mt-4">
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    <strong>Variáveis disponíveis:</strong><br />
+                    <code className="text-xs bg-background px-1 py-0.5 rounded">{"{nome_cliente}"}</code> - Nome do cliente<br />
+                    <code className="text-xs bg-background px-1 py-0.5 rounded">{"{numero_pedido}"}</code> - Número do pedido<br />
+                    <code className="text-xs bg-background px-1 py-0.5 rounded">{"{total}"}</code> - Valor total<br />
+                    <code className="text-xs bg-background px-1 py-0.5 rounded">{"{nome_estabelecimento}"}</code> - Nome do estabelecimento
+                  </p>
+                </div>
+
+                {Object.entries(templateLabels).map(([key, { label, description }]) => (
+                  <div key={key} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="font-medium">{label}</Label>
+                        <p className="text-xs text-muted-foreground">{description}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => resetTemplate(key)}
+                        className="text-xs"
+                      >
+                        Restaurar padrão
+                      </Button>
+                    </div>
+                    <Textarea
+                      value={whatsappTemplates[key] || ""}
+                      onChange={(e) => updateTemplate(key, e.target.value)}
+                      rows={2}
+                      className="resize-none text-sm"
+                    />
+                  </div>
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
+          <div className="p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-900">
+            <p className="text-sm text-green-800 dark:text-green-200">
+              💡 Ao mudar o status do pedido, o WhatsApp será aberto automaticamente com a mensagem pronta. 
+              Você só precisa clicar em "Enviar". Funciona no navegador (WhatsApp Web) e no celular (App).
+            </p>
+          </div>
+        </CardContent>
+      </Card>
       </div>
     );
   }
