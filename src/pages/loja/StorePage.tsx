@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StoreHeader } from "@/components/loja/StoreHeader";
 import { StoreInfo } from "@/components/loja/StoreInfo";
 import { CategorySection } from "@/components/loja/CategorySection";
+import { CartBar } from "@/components/loja/CartBar";
 import { CartProvider } from "@/hooks/useCart";
 import { AlertCircle } from "lucide-react";
 import { useMemo } from "react";
@@ -117,7 +118,7 @@ export default function StorePage() {
           primaryColor={(establishment as any).theme_primary_color}
         />
         
-        <main className="max-w-4xl mx-auto px-4 py-6">
+        <main className="max-w-4xl mx-auto px-4 py-6 pb-24">
           <StoreInfo
             description={(establishment as any).description}
             phone={(establishment as any).phone}
@@ -173,6 +174,8 @@ export default function StorePage() {
             </div>
           )}
         </main>
+        
+        <CartBar />
       </div>
     </CartProvider>
   );
