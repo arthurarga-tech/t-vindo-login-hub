@@ -169,7 +169,11 @@ export function useOrders() {
         },
         (payload) => {
           console.log("New order received:", payload);
-          playNotificationSound();
+          // Check if notification sound is enabled
+          const isSoundEnabled = (establishment as any).notification_sound_enabled !== false;
+          if (isSoundEnabled) {
+            playNotificationSound();
+          }
           queryClient.invalidateQueries({ queryKey: ["orders", establishment.id] });
         }
       )
@@ -190,7 +194,7 @@ export function useOrders() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [establishment?.id, queryClient, playNotificationSound]);
+  }, [establishment?.id, queryClient, playNotificationSound, establishment]);
 
   return query;
 }
