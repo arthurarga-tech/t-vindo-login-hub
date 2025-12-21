@@ -6,6 +6,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { ImageIcon, Plus, Minus } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { toast } from "sonner";
@@ -31,6 +33,7 @@ export function ProductDetailModal({
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [selectedAddons, setSelectedAddons] = useState<SelectedAddon[]>([]);
+  const [observation, setObservation] = useState("");
 
   const { data: addonData } = usePublicAddonsForCategory(product?.category_id ?? undefined);
   const groups = addonData?.groups ?? [];
@@ -40,6 +43,7 @@ export function ProductDetailModal({
     if (open) {
       setQuantity(1);
       setSelectedAddons([]);
+      setObservation("");
     }
   }, [open, product]);
 
@@ -72,7 +76,7 @@ export function ProductDetailModal({
       quantity: sa.quantity,
     }));
 
-    addItem(product, cartAddons.length > 0 ? cartAddons : undefined, quantity);
+    addItem(product, cartAddons.length > 0 ? cartAddons : undefined, quantity, observation);
     toast.success(`${product.name} adicionado ao carrinho`);
     onOpenChange(false);
   };
@@ -124,6 +128,25 @@ export function ProductDetailModal({
               />
             </div>
           )}
+
+          {/* Observation */}
+          <div className="border-t pt-4 space-y-2">
+            <Label htmlFor="observation" className="text-sm font-medium">
+              Observações (opcional)
+            </Label>
+            <Textarea
+              id="observation"
+              placeholder="Ex: Sem cebola, sem picles, bem passado..."
+              value={observation}
+              onChange={(e) => setObservation(e.target.value)}
+              className="resize-none"
+              maxLength={200}
+              rows={2}
+            />
+            <p className="text-xs text-muted-foreground text-right">
+              {observation.length}/200
+            </p>
+          </div>
 
           {/* Quantity */}
           <div className="flex items-center justify-between border-t pt-4">

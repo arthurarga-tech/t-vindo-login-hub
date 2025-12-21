@@ -12,11 +12,12 @@ export interface CartItem {
   product: PublicProduct;
   quantity: number;
   selectedAddons?: CartAddon[];
+  observation?: string;
 }
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (product: PublicProduct, selectedAddons?: CartAddon[], quantity?: number) => void;
+  addItem: (product: PublicProduct, selectedAddons?: CartAddon[], quantity?: number, observation?: string) => void;
   removeItem: (productId: string, itemIndex: number) => void;
   updateQuantity: (itemIndex: number, quantity: number) => void;
   clearCart: () => void;
@@ -53,10 +54,10 @@ export function CartProvider({ children, establishmentSlug }: { children: ReactN
     }
   }, [items, storageKey]);
 
-  const addItem = (product: PublicProduct, selectedAddons?: CartAddon[], quantity: number = 1) => {
+  const addItem = (product: PublicProduct, selectedAddons?: CartAddon[], quantity: number = 1, observation?: string) => {
     setItems((prev) => {
       // Each item with addons is treated as unique
-      return [...prev, { product, quantity, selectedAddons }];
+      return [...prev, { product, quantity, selectedAddons, observation: observation?.trim() || undefined }];
     });
   };
 
