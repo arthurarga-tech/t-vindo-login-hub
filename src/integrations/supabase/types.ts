@@ -268,6 +268,8 @@ export type Database = {
           theme_primary_color: string | null
           theme_secondary_color: string | null
           updated_at: string
+          whatsapp_message_templates: Json | null
+          whatsapp_notifications_enabled: boolean | null
         }
         Insert: {
           address?: string | null
@@ -295,6 +297,8 @@ export type Database = {
           theme_primary_color?: string | null
           theme_secondary_color?: string | null
           updated_at?: string
+          whatsapp_message_templates?: Json | null
+          whatsapp_notifications_enabled?: boolean | null
         }
         Update: {
           address?: string | null
@@ -322,6 +326,8 @@ export type Database = {
           theme_primary_color?: string | null
           theme_secondary_color?: string | null
           updated_at?: string
+          whatsapp_message_templates?: Json | null
+          whatsapp_notifications_enabled?: boolean | null
         }
         Relationships: []
       }
