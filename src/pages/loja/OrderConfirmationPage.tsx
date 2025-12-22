@@ -1,26 +1,33 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle, Clock, Package, Truck, Home, ArrowLeft, MessageCircle } from "lucide-react";
+import { CheckCircle, Clock, Package, Truck, Home, ArrowLeft, MessageCircle, Copy, Link2, XCircle } from "lucide-react";
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 const statusConfig: Record<string, { label: string; icon: React.ComponentType<any>; color: string }> = {
   pending: { label: "Pendente", icon: Clock, color: "bg-yellow-500" },
   confirmed: { label: "Confirmado", icon: CheckCircle, color: "bg-blue-500" },
   preparing: { label: "Preparando", icon: Package, color: "bg-orange-500" },
   ready: { label: "Pronto", icon: Package, color: "bg-green-500" },
+  ready_pickup: { label: "Pronto para Retirada", icon: Package, color: "bg-green-500" },
+  ready_delivery: { label: "Pronto para Entrega", icon: Package, color: "bg-green-500" },
   out_for_delivery: { label: "Saiu para entrega", icon: Truck, color: "bg-purple-500" },
   delivered: { label: "Entregue", icon: Home, color: "bg-green-600" },
-  cancelled: { label: "Cancelado", icon: Clock, color: "bg-red-500" },
+  picked_up: { label: "Retirado", icon: CheckCircle, color: "bg-green-600" },
+  served: { label: "Servido", icon: CheckCircle, color: "bg-green-600" },
+  cancelled: { label: "Cancelado", icon: XCircle, color: "bg-red-500" },
 };
 
 export default function OrderConfirmationPage() {
   const { slug, orderId } = useParams<{ slug: string; orderId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", orderId],
@@ -40,6 +47,51 @@ export default function OrderConfirmationPage() {
     },
     enabled: !!orderId,
   });
+
+  // Real-time subscription for order status updates
+  useEffect(() => {
+    if (!orderId) return;
+
+    const channel = supabase
+      .channel(`order-status-${orderId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${orderId}`,
+        },
+        (payload) => {
+          // Refetch order data when status changes
+          queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+          
+          // Show toast notification for status change
+          const newStatus = payload.new?.status;
+          if (newStatus && statusConfig[newStatus]) {
+            toast.success(`Status atualizado: ${statusConfig[newStatus].label}`);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [orderId, queryClient]);
+
+  const trackingUrl = typeof window !== 'undefined' 
+    ? `${window.location.origin}/loja/${slug}/pedido/${orderId}`
+    : '';
+
+  const copyTrackingLink = async () => {
+    try {
+      await navigator.clipboard.writeText(trackingUrl);
+      toast.success("Link copiado!");
+    } catch {
+      toast.error("Erro ao copiar link");
+    }
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -113,6 +165,30 @@ export default function OrderConfirmationPage() {
               <MessageCircle className="h-5 w-5" />
               <span className="font-medium">Você receberá atualizações no WhatsApp</span>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Tracking Link */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Link2 className="h-4 w-4" />
+                <span>Link para acompanhar:</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={copyTrackingLink}
+                className="gap-2"
+              >
+                <Copy className="h-4 w-4" />
+                Copiar Link
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2 break-all">
+              {trackingUrl}
+            </p>
           </CardContent>
         </Card>
 
