@@ -35,6 +35,7 @@ export default function Pedidos() {
   const pendingCount = pendingOrders.length;
   const printMode = ((establishment as any)?.print_mode || "none") as "none" | "on_order" | "on_confirm";
   const establishmentName = establishment?.name || "Estabelecimento";
+  const logoUrl = establishment?.logo_url;
 
   // Play notification sound and auto-print when new pending orders arrive
   useEffect(() => {
@@ -50,12 +51,12 @@ export default function Pedidos() {
       
       newPendingOrders.forEach((order) => {
         printedOrdersRef.current.add(order.id);
-        printOrder({ order, establishmentName });
+        printOrder({ order, establishmentName, logoUrl });
       });
     }
     
     previousPendingCountRef.current = pendingCount;
-  }, [pendingCount, soundEnabled, orders, printMode, establishmentName, printOrder]);
+  }, [pendingCount, soundEnabled, orders, printMode, establishmentName, logoUrl, printOrder]);
 
   const playNotificationSound = () => {
     try {
@@ -236,6 +237,7 @@ export default function Pedidos() {
         open={!!selectedOrder}
         onClose={() => setSelectedOrder(null)}
         establishmentName={establishmentName}
+        logoUrl={logoUrl}
         printMode={printMode}
       />
     </div>

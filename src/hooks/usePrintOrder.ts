@@ -5,10 +5,11 @@ import { ptBR } from "date-fns/locale";
 interface PrintOrderOptions {
   order: Order;
   establishmentName: string;
+  logoUrl?: string | null;
 }
 
 export function usePrintOrder() {
-  const printOrder = ({ order, establishmentName }: PrintOrderOptions) => {
+  const printOrder = ({ order, establishmentName, logoUrl }: PrintOrderOptions) => {
     const orderTypeLabels: Record<string, string> = {
       delivery: "Entrega",
       pickup: "Retirada",
@@ -50,6 +51,11 @@ export function usePrintOrder() {
       margin-bottom: 8px;
       border-bottom: 1px dashed #000;
       padding-bottom: 8px;
+    }
+    .store-logo {
+      max-width: 40mm;
+      max-height: 20mm;
+      margin-bottom: 4px;
     }
     .store-name {
       font-size: 14px;
@@ -134,6 +140,7 @@ export function usePrintOrder() {
 </head>
 <body>
   <div class="header">
+    ${logoUrl ? `<img src="${logoUrl}" alt="${establishmentName}" class="store-logo" />` : ''}
     <div class="store-name">${establishmentName}</div>
     <div class="order-number">PEDIDO #${order.order_number}</div>
     <div class="order-type">${orderTypeLabels[order.order_type] || order.order_type}</div>
