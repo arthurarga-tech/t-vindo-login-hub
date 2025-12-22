@@ -35,6 +35,7 @@ interface OrderDetailModalProps {
   open: boolean;
   onClose: () => void;
   establishmentName: string;
+  logoUrl?: string | null;
   printMode?: "none" | "on_order" | "on_confirm";
 }
 
@@ -59,7 +60,7 @@ const paymentLabels: Record<string, string> = {
   cash: "Dinheiro",
 };
 
-export function OrderDetailModal({ order, open, onClose, establishmentName, printMode = "none" }: OrderDetailModalProps) {
+export function OrderDetailModal({ order, open, onClose, establishmentName, logoUrl, printMode = "none" }: OrderDetailModalProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const updateStatus = useUpdateOrderStatus();
   const { printOrder } = usePrintOrder();
@@ -88,7 +89,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, prin
     : null;
 
   const handlePrint = () => {
-    printOrder({ order, establishmentName });
+    printOrder({ order, establishmentName, logoUrl });
   };
 
   const handleStatusChange = async (newStatus: OrderStatus) => {
