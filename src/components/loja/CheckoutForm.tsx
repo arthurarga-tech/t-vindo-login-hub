@@ -191,6 +191,7 @@ export function CheckoutForm() {
           product_price: item.product.price,
           quantity: item.quantity,
           total: (item.product.price + addonsTotal) * item.quantity,
+          observation: item.observation || null,
         };
       });
 
@@ -316,6 +317,11 @@ export function CheckoutForm() {
                         </p>
                       ))}
                     </div>
+                  )}
+                  {item.observation && (
+                    <p className="text-xs text-muted-foreground pl-4 italic">
+                      Obs: {item.observation}
+                    </p>
                   )}
                 </div>
               );
