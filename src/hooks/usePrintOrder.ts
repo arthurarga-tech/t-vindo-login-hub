@@ -172,6 +172,7 @@ export function usePrintOrder() {
       ${item.addons?.map(addon => `
         <div class="addon">+ ${addon.quantity}x ${addon.addon_name} (R$ ${addon.addon_price.toFixed(2).replace(".", ",")})</div>
       `).join("") || ""}
+      ${(item as any).observation ? `<div class="addon" style="font-style: italic;">Obs: ${(item as any).observation}</div>` : ""}
     `).join("") || ""}
   </div>
 
