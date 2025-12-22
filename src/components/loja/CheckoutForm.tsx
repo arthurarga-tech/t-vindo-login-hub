@@ -166,11 +166,26 @@ export function CheckoutForm() {
           : customer.neighborhood
         : null;
 
-      // Create or update customer (upsert based on phone + establishment)
-      const { data: customerData, error: customerError } = await supabase
+      // Try to create customer, if exists use existing record
+      // (Public users cannot update customer records for security)
+      let customerId: string;
+      
+      // First, try to find existing customer
+      const { data: existingCustomer } = await supabase
         .from("customers")
-        .upsert(
-          {
+        .select("id")
+        .eq("establishment_id", establishment.id)
+        .eq("phone", customer.phone)
+        .maybeSingle();
+      
+      if (existingCustomer) {
+        // Use existing customer
+        customerId = existingCustomer.id;
+      } else {
+        // Create new customer
+        const { data: newCustomer, error: customerError } = await supabase
+          .from("customers")
+          .insert({
             establishment_id: establishment.id,
             name: customer.name,
             phone: customer.phone,
@@ -179,23 +194,20 @@ export function CheckoutForm() {
             address_complement: needsAddress ? customer.addressComplement || null : null,
             neighborhood: customerNeighborhood,
             city: needsAddress ? customer.city || null : null,
-          },
-          {
-            onConflict: "phone,establishment_id",
-            ignoreDuplicates: false,
-          }
-        )
-        .select()
-        .single();
+          })
+          .select("id")
+          .single();
 
-      if (customerError) throw customerError;
+        if (customerError) throw customerError;
+        customerId = newCustomer.id;
+      }
 
       // Create order with order_type
       const { data: orderData, error: orderError } = await supabase
         .from("orders")
         .insert({
           establishment_id: establishment.id,
-          customer_id: customerData.id,
+          customer_id: customerId,
           payment_method: paymentMethod,
           order_type: orderType,
           subtotal: totalPrice,
