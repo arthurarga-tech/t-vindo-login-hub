@@ -13,9 +13,22 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { usePublicEstablishment } from "@/hooks/usePublicStore";
+import { z } from "zod";
 
 type PaymentMethod = "cash" | "credit" | "debit" | "pix";
 type OrderType = "delivery" | "pickup" | "dine_in";
+
+// Validation schema for checkout form
+const checkoutSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório").max(100, "Nome muito longo (máx. 100 caracteres)").trim(),
+  phone: z.string().min(10, "Telefone inválido").max(20, "Telefone muito longo").regex(/^[0-9\s()+-]+$/, "Formato de telefone inválido"),
+  address: z.string().max(200, "Endereço muito longo (máx. 200 caracteres)").trim().optional(),
+  addressNumber: z.string().max(20, "Número muito longo").trim().optional(),
+  addressComplement: z.string().max(100, "Complemento muito longo").trim().optional(),
+  neighborhood: z.string().max(100, "Bairro muito longo").trim().optional(),
+  city: z.string().max(100, "Cidade muito longa").trim().optional(),
+  notes: z.string().max(500, "Observação muito longa (máx. 500 caracteres)").trim().optional(),
+});
 
 interface CustomerForm {
   name: string;
@@ -89,14 +102,28 @@ export function CheckoutForm() {
   };
 
   const validateForm = () => {
-    if (!customer.name.trim()) {
-      toast.error("Informe seu nome");
+    // Build validation data
+    const validationData = {
+      name: customer.name,
+      phone: customer.phone,
+      address: needsAddress && !shareLocationViaWhatsApp ? customer.address : undefined,
+      addressNumber: needsAddress ? customer.addressNumber : undefined,
+      addressComplement: customer.addressComplement || undefined,
+      neighborhood: needsAddress && !shareLocationViaWhatsApp ? customer.neighborhood : undefined,
+      city: customer.city || undefined,
+      notes: notes || undefined,
+    };
+
+    // Validate with zod schema
+    const result = checkoutSchema.safeParse(validationData);
+    
+    if (!result.success) {
+      const firstError = result.error.errors[0];
+      toast.error(firstError.message);
       return false;
     }
-    if (!customer.phone.trim()) {
-      toast.error("Informe seu telefone");
-      return false;
-    }
+
+    // Additional business logic validations
     if (needsAddress) {
       if (!customer.addressNumber.trim()) {
         toast.error("Informe o número da casa ou s/n");
@@ -113,10 +140,12 @@ export function CheckoutForm() {
         }
       }
     }
+    
     if (items.length === 0) {
       toast.error("Seu carrinho está vazio");
       return false;
     }
+    
     return true;
   };
 
@@ -438,6 +467,7 @@ export function CheckoutForm() {
                 placeholder="Seu nome completo"
                 value={customer.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
+                maxLength={100}
               />
             </div>
 
@@ -448,6 +478,7 @@ export function CheckoutForm() {
                 placeholder="(00) 00000-0000"
                 value={customer.phone}
                 onChange={(e) => handleInputChange("phone", e.target.value)}
+                maxLength={20}
               />
             </div>
           </CardContent>
@@ -486,6 +517,7 @@ export function CheckoutForm() {
                     placeholder="Nome da rua"
                     value={customer.address}
                     onChange={(e) => handleInputChange("address", e.target.value)}
+                    maxLength={200}
                   />
                 </div>
               )}
@@ -498,6 +530,7 @@ export function CheckoutForm() {
                     placeholder="123 ou s/n"
                     value={customer.addressNumber}
                     onChange={(e) => handleInputChange("addressNumber", e.target.value)}
+                    maxLength={20}
                   />
                 </div>
                 <div className="space-y-2">
@@ -507,6 +540,7 @@ export function CheckoutForm() {
                     placeholder="Apto, bloco..."
                     value={customer.addressComplement}
                     onChange={(e) => handleInputChange("addressComplement", e.target.value)}
+                    maxLength={100}
                   />
                 </div>
               </div>
@@ -520,6 +554,7 @@ export function CheckoutForm() {
                       placeholder="Seu bairro"
                       value={customer.neighborhood}
                       onChange={(e) => handleInputChange("neighborhood", e.target.value)}
+                      maxLength={100}
                     />
                   </div>
                   <div className="space-y-2">
@@ -529,6 +564,7 @@ export function CheckoutForm() {
                       placeholder="Sua cidade"
                       value={customer.city}
                       onChange={(e) => handleInputChange("city", e.target.value)}
+                      maxLength={100}
                     />
                   </div>
                 </div>
@@ -634,7 +670,11 @@ export function CheckoutForm() {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
+              maxLength={500}
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              {notes.length}/500 caracteres
+            </p>
           </CardContent>
         </Card>
 
