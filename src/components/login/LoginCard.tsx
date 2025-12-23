@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import WhatsAppIcon from "./WhatsAppIcon";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -137,13 +136,6 @@ const LoginCard = () => {
     }
 
     setIsLoading(false);
-  };
-
-  const handleWhatsAppLogin = () => {
-    toast({
-      title: "Em breve",
-      description: "Login com WhatsApp será implementado em breve.",
-    });
   };
 
   return (
@@ -321,26 +313,6 @@ const LoginCard = () => {
             </form>
           </TabsContent>
         </Tabs>
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-3 text-muted-foreground">ou</span>
-          </div>
-        </div>
-
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full font-medium gap-2 border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10 hover:text-[#25D366]"
-          size="lg"
-          onClick={handleWhatsAppLogin}
-        >
-          <WhatsAppIcon className="h-5 w-5" />
-          Entrar com WhatsApp
-        </Button>
       </CardContent>
     </Card>
   );
