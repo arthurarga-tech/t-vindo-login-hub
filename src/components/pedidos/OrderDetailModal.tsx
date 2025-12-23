@@ -107,11 +107,6 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
       if (printMode === "on_confirm" && newStatus === "confirmed") {
         handlePrint();
       }
-
-      // Send WhatsApp notification if enabled
-      if (newStatus !== "cancelled") {
-        sendNotification(order, newStatus);
-      }
       
       onClose(); // Fecha o modal para mostrar dados atualizados
     } catch (error) {
@@ -308,7 +303,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
             <Button
               variant="outline"
               onClick={handleWhatsAppClick}
-              title="Enviar mensagem no WhatsApp"
+              title="Conversar com cliente"
               className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30"
             >
               <WhatsAppIcon className="h-4 w-4" />
