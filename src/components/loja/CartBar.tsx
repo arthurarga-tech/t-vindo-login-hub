@@ -1,9 +1,14 @@
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Clock } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/useCart";
+import { toast } from "sonner";
 
-export function CartBar() {
+interface CartBarProps {
+  isStoreOpen?: boolean;
+}
+
+export function CartBar({ isStoreOpen = true }: CartBarProps) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { totalItems, totalPrice } = useCart();
@@ -13,6 +18,14 @@ export function CartBar() {
       style: "currency",
       currency: "BRL",
     }).format(price);
+  };
+
+  const handleClick = () => {
+    if (!isStoreOpen) {
+      toast.error("Estabelecimento fechado no momento. Consulte os horários de funcionamento.");
+      return;
+    }
+    navigate(`/loja/${slug}/checkout`);
   };
 
   return (
@@ -25,19 +38,30 @@ export function CartBar() {
     >
       <div className="max-w-4xl mx-auto">
         <Button 
-          className="w-full h-14 text-base font-semibold"
+          className={`w-full h-14 text-base font-semibold ${!isStoreOpen ? 'opacity-70' : ''}`}
           size="lg"
-          onClick={() => navigate(`/loja/${slug}/checkout`)}
+          onClick={handleClick}
           style={{ 
             backgroundColor: `hsl(var(--store-primary, var(--primary)))`,
           }}
         >
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5" />
-              <span>{totalItems} {totalItems === 1 ? 'item' : 'itens'}</span>
+              {!isStoreOpen ? (
+                <>
+                  <Clock className="h-5 w-5" />
+                  <span>Fechado</span>
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="h-5 w-5" />
+                  <span>{totalItems} {totalItems === 1 ? 'item' : 'itens'}</span>
+                </>
+              )}
             </div>
-            <span>Finalizar Pedido • {formatPrice(totalPrice)}</span>
+            <span>
+              {isStoreOpen ? `Finalizar Pedido • ${formatPrice(totalPrice)}` : formatPrice(totalPrice)}
+            </span>
           </div>
         </Button>
       </div>

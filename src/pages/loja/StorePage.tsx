@@ -6,8 +6,10 @@ import { StoreInfo } from "@/components/loja/StoreInfo";
 import { CategorySection } from "@/components/loja/CategorySection";
 import { CartBar } from "@/components/loja/CartBar";
 import { CartProvider } from "@/hooks/useCart";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Clock } from "lucide-react";
 import { useMemo } from "react";
+import { useStoreOpeningHours } from "@/hooks/useStoreOpeningHours";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Convert hex to HSL for CSS variables
 function hexToHSL(hex: string): string {
@@ -49,6 +51,8 @@ export default function StorePage() {
   const { data: establishment, isLoading: loadingEstablishment } = usePublicEstablishment(slug);
   const { data: categories, isLoading: loadingCategories } = usePublicCategories(establishment?.id);
   const { data: products, isLoading: loadingProducts } = usePublicProducts(establishment?.id);
+  
+  const { isOpen, nextOpenTime } = useStoreOpeningHours((establishment as any)?.opening_hours);
 
   const isLoading = loadingEstablishment || loadingCategories || loadingProducts;
 
@@ -119,6 +123,17 @@ export default function StorePage() {
         />
         
         <main className="max-w-4xl mx-auto px-4 py-6 pb-24">
+          {!isOpen && (
+            <Alert variant="destructive" className="mb-6">
+              <Clock className="h-4 w-4" />
+              <AlertTitle>Estabelecimento Fechado</AlertTitle>
+              <AlertDescription>
+                {nextOpenTime
+                  ? `Abrimos ${nextOpenTime.day} às ${nextOpenTime.time}`
+                  : "Consulte os horários de funcionamento abaixo"}
+              </AlertDescription>
+            </Alert>
+          )}
           <StoreInfo
             description={(establishment as any).description}
             phone={(establishment as any).phone}
@@ -175,7 +190,7 @@ export default function StorePage() {
           )}
         </main>
         
-        <CartBar />
+        <CartBar isStoreOpen={isOpen} />
       </div>
     </CartProvider>
   );
