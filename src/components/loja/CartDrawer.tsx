@@ -20,10 +20,13 @@ export function CartDrawer() {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="outline" size="icon" className="relative">
+        <Button 
+          size="icon" 
+          className={`relative bg-primary-foreground text-primary hover:bg-primary-foreground/90 shadow-md ${totalItems > 0 ? 'animate-pulse' : ''}`}
+        >
           <ShoppingCart className="h-5 w-5" />
           {totalItems > 0 && (
-            <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+            <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive text-destructive-foreground animate-bounce">
               {totalItems}
             </Badge>
           )}
