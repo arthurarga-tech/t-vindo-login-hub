@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEstablishment } from "./useEstablishment";
+import { toast } from "sonner";
 
 export interface CustomerWithStats {
   id: string;
@@ -133,5 +134,59 @@ export function useCustomerOrders(customerId: string | null) {
       return data as CustomerOrder[];
     },
     enabled: !!customerId && !!establishment?.id,
+  });
+}
+
+export function useDeleteCustomer() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (customerId: string) => {
+      const { error } = await supabase
+        .from("customers")
+        .delete()
+        .eq("id", customerId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      toast.success("Cliente excluído com sucesso");
+    },
+    onError: (error) => {
+      toast.error("Erro ao excluir cliente: " + error.message);
+    },
+  });
+}
+
+export function useUpdateCustomer() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      id: string;
+      name: string;
+      phone: string;
+      address?: string | null;
+      address_number?: string | null;
+      address_complement?: string | null;
+      neighborhood?: string | null;
+      city?: string | null;
+    }) => {
+      const { id, ...updateData } = data;
+      const { error } = await supabase
+        .from("customers")
+        .update(updateData)
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      toast.success("Cliente atualizado com sucesso");
+    },
+    onError: (error) => {
+      toast.error("Erro ao atualizar cliente: " + error.message);
+    },
   });
 }

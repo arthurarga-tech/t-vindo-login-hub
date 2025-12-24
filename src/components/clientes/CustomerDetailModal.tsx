@@ -1,11 +1,24 @@
-import { User, Phone, MapPin, ShoppingBag, TrendingUp, Clock, MessageCircle, ExternalLink } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState } from "react";
+import { User, Phone, MapPin, ShoppingBag, TrendingUp, Clock, MessageCircle, Trash2, Pencil, Save, X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CustomerWithStats, useCustomerOrders } from "@/hooks/useCustomers";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { CustomerWithStats, useCustomerOrders, useDeleteCustomer, useUpdateCustomer } from "@/hooks/useCustomers";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -33,6 +46,20 @@ const paymentLabels: Record<string, string> = {
 
 export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailModalProps) {
   const { data: orders, isLoading } = useCustomerOrders(customer?.id || null);
+  const deleteCustomer = useDeleteCustomer();
+  const updateCustomer = useUpdateCustomer();
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    phone: "",
+    address: "",
+    address_number: "",
+    address_complement: "",
+    neighborhood: "",
+    city: "",
+  });
 
   if (!customer) return null;
 
@@ -53,139 +80,321 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
     window.open(`https://wa.me/${phoneWithCountry}`, "_blank");
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            {customer.name}
-          </DialogTitle>
-        </DialogHeader>
+  const startEditing = () => {
+    setEditForm({
+      name: customer.name,
+      phone: customer.phone,
+      address: customer.address || "",
+      address_number: customer.address_number || "",
+      address_complement: customer.address_complement || "",
+      neighborhood: customer.neighborhood || "",
+      city: customer.city || "",
+    });
+    setIsEditing(true);
+  };
 
-        <div className="flex-1 overflow-hidden flex flex-col space-y-4">
-          {/* Customer Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span>{customer.phone}</span>
-                <Button variant="ghost" size="sm" onClick={openWhatsApp}>
-                  <MessageCircle className="h-4 w-4 text-green-600" />
-                </Button>
+  const cancelEditing = () => {
+    setIsEditing(false);
+  };
+
+  const saveChanges = () => {
+    updateCustomer.mutate(
+      {
+        id: customer.id,
+        name: editForm.name,
+        phone: editForm.phone,
+        address: editForm.address || null,
+        address_number: editForm.address_number || null,
+        address_complement: editForm.address_complement || null,
+        neighborhood: editForm.neighborhood || null,
+        city: editForm.city || null,
+      },
+      {
+        onSuccess: () => {
+          setIsEditing(false);
+          onClose();
+        },
+      }
+    );
+  };
+
+  const confirmDelete = () => {
+    deleteCustomer.mutate(customer.id, {
+      onSuccess: () => {
+        setShowDeleteDialog(false);
+        onClose();
+      },
+    });
+  };
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                {isEditing ? "Editar Cliente" : customer.name}
               </div>
-              
-              {customer.address && (
-                <div className="flex items-start gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <div>
-                    {customer.address === "Localização via WhatsApp" ? (
-                      <span className="text-primary">📍 Localização via WhatsApp</span>
-                    ) : (
-                      <>
-                        <p>{customer.address}, {customer.address_number}</p>
-                        {customer.address_complement && (
-                          <p className="text-muted-foreground">{customer.address_complement}</p>
-                        )}
-                        <p className="text-muted-foreground">
-                          {customer.neighborhood}
-                          {customer.city && `, ${customer.city}`}
-                        </p>
-                      </>
-                    )}
-                  </div>
+              {!isEditing && (
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="icon" onClick={startEditing}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setShowDeleteDialog(true)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               )}
-              
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                <span>Cliente desde {format(new Date(customer.created_at), "dd/MM/yyyy")}</span>
-              </div>
-            </div>
+            </DialogTitle>
+          </DialogHeader>
 
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-2">
-              <div className="bg-muted/50 rounded-lg p-3 text-center">
-                <ShoppingBag className="h-5 w-5 mx-auto mb-1 text-primary" />
-                <p className="text-2xl font-bold">{customer.total_orders}</p>
-                <p className="text-xs text-muted-foreground">Pedidos</p>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-3 text-center">
-                <TrendingUp className="h-5 w-5 mx-auto mb-1 text-green-600" />
-                <p className="text-lg font-bold">{formatPrice(customer.total_spent)}</p>
-                <p className="text-xs text-muted-foreground">Total Gasto</p>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-3 text-center">
-                <ShoppingBag className="h-5 w-5 mx-auto mb-1 text-blue-600" />
-                <p className="text-lg font-bold">{formatPrice(ticketMedio)}</p>
-                <p className="text-xs text-muted-foreground">Ticket Médio</p>
-              </div>
-            </div>
-          </div>
+          <div className="flex-1 overflow-hidden flex flex-col space-y-4">
+            {isEditing ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nome</Label>
+                    <Input
+                      id="name"
+                      value={editForm.name}
+                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Telefone</Label>
+                    <Input
+                      id="phone"
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                    />
+                  </div>
+                </div>
 
-          <Separator />
+                <Separator />
+                <p className="text-sm font-medium">Endereço</p>
 
-          {/* Order History */}
-          <div className="flex-1 overflow-hidden">
-            <h4 className="font-semibold mb-3 flex items-center gap-2">
-              <ShoppingBag className="h-4 w-4" />
-              Histórico de Pedidos
-            </h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="col-span-2 space-y-2">
+                    <Label htmlFor="address">Rua</Label>
+                    <Input
+                      id="address"
+                      value={editForm.address}
+                      onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="address_number">Número</Label>
+                    <Input
+                      id="address_number"
+                      value={editForm.address_number}
+                      onChange={(e) => setEditForm({ ...editForm, address_number: e.target.value })}
+                    />
+                  </div>
+                </div>
 
-            {isLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-20 w-full" />
-                ))}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="address_complement">Complemento</Label>
+                    <Input
+                      id="address_complement"
+                      value={editForm.address_complement}
+                      onChange={(e) => setEditForm({ ...editForm, address_complement: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="neighborhood">Bairro</Label>
+                    <Input
+                      id="neighborhood"
+                      value={editForm.neighborhood}
+                      onChange={(e) => setEditForm({ ...editForm, neighborhood: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="city">Cidade</Label>
+                    <Input
+                      id="city"
+                      value={editForm.city}
+                      onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                    />
+                  </div>
+                </div>
               </div>
-            ) : orders && orders.length > 0 ? (
-              <ScrollArea className="h-[300px] pr-4">
-                <div className="space-y-3">
-                  {orders.map((order) => {
-                    const status = statusConfig[order.status] || statusConfig.pending;
-                    return (
-                      <div 
-                        key={order.id} 
-                        className="border rounded-lg p-3 hover:bg-muted/30 transition-colors"
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold">#{order.order_number}</span>
-                            <Badge variant={status.variant}>{status.label}</Badge>
-                          </div>
-                          <span className="font-bold text-primary">{formatPrice(order.total)}</span>
-                        </div>
-                        
-                        <div className="text-sm text-muted-foreground mb-2">
-                          {format(new Date(order.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                          {" • "}
-                          {paymentLabels[order.payment_method] || order.payment_method}
-                        </div>
-                        
-                        <div className="text-sm">
-                          {order.items.slice(0, 3).map((item, index) => (
-                            <span key={item.id}>
-                              {item.quantity}x {item.product_name}
-                              {index < Math.min(order.items.length - 1, 2) && ", "}
-                            </span>
-                          ))}
-                          {order.items.length > 3 && (
-                            <span className="text-muted-foreground"> +{order.items.length - 3} mais</span>
+            ) : (
+              <>
+                {/* Customer Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span>{customer.phone}</span>
+                      <Button variant="ghost" size="sm" onClick={openWhatsApp}>
+                        <MessageCircle className="h-4 w-4 text-green-600" />
+                      </Button>
+                    </div>
+                    
+                    {customer.address && (
+                      <div className="flex items-start gap-2 text-sm">
+                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          {customer.address === "Localização via WhatsApp" ? (
+                            <span className="text-primary">📍 Localização via WhatsApp</span>
+                          ) : (
+                            <>
+                              <p>{customer.address}, {customer.address_number}</p>
+                              {customer.address_complement && (
+                                <p className="text-muted-foreground">{customer.address_complement}</p>
+                              )}
+                              <p className="text-muted-foreground">
+                                {customer.neighborhood}
+                                {customer.city && `, ${customer.city}`}
+                              </p>
+                            </>
                           )}
                         </div>
                       </div>
-                    );
-                  })}
+                    )}
+                    
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      <span>Cliente desde {format(new Date(customer.created_at), "dd/MM/yyyy")}</span>
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                      <ShoppingBag className="h-5 w-5 mx-auto mb-1 text-primary" />
+                      <p className="text-2xl font-bold">{customer.total_orders}</p>
+                      <p className="text-xs text-muted-foreground">Pedidos</p>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                      <TrendingUp className="h-5 w-5 mx-auto mb-1 text-green-600" />
+                      <p className="text-lg font-bold">{formatPrice(customer.total_spent)}</p>
+                      <p className="text-xs text-muted-foreground">Total Gasto</p>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                      <ShoppingBag className="h-5 w-5 mx-auto mb-1 text-blue-600" />
+                      <p className="text-lg font-bold">{formatPrice(ticketMedio)}</p>
+                      <p className="text-xs text-muted-foreground">Ticket Médio</p>
+                    </div>
+                  </div>
                 </div>
-              </ScrollArea>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">
-                Nenhum pedido encontrado
-              </p>
+
+                <Separator />
+
+                {/* Order History */}
+                <div className="flex-1 overflow-hidden">
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <ShoppingBag className="h-4 w-4" />
+                    Histórico de Pedidos
+                  </h4>
+
+                  {isLoading ? (
+                    <div className="space-y-3">
+                      {[1, 2, 3].map((i) => (
+                        <Skeleton key={i} className="h-20 w-full" />
+                      ))}
+                    </div>
+                  ) : orders && orders.length > 0 ? (
+                    <ScrollArea className="h-[300px] pr-4">
+                      <div className="space-y-3">
+                        {orders.map((order) => {
+                          const status = statusConfig[order.status] || statusConfig.pending;
+                          return (
+                            <div 
+                              key={order.id} 
+                              className="border rounded-lg p-3 hover:bg-muted/30 transition-colors"
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold">#{order.order_number}</span>
+                                  <Badge variant={status.variant}>{status.label}</Badge>
+                                </div>
+                                <span className="font-bold text-primary">{formatPrice(order.total)}</span>
+                              </div>
+                              
+                              <div className="text-sm text-muted-foreground mb-2">
+                                {format(new Date(order.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                                {" • "}
+                                {paymentLabels[order.payment_method] || order.payment_method}
+                              </div>
+                              
+                              <div className="text-sm">
+                                {order.items.slice(0, 3).map((item, index) => (
+                                  <span key={item.id}>
+                                    {item.quantity}x {item.product_name}
+                                    {index < Math.min(order.items.length - 1, 2) && ", "}
+                                  </span>
+                                ))}
+                                {order.items.length > 3 && (
+                                  <span className="text-muted-foreground"> +{order.items.length - 3} mais</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </ScrollArea>
+                  ) : (
+                    <p className="text-center text-muted-foreground py-8">
+                      Nenhum pedido encontrado
+                    </p>
+                  )}
+                </div>
+              </>
             )}
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+
+          {isEditing && (
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={cancelEditing}>
+                <X className="h-4 w-4 mr-2" />
+                Cancelar
+              </Button>
+              <Button onClick={saveChanges} disabled={updateCustomer.isPending}>
+                <Save className="h-4 w-4 mr-2" />
+                Salvar
+              </Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Tem certeza que deseja excluir <strong>{customer.name}</strong>?
+              </p>
+              {customer.total_orders > 0 && (
+                <p className="text-amber-600 font-medium">
+                  ⚠️ Este cliente possui {customer.total_orders} pedido(s) registrado(s). 
+                  Os pedidos serão mantidos para histórico, mas não estarão mais vinculados a este cliente.
+                </p>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteCustomer.isPending}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
