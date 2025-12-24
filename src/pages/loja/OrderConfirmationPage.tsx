@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle, Clock, Package, Truck, Home, ArrowLeft, MessageCircle, Copy, Link2, XCircle } from "lucide-react";
+import { CheckCircle, Clock, Package, Truck, Home, ArrowLeft, Copy, Link2, XCircle } from "lucide-react";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
@@ -161,10 +161,9 @@ export default function OrderConfirmationPage() {
             <p className="text-green-700 dark:text-green-500">
               O estabelecimento foi notificado e em breve entrará em contato.
             </p>
-            <div className="flex items-center justify-center gap-2 pt-2 text-primary">
-              <MessageCircle className="h-5 w-5" />
-              <span className="font-medium">Você receberá atualizações no WhatsApp</span>
-            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              Use o número <strong>#{(order as any).order_number}</strong> para rastrear seu pedido
+            </p>
           </CardContent>
         </Card>
 

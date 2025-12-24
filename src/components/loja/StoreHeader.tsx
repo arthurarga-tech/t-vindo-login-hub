@@ -1,6 +1,8 @@
-import { Store, Clock, Phone } from "lucide-react";
+import { Store, Clock, Phone, Search } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
 import { CartDrawer } from "./CartDrawer";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface DayHours {
   open: string;
@@ -68,6 +70,8 @@ function getCurrentDayStatus(openingHours?: OpeningHours | null): {
 }
 
 export function StoreHeader({ establishmentName, logoUrl, bannerUrl, phone, openingHours, primaryColor }: StoreHeaderProps) {
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const status = getCurrentDayStatus(openingHours);
   
   // Use custom primary color or fallback
@@ -117,7 +121,18 @@ export function StoreHeader({ establishmentName, logoUrl, bannerUrl, phone, open
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              {/* Track order button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-primary-foreground hover:bg-primary-foreground/10"
+                onClick={() => navigate(`/loja/${slug}/rastrear`)}
+                title="Rastrear pedido"
+              >
+                <Search className="h-5 w-5" />
+              </Button>
+              
               {/* Status badge in highlight */}
               {openingHours && (
                 <Badge 
