@@ -19,6 +19,7 @@ import Configuracoes from "./pages/dashboard/Configuracoes";
 import StorePage from "./pages/loja/StorePage";
 import CheckoutPage from "./pages/loja/CheckoutPage";
 import OrderConfirmationPage from "./pages/loja/OrderConfirmationPage";
+import OrderTrackingPage from "./pages/loja/OrderTrackingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/loja/:slug" element={<StorePage />} />
             <Route path="/loja/:slug/checkout" element={<CheckoutPage />} />
             <Route path="/loja/:slug/pedido/:orderId" element={<OrderConfirmationPage />} />
+            <Route path="/loja/:slug/rastrear" element={<OrderTrackingPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
