@@ -8,6 +8,7 @@ import {
   useFinancialSummary,
   useDeleteTransaction,
   useInitializeCategories,
+  FinancialTransaction,
 } from "@/hooks/useFinancial";
 import { FinancialSummaryCards } from "@/components/financeiro/FinancialSummaryCards";
 import { FinancialFilters } from "@/components/financeiro/FinancialFilters";
@@ -30,6 +31,7 @@ export default function Financeiro() {
   const [paymentMethod, setPaymentMethod] = useState("all");
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<FinancialTransaction | null>(null);
 
   const { data: categories = [], isLoading: categoriesLoading } = useFinancialCategories();
   const initializeCategories = useInitializeCategories();
@@ -62,6 +64,18 @@ export default function Financeiro() {
       toast.success("Lançamento excluído!");
     } catch (error: any) {
       toast.error("Erro ao excluir: " + error.message);
+    }
+  };
+
+  const handleEdit = (transaction: FinancialTransaction) => {
+    setEditingTransaction(transaction);
+    setExpenseModalOpen(true);
+  };
+
+  const handleModalClose = (open: boolean) => {
+    setExpenseModalOpen(open);
+    if (!open) {
+      setEditingTransaction(null);
     }
   };
 
@@ -113,6 +127,7 @@ export default function Financeiro() {
             transactions={transactions}
             isLoading={transactionsLoading}
             onDelete={handleDelete}
+            onEdit={handleEdit}
           />
         </CardContent>
       </Card>
@@ -120,12 +135,13 @@ export default function Financeiro() {
       {/* Modals */}
       <ExpenseFormModal
         open={expenseModalOpen}
-        onOpenChange={setExpenseModalOpen}
+        onOpenChange={handleModalClose}
         categories={categories}
         onManageCategories={() => {
           setExpenseModalOpen(false);
           setCategoryModalOpen(true);
         }}
+        editTransaction={editingTransaction}
       />
 
       <CategoryManagerModal

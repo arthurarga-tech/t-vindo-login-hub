@@ -1,7 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trash2, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import { Trash2, Pencil, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { FinancialTransaction } from "@/hooks/useFinancial";
@@ -21,6 +21,7 @@ interface TransactionListProps {
   transactions: FinancialTransaction[];
   isLoading: boolean;
   onDelete: (id: string) => void;
+  onEdit?: (transaction: FinancialTransaction) => void;
 }
 
 function formatCurrency(value: number): string {
@@ -30,7 +31,7 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-export function TransactionList({ transactions, isLoading, onDelete }: TransactionListProps) {
+export function TransactionList({ transactions, isLoading, onDelete, onEdit }: TransactionListProps) {
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -69,7 +70,7 @@ export function TransactionList({ transactions, isLoading, onDelete }: Transacti
             <TableHead className="text-right">Bruto</TableHead>
             <TableHead className="text-right">Taxa</TableHead>
             <TableHead className="text-right">Líquido</TableHead>
-            <TableHead className="w-[50px]"></TableHead>
+            <TableHead className="w-[80px]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -107,27 +108,39 @@ export function TransactionList({ transactions, isLoading, onDelete }: Transacti
               </TableCell>
               <TableCell>
                 {!t.order_id && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex gap-1">
+                    {onEdit && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => onEdit(t)}
+                      >
+                        <Pencil className="h-4 w-4 text-muted-foreground" />
                       </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Excluir lançamento?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Esta ação não pode ser desfeita. O lançamento será removido permanentemente.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => onDelete(t.id)}>
-                          Excluir
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                    )}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Trash2 className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir lançamento?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta ação não pode ser desfeita. O lançamento será removido permanentemente.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => onDelete(t.id)}>
+                            Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 )}
               </TableCell>
             </TableRow>
