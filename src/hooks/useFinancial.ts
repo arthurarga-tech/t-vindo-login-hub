@@ -192,6 +192,43 @@ export function useCreateTransaction() {
   });
 }
 
+export function useUpdateTransaction() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      category_id,
+      gross_amount,
+      description,
+      transaction_date,
+    }: {
+      id: string;
+      category_id: string;
+      gross_amount: number;
+      description: string;
+      transaction_date: Date;
+    }) => {
+      const { error } = await supabase
+        .from("financial_transactions")
+        .update({
+          category_id,
+          gross_amount,
+          net_amount: gross_amount,
+          description,
+          transaction_date: transaction_date.toISOString().split("T")[0],
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["financial-transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["financial-summary"] });
+    },
+  });
+}
+
 export function useDeleteTransaction() {
   const queryClient = useQueryClient();
 
