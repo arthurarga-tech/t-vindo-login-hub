@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useCart } from "@/hooks/useCart";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, MapPin, ShoppingBag, Truck, Package, UtensilsCrossed } from "lucide-react";
+import { ArrowLeft, MapPin, ShoppingBag, Truck, Package, UtensilsCrossed, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,7 +40,11 @@ interface CustomerForm {
   city: string;
 }
 
-export function CheckoutForm() {
+interface CheckoutFormProps {
+  scheduledFor?: Date | null;
+}
+
+export function CheckoutForm({ scheduledFor }: CheckoutFormProps) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { items, totalPrice, clearCart } = useCart();
@@ -216,6 +220,7 @@ export function CheckoutForm() {
           notes: notes || null,
           status: "pending",
           change_for: paymentMethod === "cash" && changeForValue > 0 ? changeForValue : null,
+          scheduled_for: scheduledFor?.toISOString() || null,
         })
         .select()
         .single();
@@ -330,6 +335,30 @@ export function CheckoutForm() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+        {/* Scheduled Order Banner */}
+        {scheduledFor && (
+          <Card className="border-primary bg-primary/5">
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-3">
+                <Calendar className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium text-primary">Pedido Agendado</p>
+                  <p className="text-sm text-muted-foreground">
+                    Para {scheduledFor.toLocaleDateString("pt-BR", {
+                      weekday: "long",
+                      day: "2-digit",
+                      month: "long"
+                    })} às {scheduledFor.toLocaleTimeString("pt-BR", {
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    })}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
         {/* Order Summary */}
         <Card>
           <CardHeader>

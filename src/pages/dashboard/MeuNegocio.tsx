@@ -1,4 +1,4 @@
-import { Building2, Link2, Check, Copy, Clock, MapPin, Phone, FileText, Truck, Package, Store, UtensilsCrossed } from "lucide-react";
+import { Building2, Link2, Check, Copy, Clock, MapPin, Phone, FileText, Truck, Package, Store, UtensilsCrossed, CalendarClock } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -77,6 +77,9 @@ export default function MeuNegocio() {
   const [servicePickup, setServicePickup] = useState(false);
   const [serviceDineIn, setServiceDineIn] = useState(false);
   
+  // Scheduling
+  const [allowScheduling, setAllowScheduling] = useState(false);
+  
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -103,6 +106,9 @@ export default function MeuNegocio() {
       setServiceDelivery((establishment as any).service_delivery ?? true);
       setServicePickup((establishment as any).service_pickup ?? false);
       setServiceDineIn((establishment as any).service_dine_in ?? false);
+      
+      // Scheduling
+      setAllowScheduling((establishment as any).allow_scheduling ?? false);
     }
   }, [establishment]);
 
@@ -193,6 +199,7 @@ export default function MeuNegocio() {
           service_delivery: serviceDelivery,
           service_pickup: servicePickup,
           service_dine_in: serviceDineIn,
+          allow_scheduling: allowScheduling,
         })
         .eq("id", establishment.id);
 
@@ -473,6 +480,39 @@ export default function MeuNegocio() {
           {!serviceDelivery && !servicePickup && !serviceDineIn && (
             <p className="text-sm text-destructive">
               Selecione pelo menos uma modalidade de atendimento
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Card - Order Scheduling */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <CalendarClock className="h-5 w-5 text-primary" />
+            <CardTitle>Agendamento de Pedidos</CardTitle>
+          </div>
+          <CardDescription>Permite que clientes agendem pedidos quando a loja está fechada</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+            <div className="flex items-center gap-3">
+              <CalendarClock className="h-5 w-5 text-primary" />
+              <div>
+                <p className="font-medium">Permitir Agendamento</p>
+                <p className="text-sm text-muted-foreground">
+                  Clientes podem agendar pedidos para horários em que a loja estará aberta
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={allowScheduling}
+              onCheckedChange={setAllowScheduling}
+            />
+          </div>
+          {allowScheduling && (
+            <p className="text-sm text-muted-foreground">
+              Quando a loja estiver fechada, os clientes poderão agendar pedidos para o próximo horário disponível.
             </p>
           )}
         </CardContent>

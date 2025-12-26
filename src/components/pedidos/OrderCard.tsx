@@ -1,9 +1,9 @@
-import { Clock, User, MapPin, Phone, CreditCard, MessageSquare, Truck, Package, UtensilsCrossed, ChevronRight } from "lucide-react";
+import { Clock, User, MapPin, Phone, CreditCard, MessageSquare, Truck, Package, UtensilsCrossed, ChevronRight, Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Order, OrderStatus, OrderType, orderTypeLabels } from "@/hooks/useOrders";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface OrderCardProps {
@@ -65,6 +65,7 @@ export function OrderCard({ order, onClick, onQuickStatusChange, nextStatus, com
     addSuffix: true,
     locale: ptBR,
   });
+  const scheduledFor = (order as any).scheduled_for ? new Date((order as any).scheduled_for) : null;
 
   const getOrderTypeIcon = () => {
     switch (orderType) {
@@ -98,6 +99,12 @@ export function OrderCard({ order, onClick, onQuickStatusChange, nextStatus, com
             <Badge variant="outline" className={`flex items-center gap-0.5 ${compact ? "text-[10px] px-1 py-0" : "text-xs"}`}>
               {getOrderTypeIcon()} {typeInfo.label}
             </Badge>
+            {scheduledFor && (
+              <Badge variant="secondary" className={`flex items-center gap-0.5 ${compact ? "text-[10px] px-1 py-0" : "text-xs"}`}>
+                <Calendar className={compact ? "h-2.5 w-2.5" : "h-3 w-3"} />
+                {format(scheduledFor, "dd/MM HH:mm")}
+              </Badge>
+            )}
           </div>
           <div className={`flex items-center gap-1 text-muted-foreground ${compact ? 'text-[10px]' : 'text-xs'}`}>
             <Clock className={compact ? "h-2.5 w-2.5" : "h-3 w-3"} />

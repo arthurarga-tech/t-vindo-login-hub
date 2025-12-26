@@ -63,6 +63,24 @@ function currentTimeToMinutes(): number {
   return now.getHours() * 60 + now.getMinutes();
 }
 
+function minutesToTime(minutes: number): string {
+  const hours = Math.floor(minutes / 60) % 24;
+  const mins = minutes % 60;
+  return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
+}
+
+export interface ScheduleSlot {
+  time: string;
+  label: string;
+}
+
+export interface AvailableDay {
+  date: Date;
+  dayKey: DayKey;
+  label: string;
+  dayLabel: string;
+}
+
 export function useStoreOpeningHours(openingHours: OpeningHours | null | undefined) {
   return useMemo(() => {
     const checkIsOpen = (): boolean => {
@@ -125,6 +143,91 @@ export function useStoreOpeningHours(openingHours: OpeningHours | null | undefin
       return openingHours[currentDayKey] || null;
     };
 
+    // Get slots for a specific date with 30-minute intervals
+    const getAvailableScheduleSlots = (date: Date): ScheduleSlot[] => {
+      if (!openingHours) return [];
+
+      const dayKey = dayMapping[date.getDay()];
+      const dayHours = openingHours[dayKey];
+
+      if (!dayHours || dayHours.closed) return [];
+
+      const slots: ScheduleSlot[] = [];
+      const openMinutes = timeToMinutes(dayHours.open);
+      let closeMinutes = timeToMinutes(dayHours.close);
+
+      // Handle overnight hours
+      if (closeMinutes < openMinutes) {
+        closeMinutes += 24 * 60;
+      }
+
+      const now = new Date();
+      const isToday = date.toDateString() === now.toDateString();
+      const currentMinutes = isToday ? currentTimeToMinutes() : 0;
+
+      // Generate slots every 30 minutes, starting at least 30 minutes from now
+      const minStartTime = isToday ? currentMinutes + 30 : openMinutes;
+      const startSlot = Math.max(openMinutes, Math.ceil(minStartTime / 30) * 30);
+
+      for (let minutes = startSlot; minutes < closeMinutes - 15; minutes += 30) {
+        const displayMinutes = minutes % (24 * 60);
+        const time = minutesToTime(displayMinutes);
+        slots.push({
+          time,
+          label: time,
+        });
+      }
+
+      return slots;
+    };
+
+    // Get next N days that have opening hours
+    const getNextAvailableDays = (count: number = 7): AvailableDay[] => {
+      if (!openingHours) return [];
+
+      const days: AvailableDay[] = [];
+      const now = new Date();
+
+      for (let i = 0; i <= 14 && days.length < count; i++) {
+        const date = new Date(now);
+        date.setDate(date.getDate() + i);
+        date.setHours(0, 0, 0, 0);
+
+        const dayKey = dayMapping[date.getDay()];
+        const dayHours = openingHours[dayKey];
+
+        if (dayHours && !dayHours.closed) {
+          // For today, check if there's still time to schedule
+          if (i === 0) {
+            const slots = getAvailableScheduleSlots(date);
+            if (slots.length === 0) continue;
+          }
+
+          let label: string;
+          if (i === 0) {
+            label = "Hoje";
+          } else if (i === 1) {
+            label = "Amanhã";
+          } else {
+            label = date.toLocaleDateString("pt-BR", { 
+              weekday: "short", 
+              day: "2-digit",
+              month: "2-digit"
+            });
+          }
+
+          days.push({
+            date,
+            dayKey,
+            label,
+            dayLabel: dayLabels[dayKey],
+          });
+        }
+      }
+
+      return days;
+    };
+
     const isOpen = checkIsOpen();
     const nextOpenTime = !isOpen ? getNextOpenTime() : null;
     const todayHours = getTodayHours();
@@ -134,6 +237,8 @@ export function useStoreOpeningHours(openingHours: OpeningHours | null | undefin
       nextOpenTime,
       todayHours,
       hasOpeningHours: !!openingHours,
+      getAvailableScheduleSlots,
+      getNextAvailableDays,
     };
   }, [openingHours]);
 }

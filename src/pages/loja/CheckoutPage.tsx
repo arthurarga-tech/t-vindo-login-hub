@@ -1,18 +1,25 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { usePublicEstablishment } from "@/hooks/usePublicStore";
 import { CartProvider } from "@/hooks/useCart";
 import { CheckoutForm } from "@/components/loja/CheckoutForm";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, Clock, ArrowLeft } from "lucide-react";
+import { AlertCircle, Clock, ArrowLeft, Calendar } from "lucide-react";
 import { useStoreOpeningHours } from "@/hooks/useStoreOpeningHours";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ScheduleSelector } from "@/components/loja/ScheduleSelector";
 
 export default function CheckoutPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { data: establishment, isLoading } = usePublicEstablishment(slug);
   const { isOpen, nextOpenTime } = useStoreOpeningHours((establishment as any)?.opening_hours);
+  
+  const [scheduledFor, setScheduledFor] = useState<Date | null>(null);
+  const [showScheduler, setShowScheduler] = useState(false);
+
+  const allowScheduling = (establishment as any)?.allow_scheduling ?? false;
 
   if (isLoading) {
     return (
@@ -36,8 +43,8 @@ export default function CheckoutPage() {
     );
   }
 
-  // Block checkout if store is closed
-  if (!isOpen) {
+  // Block checkout if store is closed AND scheduling not allowed
+  if (!isOpen && !allowScheduling) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
@@ -59,9 +66,64 @@ export default function CheckoutPage() {
     );
   }
 
+  // Store is closed but scheduling is allowed - show scheduling option
+  if (!isOpen && allowScheduling && !showScheduler && !scheduledFor) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6 text-center space-y-4">
+            <Calendar className="h-16 w-16 text-primary mx-auto" />
+            <h2 className="text-xl font-semibold">Estabelecimento Fechado</h2>
+            <p className="text-muted-foreground">
+              {nextOpenTime
+                ? `Abrimos ${nextOpenTime.day} às ${nextOpenTime.time}.`
+                : "O estabelecimento está fechado no momento."}
+            </p>
+            <p className="text-sm">
+              Mas você pode agendar seu pedido para o próximo horário disponível!
+            </p>
+            <div className="flex flex-col gap-2">
+              <Button onClick={() => setShowScheduler(true)} className="gap-2">
+                <Calendar className="h-4 w-4" />
+                Agendar Pedido
+              </Button>
+              <Button variant="outline" onClick={() => navigate(`/loja/${slug}`)} className="gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Voltar para a loja
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show scheduler interface when scheduling
+  if (!isOpen && allowScheduling && showScheduler && !scheduledFor) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-md mx-auto space-y-4">
+          <Button 
+            variant="ghost" 
+            onClick={() => setShowScheduler(false)} 
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Voltar
+          </Button>
+          <ScheduleSelector
+            openingHours={(establishment as any)?.opening_hours}
+            onScheduleSelect={setScheduledFor}
+            selectedDate={scheduledFor}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <CartProvider establishmentSlug={slug || ""}>
-      <CheckoutForm />
+      <CheckoutForm scheduledFor={scheduledFor} />
     </CartProvider>
   );
 }
