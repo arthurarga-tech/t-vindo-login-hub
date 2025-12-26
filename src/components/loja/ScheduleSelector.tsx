@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStoreOpeningHours, ScheduleSlot, AvailableDay } from "@/hooks/useStoreOpeningHours";
+import { formatInSaoPaulo } from "@/lib/dateUtils";
+import { ptBR } from "date-fns/locale";
 
 interface ScheduleSelectorProps {
   openingHours: any;
@@ -138,14 +140,7 @@ export function ScheduleSelector({ openingHours, onScheduleSelect, selectedDate 
           <div className="flex items-center justify-center gap-2 p-3 bg-primary/10 rounded-lg">
             <Calendar className="h-4 w-4 text-primary" />
             <span className="font-medium">
-              Agendado para {selectedDate.toLocaleDateString("pt-BR", {
-                weekday: "long",
-                day: "2-digit",
-                month: "long"
-              })} às {selectedDate.toLocaleTimeString("pt-BR", {
-                hour: "2-digit",
-                minute: "2-digit"
-              })}
+              Agendado para {formatInSaoPaulo(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })} às {formatInSaoPaulo(selectedDate, "HH:mm", { locale: ptBR })}
             </span>
           </div>
         )}

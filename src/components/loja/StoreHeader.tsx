@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { CartDrawer } from "./CartDrawer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { getCurrentDayInSaoPaulo, getCurrentMinutesInSaoPaulo } from "@/lib/dateUtils";
 
 interface DayHours {
   open: string;
@@ -45,8 +46,7 @@ function getCurrentDayStatus(openingHours?: OpeningHours | null): {
 } {
   if (!openingHours) return { isOpen: true, text: "" };
 
-  const now = new Date();
-  const dayIndex = now.getDay();
+  const dayIndex = getCurrentDayInSaoPaulo();
   const currentDay = dayKeys[dayIndex];
   const dayHours = openingHours[currentDay];
 
@@ -54,7 +54,7 @@ function getCurrentDayStatus(openingHours?: OpeningHours | null): {
     return { isOpen: false, text: "Fechado hoje" };
   }
 
-  const currentTime = now.getHours() * 60 + now.getMinutes();
+  const currentTime = getCurrentMinutesInSaoPaulo();
   const [openHour, openMin] = dayHours.open.split(":").map(Number);
   const [closeHour, closeMin] = dayHours.close.split(":").map(Number);
   const openTime = openHour * 60 + openMin;

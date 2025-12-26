@@ -144,7 +144,7 @@ export function usePrintOrder() {
     <div class="store-name">${establishmentName}</div>
     <div class="order-number">PEDIDO #${order.order_number}</div>
     <div class="order-type">${orderTypeLabels[order.order_type] || order.order_type}</div>
-    <div>${format(new Date(order.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}</div>
+    <div>${formatInSaoPaulo(order.created_at, "dd/MM/yyyy HH:mm", { locale: ptBR })}</div>
   </div>
 
   <div class="section">

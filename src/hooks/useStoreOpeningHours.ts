@@ -1,4 +1,12 @@
 import { useMemo } from "react";
+import { 
+  getNowInSaoPaulo, 
+  getCurrentDayInSaoPaulo, 
+  getCurrentMinutesInSaoPaulo,
+  isTodayInSaoPaulo,
+  formatInSaoPaulo
+} from "@/lib/dateUtils";
+import { ptBR } from "date-fns/locale";
 
 interface DayHours {
   open: string;
@@ -58,11 +66,6 @@ function timeToMinutes(timeStr: string): number {
   return hours * 60 + minutes;
 }
 
-function currentTimeToMinutes(): number {
-  const now = new Date();
-  return now.getHours() * 60 + now.getMinutes();
-}
-
 function minutesToTime(minutes: number): string {
   const hours = Math.floor(minutes / 60) % 24;
   const mins = minutes % 60;
@@ -86,13 +89,12 @@ export function useStoreOpeningHours(openingHours: OpeningHours | null | undefin
     const checkIsOpen = (): boolean => {
       if (!openingHours) return true; // If no opening hours configured, assume open
 
-      const now = new Date();
-      const currentDay = dayMapping[now.getDay()];
+      const currentDay = dayMapping[getCurrentDayInSaoPaulo()];
       const todayHours = openingHours[currentDay];
 
       if (!todayHours || todayHours.closed) return false;
 
-      const currentMinutes = currentTimeToMinutes();
+      const currentMinutes = getCurrentMinutesInSaoPaulo();
       const openMinutes = timeToMinutes(todayHours.open);
       const closeMinutes = timeToMinutes(todayHours.close);
 
@@ -108,9 +110,9 @@ export function useStoreOpeningHours(openingHours: OpeningHours | null | undefin
     const getNextOpenTime = (): { day: string; time: string } | null => {
       if (!openingHours) return null;
 
-      const now = new Date();
-      const currentDayIndex = now.getDay();
-      const currentMinutes = currentTimeToMinutes();
+      const now = getNowInSaoPaulo();
+      const currentDayIndex = getCurrentDayInSaoPaulo();
+      const currentMinutes = getCurrentMinutesInSaoPaulo();
       const currentDayKey = dayMapping[currentDayIndex];
       const todayHours = openingHours[currentDayKey];
 
@@ -139,11 +141,10 @@ export function useStoreOpeningHours(openingHours: OpeningHours | null | undefin
 
     const getTodayHours = (): DayHours | null => {
       if (!openingHours) return null;
-      const currentDayKey = dayMapping[new Date().getDay()];
+      const currentDayKey = dayMapping[getCurrentDayInSaoPaulo()];
       return openingHours[currentDayKey] || null;
     };
 
-    // Get slots for a specific date with 30-minute intervals
     const getAvailableScheduleSlots = (date: Date): ScheduleSlot[] => {
       if (!openingHours) return [];
 
@@ -161,9 +162,9 @@ export function useStoreOpeningHours(openingHours: OpeningHours | null | undefin
         closeMinutes += 24 * 60;
       }
 
-      const now = new Date();
-      const isToday = date.toDateString() === now.toDateString();
-      const currentMinutes = isToday ? currentTimeToMinutes() : 0;
+      const now = getNowInSaoPaulo();
+      const isToday = isTodayInSaoPaulo(date);
+      const currentMinutes = isToday ? getCurrentMinutesInSaoPaulo() : 0;
 
       // Generate slots every 30 minutes, starting at least 30 minutes from now
       const minStartTime = isToday ? currentMinutes + 30 : openMinutes;
@@ -181,12 +182,11 @@ export function useStoreOpeningHours(openingHours: OpeningHours | null | undefin
       return slots;
     };
 
-    // Get next N days that have opening hours
     const getNextAvailableDays = (count: number = 7): AvailableDay[] => {
       if (!openingHours) return [];
 
       const days: AvailableDay[] = [];
-      const now = new Date();
+      const now = getNowInSaoPaulo();
 
       for (let i = 0; i <= 14 && days.length < count; i++) {
         const date = new Date(now);
@@ -209,11 +209,7 @@ export function useStoreOpeningHours(openingHours: OpeningHours | null | undefin
           } else if (i === 1) {
             label = "Amanhã";
           } else {
-            label = date.toLocaleDateString("pt-BR", { 
-              weekday: "short", 
-              day: "2-digit",
-              month: "2-digit"
-            });
+            label = formatInSaoPaulo(date, "EEE, dd/MM", { locale: ptBR });
           }
 
           days.push({

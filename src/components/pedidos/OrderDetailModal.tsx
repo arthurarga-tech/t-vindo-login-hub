@@ -15,11 +15,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Order, OrderStatus, useUpdateOrderStatus, orderTypeLabels, getStatusFlow } from "@/hooks/useOrders";
-import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { usePrintOrder } from "@/hooks/usePrintOrder";
 import { useWhatsAppNotification } from "@/hooks/useWhatsAppNotification";
+import { formatInSaoPaulo } from "@/lib/dateUtils";
 
 // WhatsApp Icon Component
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -169,7 +169,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
               <div>
                 <p className="text-sm font-medium text-primary">Pedido Agendado</p>
                 <p className="text-sm">
-                  {format(new Date((order as any).scheduled_for), "EEEE, dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
+                  {formatInSaoPaulo((order as any).scheduled_for, "EEEE, dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
                 </p>
               </div>
             </div>
@@ -179,7 +179,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Clock className="h-4 w-4" />
             <span>
-              {format(new Date(order.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+              {formatInSaoPaulo(order.created_at, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
             </span>
           </div>
 

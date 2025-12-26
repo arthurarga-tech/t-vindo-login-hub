@@ -409,7 +409,7 @@ export default function Usuarios() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {new Date(member.created_at).toLocaleDateString("pt-BR")}
+                      {new Date(member.created_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                     </TableCell>
                     <TableCell className="text-right">
                       {member.role !== "owner" && member.user_id !== user?.id && (

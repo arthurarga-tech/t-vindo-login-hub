@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { DollarSign } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { startOfMonth, endOfMonth } from "date-fns";
+import { getNowInSaoPaulo } from "@/lib/dateUtils";
 import {
   useFinancialCategories,
   useFinancialTransactions,
@@ -22,9 +23,12 @@ type PeriodType = "today" | "week" | "month" | "quarter" | "custom";
 
 export default function Financeiro() {
   const [period, setPeriod] = useState<PeriodType>("month");
-  const [dateRange, setDateRange] = useState({
-    start: startOfMonth(new Date()),
-    end: endOfMonth(new Date()),
+  const [dateRange, setDateRange] = useState(() => {
+    const now = getNowInSaoPaulo();
+    return {
+      start: startOfMonth(now),
+      end: endOfMonth(now),
+    };
   });
   const [type, setType] = useState<"all" | "income" | "expense">("all");
   const [categoryId, setCategoryId] = useState("all");

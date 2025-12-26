@@ -263,7 +263,7 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
                     
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Clock className="h-4 w-4" />
-                      <span>Cliente desde {format(new Date(customer.created_at), "dd/MM/yyyy")}</span>
+                      <span>Cliente desde {formatInSaoPaulo(customer.created_at, "dd/MM/yyyy")}</span>
                     </div>
                   </div>
 
@@ -321,7 +321,7 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
                               </div>
                               
                               <div className="text-sm text-muted-foreground mb-2">
-                                {format(new Date(order.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                                {formatInSaoPaulo(order.created_at, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                                 {" • "}
                                 {paymentLabels[order.payment_method] || order.payment_method}
                               </div>
