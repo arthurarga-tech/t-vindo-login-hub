@@ -21,6 +21,7 @@ import {
 import { CustomerWithStats, useCustomerOrders, useDeleteCustomer, useUpdateCustomer } from "@/hooks/useCustomers";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatInSaoPaulo } from "@/lib/dateUtils";
 
 interface CustomerDetailModalProps {
   customer: CustomerWithStats | null;
