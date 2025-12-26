@@ -20,6 +20,7 @@ import StorePage from "./pages/loja/StorePage";
 import CheckoutPage from "./pages/loja/CheckoutPage";
 import OrderConfirmationPage from "./pages/loja/OrderConfirmationPage";
 import OrderTrackingPage from "./pages/loja/OrderTrackingPage";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <DashboardLayout />
