@@ -10,25 +10,27 @@ interface OrderKanbanProps {
 }
 
 interface KanbanColumn {
-  status: OrderStatus;
+  id: string;
+  statuses: OrderStatus[];
   label: string;
   color: string;
 }
 
+// Columns that group related statuses from different order types
 const columns: KanbanColumn[] = [
-  { status: "pending", label: "Pendentes", color: "bg-red-500" },
-  { status: "confirmed", label: "Confirmados", color: "bg-blue-500" },
-  { status: "preparing", label: "Preparando", color: "bg-orange-500" },
-  { status: "ready", label: "Prontos", color: "bg-yellow-500" },
-  { status: "out_for_delivery", label: "Em Entrega", color: "bg-purple-500" },
-  { status: "delivered", label: "Entregues", color: "bg-green-500" },
+  { id: "pending", statuses: ["pending"], label: "Pendentes", color: "bg-red-500" },
+  { id: "confirmed", statuses: ["confirmed"], label: "Confirmados", color: "bg-blue-500" },
+  { id: "preparing", statuses: ["preparing"], label: "Preparando", color: "bg-orange-500" },
+  { id: "ready", statuses: ["ready", "ready_for_pickup", "ready_to_serve"], label: "Prontos", color: "bg-yellow-500" },
+  { id: "out_for_delivery", statuses: ["out_for_delivery"], label: "Em Entrega", color: "bg-purple-500" },
+  { id: "completed", statuses: ["delivered", "picked_up", "served"], label: "Finalizados", color: "bg-green-500" },
 ];
 
 export function OrderKanban({ orders, onOrderClick }: OrderKanbanProps) {
   const updateStatus = useUpdateOrderStatus();
 
-  const getOrdersByStatus = (status: OrderStatus) => {
-    return orders.filter((order) => order.status === status);
+  const getOrdersByStatuses = (statuses: OrderStatus[]) => {
+    return orders.filter((order) => statuses.includes(order.status as OrderStatus));
   };
 
   const handleQuickStatusChange = async (order: Order, newStatus: OrderStatus) => {
@@ -52,11 +54,11 @@ export function OrderKanban({ orders, onOrderClick }: OrderKanbanProps) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
       {columns.map((column) => {
-        const columnOrders = getOrdersByStatus(column.status);
+        const columnOrders = getOrdersByStatuses(column.statuses);
         
         return (
           <div 
-            key={column.status}
+            key={column.id}
             className="bg-muted/30 rounded-lg min-h-[200px]"
           >
             <div className="p-1.5 border-b flex items-center justify-between">
