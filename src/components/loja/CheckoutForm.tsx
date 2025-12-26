@@ -229,16 +229,58 @@ export function CheckoutForm({ scheduledFor }: CheckoutFormProps) {
 
       if (orderError) throw orderError;
 
-      // Create order items
+      // SECURITY: Fetch fresh prices from database to prevent client-side manipulation
+      const productIds = items.map(i => i.product.id);
+      const { data: freshProducts, error: priceError } = await supabase
+        .from('products')
+        .select('id, price, name')
+        .in('id', productIds);
+
+      if (priceError) throw priceError;
+
+      const productPriceMap = new Map(
+        freshProducts?.map(p => [p.id, { price: Number(p.price), name: p.name }]) || []
+      );
+
+      // Fetch fresh addon prices
+      const allAddonIds = items.flatMap(i => i.selectedAddons?.map(a => a.id) || []);
+      let addonPriceMap = new Map<string, { price: number; name: string }>();
+      
+      if (allAddonIds.length > 0) {
+        const { data: freshAddons, error: addonsError } = await supabase
+          .from('addons')
+          .select('id, price, name')
+          .in('id', allAddonIds);
+
+        if (addonsError) throw addonsError;
+
+        addonPriceMap = new Map(
+          freshAddons?.map(a => [a.id, { price: Number(a.price), name: a.name }]) || []
+        );
+      }
+
+      // Create order items with validated prices
       const orderItems = items.map((item) => {
-        const addonsTotal = item.selectedAddons?.reduce((sum, a) => sum + a.price * a.quantity, 0) ?? 0;
+        const productData = productPriceMap.get(item.product.id);
+        if (!productData) {
+          throw new Error(`Produto não encontrado ou inativo: ${item.product.name}`);
+        }
+
+        const validatedAddonsTotal = item.selectedAddons?.reduce((sum, a) => {
+          const addonData = addonPriceMap.get(a.id);
+          if (!addonData) {
+            throw new Error(`Adicional não encontrado ou inativo: ${a.name}`);
+          }
+          return sum + addonData.price * a.quantity;
+        }, 0) ?? 0;
+
         return {
           order_id: orderData.id,
           product_id: item.product.id,
-          product_name: item.product.name,
-          product_price: item.product.price,
+          product_name: productData.name,
+          product_price: productData.price,
           quantity: item.quantity,
-          total: (item.product.price + addonsTotal) * item.quantity,
+          total: (productData.price + validatedAddonsTotal) * item.quantity,
           observation: item.observation || null,
         };
       });
@@ -250,7 +292,7 @@ export function CheckoutForm({ scheduledFor }: CheckoutFormProps) {
 
       if (itemsError) throw itemsError;
 
-      // Create order item addons
+      // Create order item addons with validated prices
       const orderItemAddons: {
         order_item_id: string;
         addon_id: string;
@@ -263,13 +305,16 @@ export function CheckoutForm({ scheduledFor }: CheckoutFormProps) {
         if (item.selectedAddons && item.selectedAddons.length > 0) {
           const orderItemId = insertedItems[index].id;
           item.selectedAddons.forEach((addon) => {
-            orderItemAddons.push({
-              order_item_id: orderItemId,
-              addon_id: addon.id,
-              addon_name: addon.name,
-              addon_price: addon.price,
-              quantity: addon.quantity,
-            });
+            const addonData = addonPriceMap.get(addon.id);
+            if (addonData) {
+              orderItemAddons.push({
+                order_item_id: orderItemId,
+                addon_id: addon.id,
+                addon_name: addonData.name,
+                addon_price: addonData.price,
+                quantity: addon.quantity,
+              });
+            }
           });
         }
       });
