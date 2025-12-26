@@ -162,6 +162,19 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Scheduled Order */}
+          {(order as any).scheduled_for && (
+            <div className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg">
+              <Clock className="h-4 w-4 text-primary" />
+              <div>
+                <p className="text-sm font-medium text-primary">Pedido Agendado</p>
+                <p className="text-sm">
+                  {format(new Date((order as any).scheduled_for), "EEEE, dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Time */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Clock className="h-4 w-4" />

@@ -244,6 +244,7 @@ export type Database = {
       establishments: {
         Row: {
           address: string | null
+          allow_scheduling: boolean | null
           banner_url: string | null
           card_credit_fee: number | null
           card_debit_fee: number | null
@@ -273,6 +274,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          allow_scheduling?: boolean | null
           banner_url?: string | null
           card_credit_fee?: number | null
           card_debit_fee?: number | null
@@ -302,6 +304,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          allow_scheduling?: boolean | null
           banner_url?: string | null
           card_credit_fee?: number | null
           card_debit_fee?: number | null
@@ -582,6 +585,7 @@ export type Database = {
           order_number: number
           order_type: string
           payment_method: string
+          scheduled_for: string | null
           status: string
           subtotal: number
           total: number
@@ -598,6 +602,7 @@ export type Database = {
           order_number?: number
           order_type?: string
           payment_method: string
+          scheduled_for?: string | null
           status?: string
           subtotal?: number
           total?: number
@@ -614,6 +619,7 @@ export type Database = {
           order_number?: number
           order_type?: string
           payment_method?: string
+          scheduled_for?: string | null
           status?: string
           subtotal?: number
           total?: number
