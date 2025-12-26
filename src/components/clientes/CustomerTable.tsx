@@ -16,6 +16,7 @@ import {
 import { CustomerWithStats, useDeleteCustomer } from "@/hooks/useCustomers";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatInSaoPaulo, toSaoPauloTime } from "@/lib/dateUtils";
 
 interface CustomerTableProps {
   customers: CustomerWithStats[];

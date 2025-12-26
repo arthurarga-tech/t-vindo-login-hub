@@ -1,6 +1,6 @@
 import { Order } from "@/hooks/useOrders";
-import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatInSaoPaulo } from "@/lib/dateUtils";
 
 interface PrintOrderOptions {
   order: Order;
