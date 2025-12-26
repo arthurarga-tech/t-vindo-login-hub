@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Mail, Lock, Building2 } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Building2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,9 +34,11 @@ const LoginCard = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
   
   const { toast } = useToast();
-  const { signIn, signUp, user, loading } = useAuth();
+  const { signIn, signUp, user, loading, resetPassword } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -138,6 +140,102 @@ const LoginCard = () => {
     setIsLoading(false);
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const emailValidation = z.string().email("Email inválido").safeParse(resetEmail);
+      if (!emailValidation.success) {
+        toast({
+          title: "Erro de validação",
+          description: emailValidation.error.errors[0].message,
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      const { error } = await resetPassword(resetEmail);
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Não foi possível enviar o email de recuperação",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Email enviado!",
+          description: "Verifique sua caixa de entrada para redefinir sua senha.",
+        });
+        setShowForgotPassword(false);
+        setResetEmail("");
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro inesperado",
+        variant: "destructive",
+      });
+    }
+
+    setIsLoading(false);
+  };
+
+  if (showForgotPassword) {
+    return (
+      <Card className="w-full max-w-md shadow-lg border-border/50 bg-card/95 backdrop-blur-sm">
+        <CardHeader className="space-y-3 text-center pt-6 pb-2">
+          <CardTitle className="text-xl md:text-2xl font-semibold text-foreground">
+            Recuperar Senha
+          </CardTitle>
+          <CardDescription className="text-muted-foreground text-sm md:text-base">
+            Digite seu email para receber um link de recuperação de senha.
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="space-y-6 px-6 pb-6">
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="reset-email" className="text-foreground font-medium">
+                Email
+              </Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="reset-email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  className="pl-10 bg-background border-input focus:ring-2 focus:ring-primary/20"
+                  required
+                />
+              </div>
+            </div>
+
+            <Button type="submit" className="w-full font-medium" size="lg" disabled={isLoading}>
+              {isLoading ? "Enviando..." : "Enviar Link de Recuperação"}
+            </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full font-medium"
+              onClick={() => {
+                setShowForgotPassword(false);
+                setResetEmail("");
+              }}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar ao Login
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="w-full max-w-md shadow-lg border-border/50 bg-card/95 backdrop-blur-sm">
       <CardHeader className="space-y-3 text-center pt-6 pb-2">
@@ -203,12 +301,13 @@ const LoginCard = () => {
               </div>
 
               <div className="text-right">
-                <a
-                  href="#"
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
                   className="text-sm text-primary hover:text-primary/80 transition-colors hover:underline"
                 >
                   Esqueci minha senha
-                </a>
+                </button>
               </div>
 
               <Button type="submit" className="w-full font-medium" size="lg" disabled={isLoading}>
