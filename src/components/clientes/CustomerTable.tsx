@@ -82,7 +82,7 @@ export function CustomerTable({ customers, onCustomerClick }: CustomerTableProps
                 <TableCell>
                   <div className="font-medium">{customer.name}</div>
                   <div className="text-xs text-muted-foreground">
-                    Cliente desde {format(new Date(customer.created_at), "dd/MM/yyyy")}
+                    Cliente desde {formatInSaoPaulo(customer.created_at, "dd/MM/yyyy")}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -121,7 +121,7 @@ export function CustomerTable({ customers, onCustomerClick }: CustomerTableProps
                 <TableCell>
                   {customer.last_order_at ? (
                     <span className="text-sm text-muted-foreground">
-                      {formatDistanceToNow(new Date(customer.last_order_at), { 
+                      {formatDistanceToNow(toSaoPauloTime(customer.last_order_at), { 
                         addSuffix: true, 
                         locale: ptBR 
                       })}

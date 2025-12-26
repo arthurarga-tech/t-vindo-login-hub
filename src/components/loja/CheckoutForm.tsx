@@ -14,6 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { usePublicEstablishment } from "@/hooks/usePublicStore";
 import { z } from "zod";
+import { formatInSaoPaulo } from "@/lib/dateUtils";
+import { ptBR } from "date-fns/locale";
 
 type PaymentMethod = "cash" | "credit" | "debit" | "pix";
 type OrderType = "delivery" | "pickup" | "dine_in";
@@ -344,14 +346,7 @@ export function CheckoutForm({ scheduledFor }: CheckoutFormProps) {
                 <div>
                   <p className="font-medium text-primary">Pedido Agendado</p>
                   <p className="text-sm text-muted-foreground">
-                    Para {scheduledFor.toLocaleDateString("pt-BR", {
-                      weekday: "long",
-                      day: "2-digit",
-                      month: "long"
-                    })} às {scheduledFor.toLocaleTimeString("pt-BR", {
-                      hour: "2-digit",
-                      minute: "2-digit"
-                    })}
+                    Para {formatInSaoPaulo(scheduledFor, "EEEE, dd 'de' MMMM", { locale: ptBR })} às {formatInSaoPaulo(scheduledFor, "HH:mm", { locale: ptBR })}
                   </p>
                 </div>
               </div>

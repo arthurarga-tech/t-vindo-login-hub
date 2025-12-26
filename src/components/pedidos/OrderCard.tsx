@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Order, OrderStatus, OrderType, orderTypeLabels } from "@/hooks/useOrders";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toSaoPauloTime } from "@/lib/dateUtils";
 
 interface OrderCardProps {
   order: Order;
@@ -61,11 +62,11 @@ export function OrderCard({ order, onClick, onQuickStatusChange, nextStatus, com
   const status = statusConfig[order.status as OrderStatus] || statusConfig.pending;
   const orderType = (order.order_type || "delivery") as OrderType;
   const typeInfo = orderTypeLabels[orderType];
-  const timeAgo = formatDistanceToNow(new Date(order.created_at), {
+  const timeAgo = formatDistanceToNow(toSaoPauloTime(order.created_at), {
     addSuffix: true,
     locale: ptBR,
   });
-  const scheduledFor = (order as any).scheduled_for ? new Date((order as any).scheduled_for) : null;
+  const scheduledFor = (order as any).scheduled_for ? toSaoPauloTime((order as any).scheduled_for) : null;
 
   const getOrderTypeIcon = () => {
     switch (orderType) {

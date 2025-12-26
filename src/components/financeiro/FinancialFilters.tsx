@@ -8,6 +8,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { FinancialCategory } from "@/hooks/useFinancial";
 import { DateRange } from "react-day-picker";
+import { getNowInSaoPaulo } from "@/lib/dateUtils";
 
 type PeriodType = "today" | "week" | "month" | "quarter" | "custom";
 
@@ -42,7 +43,7 @@ export function FinancialFilters({
 }: FinancialFiltersProps) {
   const handlePeriodChange = (newPeriod: PeriodType) => {
     onPeriodChange(newPeriod);
-    const today = new Date();
+    const today = getNowInSaoPaulo();
     
     switch (newPeriod) {
       case "today":

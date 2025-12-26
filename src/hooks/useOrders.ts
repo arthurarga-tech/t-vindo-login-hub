@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEstablishment } from "./useEstablishment";
 import { useEffect, useRef, useCallback } from "react";
+import { getNowInSaoPaulo } from "@/lib/dateUtils";
 
 export type OrderStatus = 
   | "pending" 
@@ -208,7 +209,7 @@ export function useUpdateOrderStatus() {
       // Update order status
       const { error: orderError } = await supabase
         .from("orders")
-        .update({ status, updated_at: new Date().toISOString() })
+        .update({ status, updated_at: getNowInSaoPaulo().toISOString() })
         .eq("id", orderId);
 
       if (orderError) throw orderError;

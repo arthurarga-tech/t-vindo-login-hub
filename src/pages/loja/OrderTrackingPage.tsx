@@ -12,6 +12,8 @@ import { CheckCircle, Clock, Package, Truck, Home, ArrowLeft, Search, XCircle, M
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { usePublicEstablishment } from "@/hooks/usePublicStore";
+import { formatInSaoPaulo } from "@/lib/dateUtils";
+import { ptBR } from "date-fns/locale";
 
 const statusConfig: Record<string, { label: string; icon: React.ComponentType<any>; color: string }> = {
   pending: { label: "Pendente", icon: Clock, color: "bg-yellow-500" },
@@ -214,13 +216,7 @@ export default function OrderTrackingPage() {
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Clock className="h-4 w-4" />
                   <span>
-                    {new Date(order.created_at).toLocaleDateString("pt-BR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {formatInSaoPaulo(order.created_at, "dd/MM/yyyy HH:mm", { locale: ptBR })}
                   </span>
                   <span className="mx-2">•</span>
                   <span>{orderTypeLabels[order.order_type] || order.order_type}</span>
