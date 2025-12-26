@@ -42,6 +42,38 @@ const orderTypeLabels: Record<string, string> = {
   dine_in: "Consumo local",
 };
 
+interface OrderItem {
+  id: string;
+  product_name: string;
+  quantity: number;
+  total: number;
+}
+
+interface Customer {
+  name: string;
+  phone: string;
+  address: string;
+  address_number: string;
+  address_complement: string;
+  neighborhood: string;
+  city: string;
+}
+
+interface PublicOrder {
+  id: string;
+  order_number: number;
+  status: string;
+  order_type: string;
+  created_at: string;
+  total: number;
+  delivery_fee: number;
+  payment_method: string;
+  change_for: number | null;
+  notes: string | null;
+  customer: Customer;
+  items: OrderItem[];
+}
+
 export default function OrderTrackingPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -51,24 +83,20 @@ export default function OrderTrackingPage() {
 
   const { data: establishment } = usePublicEstablishment(slug || "");
 
+  // Use secure RPC function instead of direct query
   const { data: order, isLoading, isError } = useQuery({
     queryKey: ["order-by-number", establishment?.id, searchedNumber],
     queryFn: async () => {
       if (!establishment?.id || !searchedNumber) return null;
 
       const { data, error } = await supabase
-        .from("orders")
-        .select(`
-          *,
-          customer:customers(*),
-          items:order_items(*)
-        `)
-        .eq("establishment_id", establishment.id)
-        .eq("order_number", searchedNumber)
-        .single();
+        .rpc('get_public_order_by_number', {
+          p_establishment_id: establishment.id,
+          p_order_number: searchedNumber
+        });
 
       if (error) throw error;
-      return data;
+      return data as unknown as PublicOrder | null;
     },
     enabled: !!establishment?.id && !!searchedNumber,
     retry: false,
@@ -186,7 +214,7 @@ export default function OrderTrackingPage() {
         )}
 
         {/* Not Found State */}
-        {isError && searchedNumber && (
+        {(isError || (searchedNumber && !isLoading && !order)) && (
           <Card className="border-destructive/50 bg-destructive/10">
             <CardContent className="pt-6 text-center space-y-3">
               <XCircle className="h-12 w-12 text-destructive mx-auto" />
@@ -230,7 +258,7 @@ export default function OrderTrackingPage() {
                 <CardTitle className="text-lg">Itens do Pedido</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {order.items?.map((item: any) => (
+                {order.items?.map((item) => (
                   <div key={item.id} className="flex justify-between text-sm">
                     <span>
                       {item.quantity}x {item.product_name}

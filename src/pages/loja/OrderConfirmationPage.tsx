@@ -24,26 +24,57 @@ const statusConfig: Record<string, { label: string; icon: React.ComponentType<an
   cancelled: { label: "Cancelado", icon: XCircle, color: "bg-red-500" },
 };
 
+interface OrderItem {
+  id: string;
+  product_name: string;
+  quantity: number;
+  total: number;
+  product_price: number;
+}
+
+interface Customer {
+  name: string;
+  phone: string;
+  address: string;
+  address_number: string;
+  address_complement: string;
+  neighborhood: string;
+  city: string;
+}
+
+interface PublicOrder {
+  id: string;
+  order_number: number;
+  status: string;
+  order_type: string;
+  created_at: string;
+  total: number;
+  delivery_fee: number;
+  subtotal: number;
+  payment_method: string;
+  change_for: number | null;
+  notes: string | null;
+  establishment_id: string;
+  customer: Customer;
+  items: OrderItem[];
+}
+
 export default function OrderConfirmationPage() {
   const { slug, orderId } = useParams<{ slug: string; orderId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  // Use secure RPC function instead of direct query
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", orderId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("orders")
-        .select(`
-          *,
-          customer:customers(*),
-          items:order_items(*)
-        `)
-        .eq("id", orderId)
-        .single();
+        .rpc('get_public_order_by_id', {
+          p_order_id: orderId
+        });
 
       if (error) throw error;
-      return data;
+      return data as unknown as PublicOrder | null;
     },
     enabled: !!orderId,
   });
@@ -156,13 +187,13 @@ export default function OrderConfirmationPage() {
           <CardContent className="pt-6 text-center space-y-3">
             <CheckCircle className="h-16 w-16 text-green-600 mx-auto" />
             <h2 className="text-2xl font-bold text-green-800 dark:text-green-400">
-              Pedido #{(order as any).order_number || order.id.slice(0, 6).toUpperCase()} enviado!
+              Pedido #{order.order_number || order.id.slice(0, 6).toUpperCase()} enviado!
             </h2>
             <p className="text-green-700 dark:text-green-500">
               O estabelecimento foi notificado e em breve entrará em contato.
             </p>
             <p className="text-sm text-muted-foreground mt-2">
-              Use o número <strong>#{(order as any).order_number}</strong> para rastrear seu pedido
+              Use o número <strong>#{order.order_number}</strong> para rastrear seu pedido
             </p>
           </CardContent>
         </Card>
@@ -204,7 +235,7 @@ export default function OrderConfirmationPage() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Pedido #{(order as any).order_number || order.id.slice(0, 8).toUpperCase()}
+              Pedido #{order.order_number || order.id.slice(0, 8).toUpperCase()}
             </p>
           </CardContent>
         </Card>
@@ -215,7 +246,7 @@ export default function OrderConfirmationPage() {
             <CardTitle className="text-lg">Itens do Pedido</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {order.items?.map((item: any) => (
+            {order.items?.map((item) => (
               <div key={item.id} className="flex justify-between text-sm">
                 <span>
                   {item.quantity}x {item.product_name}
@@ -260,13 +291,13 @@ export default function OrderConfirmationPage() {
           <CardContent className="space-y-2">
             <p className="font-medium">{paymentMethodLabels[order.payment_method]}</p>
             <p className="text-sm text-muted-foreground">Pagamento na entrega</p>
-            {order.payment_method === "cash" && (order as any).change_for && (order as any).change_for > 0 && (
+            {order.payment_method === "cash" && order.change_for && order.change_for > 0 && (
               <div className="pt-2 border-t space-y-1">
                 <p className="text-sm">
-                  Troco para: <span className="font-medium">{formatPrice((order as any).change_for)}</span>
+                  Troco para: <span className="font-medium">{formatPrice(order.change_for)}</span>
                 </p>
                 <p className="text-sm text-primary font-medium">
-                  Troco: {formatPrice((order as any).change_for - order.total)}
+                  Troco: {formatPrice(order.change_for - order.total)}
                 </p>
               </div>
             )}
