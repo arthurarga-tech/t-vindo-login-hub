@@ -3,6 +3,7 @@ import { Upload, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useEstablishment } from "@/hooks/useEstablishment";
 
 interface ImageUploadProps {
   value?: string;
@@ -13,6 +14,7 @@ interface ImageUploadProps {
 export function ImageUpload({ value, onChange, folder = "products" }: ImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { data: establishment } = useEstablishment();
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -30,11 +32,17 @@ export function ImageUpload({ value, onChange, folder = "products" }: ImageUploa
       return;
     }
 
+    if (!establishment?.id) {
+      toast.error("Estabelecimento não encontrado");
+      return;
+    }
+
     setIsUploading(true);
 
     try {
       const fileExt = file.name.split(".").pop();
-      const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      // SECURITY: Use establishment_id as folder prefix for ownership validation via RLS
+      const fileName = `${establishment.id}/${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from("product-images")
