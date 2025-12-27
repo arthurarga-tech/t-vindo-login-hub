@@ -118,11 +118,21 @@ export function useDeleteCategory(establishmentId: string | undefined) {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // First, set category_id to null for all products in this category
+      const { error: updateError } = await supabase
+        .from("products")
+        .update({ category_id: null })
+        .eq("category_id", id);
+      
+      if (updateError) throw updateError;
+
+      // Then delete the category
       const { error } = await supabase.from("categories").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories", establishmentId] });
+      queryClient.invalidateQueries({ queryKey: ["products", establishmentId] });
       toast.success("Categoria excluída com sucesso!");
     },
     onError: (error) => {
