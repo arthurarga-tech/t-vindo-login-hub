@@ -108,8 +108,6 @@ export default function StorePage() {
     return acc;
   }, {} as Record<string, typeof products>);
 
-  const uncategorizedProducts = products?.filter((p) => !p.category_id) || [];
-
   return (
     <CartProvider establishmentSlug={slug || ""}>
       <div className="min-h-screen bg-background" style={customStyles}>
@@ -172,12 +170,6 @@ export default function StorePage() {
                 );
               })}
 
-              {uncategorizedProducts.length > 0 && (
-                <CategorySection
-                  category={{ id: "uncategorized", name: "Outros", image_url: null }}
-                  products={uncategorizedProducts}
-                />
-              )}
 
               {(!products || products.length === 0) && (
                 <div className="text-center py-12">
