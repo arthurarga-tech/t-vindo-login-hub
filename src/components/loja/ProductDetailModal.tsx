@@ -136,7 +136,7 @@ export function ProductDetailModal({
             </Label>
             <Textarea
               id="observation"
-              placeholder="Ex: Sem cebola, sem picles, bem passado..."
+              placeholder="Digite aqui observações adicionais se necessário"
               value={observation}
               onChange={(e) => setObservation(e.target.value)}
               className="resize-none"
