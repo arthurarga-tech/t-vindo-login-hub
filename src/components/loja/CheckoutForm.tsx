@@ -365,23 +365,23 @@ export function CheckoutForm({ scheduledFor }: CheckoutFormProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-primary text-primary-foreground py-4 shadow-md sticky top-0 z-50">
-        <div className="max-w-2xl mx-auto px-4">
-          <div className="flex items-center gap-3">
+      <header className="bg-primary text-primary-foreground py-3 sm:py-4 shadow-md sticky top-0 z-50">
+        <div className="max-w-2xl mx-auto px-3 sm:px-4">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Button
               variant="ghost"
               size="icon"
-              className="text-primary-foreground hover:bg-primary-foreground/10"
+              className="h-8 w-8 sm:h-10 sm:w-10 text-primary-foreground hover:bg-primary-foreground/10"
               onClick={() => navigate(`/loja/${slug}`)}
             >
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
-            <h1 className="text-xl font-bold">Finalizar Pedido</h1>
+            <h1 className="text-lg sm:text-xl font-bold">Finalizar Pedido</h1>
           </div>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      <main className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Scheduled Order Banner */}
         {scheduledFor && (
           <Card className="border-primary bg-primary/5">
@@ -401,8 +401,8 @@ export function CheckoutForm({ scheduledFor }: CheckoutFormProps) {
         
         {/* Order Summary */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Resumo do Pedido</CardTitle>
+          <CardHeader className="pb-2 sm:pb-4">
+            <CardTitle className="text-base sm:text-lg">Resumo do Pedido</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {items.map((item, index) => {
@@ -447,8 +447,8 @@ export function CheckoutForm({ scheduledFor }: CheckoutFormProps) {
         {/* Order Type Selection */}
         {showModalitySelector && (
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Como deseja receber?</CardTitle>
+            <CardHeader className="pb-2 sm:pb-4">
+              <CardTitle className="text-base sm:text-lg">Como deseja receber?</CardTitle>
             </CardHeader>
             <CardContent>
               <RadioGroup
