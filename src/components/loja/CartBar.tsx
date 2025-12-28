@@ -30,7 +30,7 @@ export function CartBar({ isStoreOpen = true }: CartBarProps) {
 
   return (
     <div 
-      className={`fixed bottom-0 left-0 right-0 z-50 p-4 bg-background border-t shadow-lg transition-all duration-300 ease-out ${
+      className={`fixed bottom-0 left-0 right-0 z-50 p-3 sm:p-4 bg-background border-t shadow-lg transition-all duration-300 ease-out ${
         totalItems === 0 
           ? "translate-y-full opacity-0 pointer-events-none" 
           : "translate-y-0 opacity-100"
@@ -38,7 +38,7 @@ export function CartBar({ isStoreOpen = true }: CartBarProps) {
     >
       <div className="max-w-4xl mx-auto">
         <Button 
-          className={`w-full h-14 text-base font-semibold ${!isStoreOpen ? 'opacity-70' : ''}`}
+          className={`w-full h-12 sm:h-14 text-sm sm:text-base font-semibold ${!isStoreOpen ? 'opacity-70' : ''}`}
           size="lg"
           onClick={handleClick}
           style={{ 
@@ -49,18 +49,24 @@ export function CartBar({ isStoreOpen = true }: CartBarProps) {
             <div className="flex items-center gap-2">
               {!isStoreOpen ? (
                 <>
-                  <Clock className="h-5 w-5" />
-                  <span>Fechado</span>
+                  <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="text-xs sm:text-base">Fechado</span>
                 </>
               ) : (
                 <>
-                  <ShoppingCart className="h-5 w-5" />
-                  <span>{totalItems} {totalItems === 1 ? 'item' : 'itens'}</span>
+                  <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="text-xs sm:text-base">{totalItems} {totalItems === 1 ? 'item' : 'itens'}</span>
                 </>
               )}
             </div>
-            <span>
-              {isStoreOpen ? `Finalizar Pedido • ${formatPrice(totalPrice)}` : formatPrice(totalPrice)}
+            <span className="text-xs sm:text-base">
+              {isStoreOpen ? (
+                <>
+                  <span className="hidden sm:inline">Finalizar Pedido • </span>
+                  <span className="sm:hidden">Finalizar • </span>
+                  {formatPrice(totalPrice)}
+                </>
+              ) : formatPrice(totalPrice)}
             </span>
           </div>
         </Button>

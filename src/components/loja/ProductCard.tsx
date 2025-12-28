@@ -26,28 +26,9 @@ export function ProductCard({ product }: ProductCardProps) {
         onClick={() => setModalOpen(true)}
       >
         <CardContent className="p-0">
-          <div className="flex">
-            <div className="flex-1 p-4">
-              <h3 className="font-medium text-foreground line-clamp-2">
-                {product.name}
-              </h3>
-              {product.description && (
-                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                  {product.description}
-                </p>
-              )}
-              <div className="flex items-center justify-between mt-2">
-                <p className="text-primary font-semibold">
-                  {formatPrice(product.price)}
-                </p>
-                <Button size="sm" onClick={(e) => { e.stopPropagation(); setModalOpen(true); }}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Adicionar
-                </Button>
-              </div>
-            </div>
-            
-            <div className="w-24 h-24 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row">
+            {/* Image first on mobile, right side on desktop */}
+            <div className="w-full h-32 sm:w-24 sm:h-24 sm:order-2 flex-shrink-0">
               {product.image_url ? (
                 <img
                   src={product.image_url}
@@ -59,6 +40,26 @@ export function ProductCard({ product }: ProductCardProps) {
                   <ImageIcon className="h-8 w-8 text-muted-foreground" />
                 </div>
               )}
+            </div>
+            
+            <div className="flex-1 p-3 sm:p-4 sm:order-1">
+              <h3 className="font-medium text-foreground line-clamp-2 text-sm sm:text-base">
+                {product.name}
+              </h3>
+              {product.description && (
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
+                  {product.description}
+                </p>
+              )}
+              <div className="flex items-center justify-between mt-2 gap-2">
+                <p className="text-primary font-semibold text-sm sm:text-base">
+                  {formatPrice(product.price)}
+                </p>
+                <Button size="sm" className="text-xs sm:text-sm h-8 sm:h-9" onClick={(e) => { e.stopPropagation(); setModalOpen(true); }}>
+                  <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                  Adicionar
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>

@@ -22,20 +22,20 @@ export function CartDrawer() {
       <SheetTrigger asChild>
         <Button 
           size="icon" 
-          className={`relative bg-primary-foreground text-primary hover:bg-primary-foreground/90 shadow-md ${totalItems > 0 ? 'animate-pulse' : ''}`}
+          className={`relative h-8 w-8 sm:h-10 sm:w-10 bg-primary-foreground text-primary hover:bg-primary-foreground/90 shadow-md ${totalItems > 0 ? 'animate-pulse' : ''}`}
         >
-          <ShoppingCart className="h-5 w-5" />
+          <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
           {totalItems > 0 && (
-            <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive text-destructive-foreground animate-bounce">
+            <Badge className="absolute -top-2 -right-2 h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center p-0 text-[10px] sm:text-xs bg-destructive text-destructive-foreground animate-bounce">
               {totalItems}
             </Badge>
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="flex flex-col">
+      <SheetContent className="flex flex-col w-full sm:max-w-md">
         <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <ShoppingCart className="h-5 w-5" />
+          <SheetTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
             Carrinho
           </SheetTitle>
         </SheetHeader>

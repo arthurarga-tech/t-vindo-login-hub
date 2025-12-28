@@ -120,12 +120,12 @@ export default function StorePage() {
           primaryColor={(establishment as any).theme_primary_color}
         />
         
-        <main className="max-w-4xl mx-auto px-4 py-6 pb-24">
+        <main className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-24">
           {!isOpen && (
-            <Alert variant="destructive" className="mb-6">
+            <Alert variant="destructive" className="mb-4 sm:mb-6">
               <Clock className="h-4 w-4" />
-              <AlertTitle>Estabelecimento Fechado</AlertTitle>
-              <AlertDescription>
+              <AlertTitle className="text-sm sm:text-base">Estabelecimento Fechado</AlertTitle>
+              <AlertDescription className="text-xs sm:text-sm">
                 {nextOpenTime
                   ? `Abrimos ${nextOpenTime.day} às ${nextOpenTime.time}`
                   : "Consulte os horários de funcionamento abaixo"}
@@ -143,20 +143,20 @@ export default function StorePage() {
             minOrderValue={(establishment as any).min_order_value}
           />
           {isLoading ? (
-            <div className="space-y-8">
+            <div className="space-y-6 sm:space-y-8">
               {[1, 2].map((i) => (
                 <div key={i}>
-                  <Skeleton className="h-8 w-48 mb-4" />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Skeleton className="h-6 sm:h-8 w-36 sm:w-48 mb-3 sm:mb-4" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     {[1, 2, 3, 4].map((j) => (
-                      <Skeleton key={j} className="h-32" />
+                      <Skeleton key={j} className="h-28 sm:h-32" />
                     ))}
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="space-y-8">
+            <div className="space-y-6 sm:space-y-8">
               {categories?.map((category) => {
                 const categoryProducts = productsByCategory?.[category.id] || [];
                 if (categoryProducts.length === 0) return null;

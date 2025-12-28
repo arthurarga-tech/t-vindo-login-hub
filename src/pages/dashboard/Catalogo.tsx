@@ -133,28 +133,28 @@ export default function Catalogo() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <BookOpen className="h-8 w-8 text-primary" />
-          <h1 className="text-2xl font-bold text-foreground">Catálogo</h1>
+          <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Catálogo</h1>
         </div>
-        <Button onClick={handleCreateCategory}>
+        <Button onClick={handleCreateCategory} className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
           Nova Categoria
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
         {/* Categories Sidebar */}
         <Card className="lg:col-span-1">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Categorias</CardTitle>
-            <CardDescription>
+          <CardHeader className="pb-2 sm:pb-3">
+            <CardTitle className="text-base sm:text-lg">Categorias</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               {categories.length} {categories.length === 1 ? "categoria" : "categorias"}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6">
             {isLoadingCategories ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -173,26 +173,26 @@ export default function Catalogo() {
 
         {/* Products Grid */}
         <Card className="lg:col-span-3">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
+          <CardHeader className="pb-2 sm:pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <CardTitle className="text-lg">
+                <CardTitle className="text-base sm:text-lg">
                   {selectedCategory ? selectedCategory.name : "Produtos"}
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs sm:text-sm">
                   {products.length} {products.length === 1 ? "produto" : "produtos"}
                   {selectedCategory && !selectedCategory.active && " (categoria inativa)"}
                 </CardDescription>
               </div>
-              <Button onClick={handleCreateProduct} disabled={!selectedCategory}>
+              <Button onClick={handleCreateProduct} disabled={!selectedCategory} className="w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Produto
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6">
             {!selectedCategory ? (
-              <div className="text-center py-12 text-muted-foreground">
+              <div className="text-center py-8 sm:py-12 text-muted-foreground text-sm sm:text-base">
                 Selecione uma categoria para ver os produtos
               </div>
             ) : (

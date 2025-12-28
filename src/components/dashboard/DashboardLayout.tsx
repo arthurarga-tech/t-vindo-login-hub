@@ -7,12 +7,12 @@ export function DashboardLayout() {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <DashboardSidebar />
-        <main className="flex-1 flex flex-col">
-          <header className="h-14 border-b border-border flex items-center px-4 md:px-6">
-            <SidebarTrigger className="mr-4" />
-            <h1 className="text-lg font-semibold text-foreground">Painel do Estabelecimento</h1>
+        <main className="flex-1 flex flex-col min-w-0">
+          <header className="h-12 sm:h-14 border-b border-border flex items-center px-3 sm:px-4 md:px-6">
+            <SidebarTrigger className="mr-2 sm:mr-4" />
+            <h1 className="text-sm sm:text-lg font-semibold text-foreground truncate">Painel do Estabelecimento</h1>
           </header>
-          <div className="flex-1 p-4 md:p-6">
+          <div className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto">
             <Outlet />
           </div>
         </main>

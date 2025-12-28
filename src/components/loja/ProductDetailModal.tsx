@@ -83,14 +83,14 @@ export function ProductDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle>{product.name}</DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl">{product.name}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {/* Product Image */}
-          <div className="w-full h-48 rounded-lg overflow-hidden">
+          <div className="w-full h-40 sm:h-48 rounded-lg overflow-hidden">
             {product.image_url ? (
               <img
                 src={product.image_url}
@@ -99,20 +99,20 @@ export function ProductDetailModal({
               />
             ) : (
               <div className="w-full h-full bg-muted flex items-center justify-center">
-                <ImageIcon className="h-16 w-16 text-muted-foreground" />
+                <ImageIcon className="h-12 w-12 sm:h-16 sm:w-16 text-muted-foreground" />
               </div>
             )}
           </div>
 
           {/* Description */}
           {product.description && (
-            <p className="text-sm text-muted-foreground">{product.description}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">{product.description}</p>
           )}
 
           {/* Base Price */}
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Preço base:</span>
-            <span className="text-lg font-semibold text-primary">
+            <span className="text-xs sm:text-sm text-muted-foreground">Preço base:</span>
+            <span className="text-base sm:text-lg font-semibold text-primary">
               {formatPrice(product.price)}
             </span>
           </div>
@@ -130,8 +130,8 @@ export function ProductDetailModal({
           )}
 
           {/* Observation */}
-          <div className="border-t pt-4 space-y-2">
-            <Label htmlFor="observation" className="text-sm font-medium">
+          <div className="border-t pt-3 sm:pt-4 space-y-2">
+            <Label htmlFor="observation" className="text-xs sm:text-sm font-medium">
               Observações (opcional)
             </Label>
             <Textarea
@@ -139,7 +139,7 @@ export function ProductDetailModal({
               placeholder="Digite aqui observações adicionais se necessário"
               value={observation}
               onChange={(e) => setObservation(e.target.value)}
-              className="resize-none"
+              className="resize-none text-sm"
               maxLength={200}
               rows={2}
             />
@@ -149,31 +149,31 @@ export function ProductDetailModal({
           </div>
 
           {/* Quantity */}
-          <div className="flex items-center justify-between border-t pt-4">
-            <span className="text-sm font-medium">Quantidade:</span>
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between border-t pt-3 sm:pt-4">
+            <span className="text-xs sm:text-sm font-medium">Quantidade:</span>
+            <div className="flex items-center gap-2 sm:gap-3">
               <Button
                 size="icon"
                 variant="outline"
-                className="h-8 w-8"
+                className="h-7 w-7 sm:h-8 sm:w-8"
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
               >
-                <Minus className="h-4 w-4" />
+                <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
-              <span className="w-8 text-center font-medium">{quantity}</span>
+              <span className="w-6 sm:w-8 text-center font-medium text-sm sm:text-base">{quantity}</span>
               <Button
                 size="icon"
                 variant="outline"
-                className="h-8 w-8"
+                className="h-7 w-7 sm:h-8 sm:w-8"
                 onClick={() => setQuantity(quantity + 1)}
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </div>
           </div>
 
           {/* Total and Add Button */}
-          <Button className="w-full" size="lg" onClick={handleAddToCart}>
+          <Button className="w-full text-sm sm:text-base" size="lg" onClick={handleAddToCart}>
             Adicionar {formatPrice(itemTotal)}
           </Button>
         </div>
