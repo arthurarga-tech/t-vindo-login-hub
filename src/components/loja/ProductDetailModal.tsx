@@ -112,7 +112,7 @@ export function ProductDetailModal({
           {/* Base Price */}
           <div className="flex items-center justify-between">
             <span className="text-xs sm:text-sm text-muted-foreground">Preço base:</span>
-            <span className="text-base sm:text-lg font-semibold text-primary">
+            <span className="text-base sm:text-lg font-semibold" style={{ color: "hsl(var(--store-primary, var(--primary)))" }}>
               {formatPrice(product.price)}
             </span>
           </div>
@@ -173,7 +173,12 @@ export function ProductDetailModal({
           </div>
 
           {/* Total and Add Button */}
-          <Button className="w-full text-sm sm:text-base" size="lg" onClick={handleAddToCart}>
+          <Button 
+            className="w-full text-sm sm:text-base" 
+            size="lg" 
+            style={{ backgroundColor: "hsl(var(--store-primary, var(--primary)))" }}
+            onClick={handleAddToCart}
+          >
             Adicionar {formatPrice(itemTotal)}
           </Button>
         </div>

@@ -77,7 +77,7 @@ export function CartDrawer() {
                           ))}
                         </div>
                       )}
-                      <p className="text-primary font-semibold text-sm mt-1">
+                      <p className="font-semibold text-sm mt-1" style={{ color: "hsl(var(--store-primary, var(--primary)))" }}>
                         {formatPrice(itemPrice)}
                       </p>
                       
@@ -121,7 +121,12 @@ export function CartDrawer() {
               </div>
               
               <SheetClose asChild>
-                <Button className="w-full" size="lg" onClick={() => navigate(`/loja/${slug}/checkout`)}>
+                <Button 
+                  className="w-full" 
+                  size="lg" 
+                  style={{ backgroundColor: "hsl(var(--store-primary, var(--primary)))" }}
+                  onClick={() => navigate(`/loja/${slug}/checkout`)}
+                >
                   Finalizar Pedido
                 </Button>
               </SheetClose>

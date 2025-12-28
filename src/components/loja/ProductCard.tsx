@@ -52,10 +52,15 @@ export function ProductCard({ product }: ProductCardProps) {
                 </p>
               )}
               <div className="flex items-center justify-between mt-2 gap-2">
-                <p className="text-primary font-semibold text-sm sm:text-base">
+                <p className="font-semibold text-sm sm:text-base" style={{ color: "hsl(var(--store-primary, var(--primary)))" }}>
                   {formatPrice(product.price)}
                 </p>
-                <Button size="sm" className="text-xs sm:text-sm h-8 sm:h-9" onClick={(e) => { e.stopPropagation(); setModalOpen(true); }}>
+                <Button 
+                  size="sm" 
+                  className="text-xs sm:text-sm h-8 sm:h-9" 
+                  style={{ backgroundColor: "hsl(var(--store-primary, var(--primary)))" }}
+                  onClick={(e) => { e.stopPropagation(); setModalOpen(true); }}
+                >
                   <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                   Adicionar
                 </Button>
