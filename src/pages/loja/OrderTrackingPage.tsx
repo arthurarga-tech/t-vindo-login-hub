@@ -74,14 +74,39 @@ interface PublicOrder {
   items: OrderItem[];
 }
 
+// Statuses that are considered "finalized"
+const finalizedStatuses = ["delivered", "picked_up", "served", "cancelled"];
+
 export default function OrderTrackingPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [orderNumber, setOrderNumber] = useState("");
   const [searchedNumber, setSearchedNumber] = useState<number | null>(null);
+  const [hasAutoLoaded, setHasAutoLoaded] = useState(false);
 
   const { data: establishment } = usePublicEstablishment(slug || "");
+
+  // Auto-load last order from localStorage on mount
+  useEffect(() => {
+    if (hasAutoLoaded || !slug) return;
+    
+    const storedOrder = localStorage.getItem(`lastOrder_${slug}`);
+    if (storedOrder) {
+      try {
+        const { orderNumber: lastOrderNumber, timestamp } = JSON.parse(storedOrder);
+        // Only auto-load if order is less than 24 hours old
+        const isRecent = Date.now() - timestamp < 24 * 60 * 60 * 1000;
+        if (lastOrderNumber && isRecent) {
+          setOrderNumber(String(lastOrderNumber));
+          setSearchedNumber(lastOrderNumber);
+        }
+      } catch (e) {
+        console.error("Error parsing stored order", e);
+      }
+    }
+    setHasAutoLoaded(true);
+  }, [slug, hasAutoLoaded]);
 
   // Use secure RPC function instead of direct query
   const { data: order, isLoading, isError } = useQuery({
@@ -184,10 +209,12 @@ export default function OrderTrackingPage() {
               Buscar Pedido
             </CardTitle>
             <CardDescription>
-              Digite o número do seu pedido para acompanhar em tempo real
+              {order && !finalizedStatuses.includes(order.status) 
+                ? "Seu último pedido está sendo exibido abaixo"
+                : "Digite o número do seu pedido para acompanhar em tempo real"}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
             <form onSubmit={handleSearch} className="flex gap-2">
               <Input
                 type="number"
@@ -275,7 +302,7 @@ export default function OrderTrackingPage() {
                 )}
                 <div className="flex justify-between font-semibold text-lg">
                   <span>Total</span>
-                  <span className="text-primary">{formatPrice(order.total)}</span>
+                  <span style={{ color: "hsl(var(--store-primary, var(--primary)))" }}>{formatPrice(order.total)}</span>
                 </div>
               </CardContent>
             </Card>

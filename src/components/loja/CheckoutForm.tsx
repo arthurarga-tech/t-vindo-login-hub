@@ -333,6 +333,13 @@ export function CheckoutForm({ scheduledFor }: CheckoutFormProps) {
         status: "pending",
       });
 
+      // Save last order to localStorage for quick tracking
+      localStorage.setItem(`lastOrder_${slug}`, JSON.stringify({
+        orderId: orderData.id,
+        orderNumber: orderData.order_number,
+        timestamp: Date.now()
+      }));
+
       clearCart();
       toast.success("Pedido enviado com sucesso!");
       navigate(`/loja/${slug}/pedido/${orderData.id}`);
@@ -439,7 +446,7 @@ export function CheckoutForm({ scheduledFor }: CheckoutFormProps) {
             <Separator />
             <div className="flex justify-between font-semibold">
               <span>Total</span>
-              <span className="text-primary">{formatPrice(totalPrice)}</span>
+              <span style={{ color: "hsl(var(--store-primary, var(--primary)))" }}>{formatPrice(totalPrice)}</span>
             </div>
           </CardContent>
         </Card>
@@ -723,9 +730,9 @@ export function CheckoutForm({ scheduledFor }: CheckoutFormProps) {
                   </p>
                 </div>
                 {needsChange && (
-                  <div className="flex justify-between items-center pt-2 border-t">
+                <div className="flex justify-between items-center pt-2 border-t">
                     <span className="text-sm font-medium">Troco:</span>
-                    <span className="text-lg font-bold text-primary">
+                    <span className="text-lg font-bold" style={{ color: "hsl(var(--store-primary, var(--primary)))" }}>
                       {formatPrice(changeAmount)}
                     </span>
                   </div>
@@ -763,6 +770,7 @@ export function CheckoutForm({ scheduledFor }: CheckoutFormProps) {
         <Button
           className="w-full"
           size="lg"
+          style={{ backgroundColor: "hsl(var(--store-primary, var(--primary)))" }}
           onClick={handleSubmit}
           disabled={submitting}
         >

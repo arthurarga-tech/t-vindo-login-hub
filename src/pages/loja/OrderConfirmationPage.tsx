@@ -79,6 +79,17 @@ export default function OrderConfirmationPage() {
     enabled: !!orderId,
   });
 
+  // Save order to localStorage for quick tracking
+  useEffect(() => {
+    if (order && slug) {
+      localStorage.setItem(`lastOrder_${slug}`, JSON.stringify({
+        orderId: order.id,
+        orderNumber: order.order_number,
+        timestamp: Date.now()
+      }));
+    }
+  }, [order, slug]);
+
   // Real-time subscription for order status updates
   useEffect(() => {
     if (!orderId) return;
@@ -257,7 +268,7 @@ export default function OrderConfirmationPage() {
             <Separator />
             <div className="flex justify-between font-semibold">
               <span>Total</span>
-              <span className="text-primary">{formatPrice(order.total)}</span>
+              <span style={{ color: "hsl(var(--store-primary, var(--primary)))" }}>{formatPrice(order.total)}</span>
             </div>
           </CardContent>
         </Card>

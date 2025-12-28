@@ -1,4 +1,4 @@
-import { Store, Clock, Phone, Search } from "lucide-react";
+import { Store, Clock, Phone, Package } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CartDrawer } from "./CartDrawer";
 import { Badge } from "@/components/ui/badge";
@@ -124,13 +124,13 @@ export function StoreHeader({ establishmentName, logoUrl, bannerUrl, phone, open
             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               {/* Track order button */}
               <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 sm:h-10 sm:w-10 text-primary-foreground hover:bg-primary-foreground/10"
+                variant="outline"
+                size="sm"
+                className="h-8 sm:h-9 px-2 sm:px-3 bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30"
                 onClick={() => navigate(`/loja/${slug}/rastrear`)}
-                title="Rastrear pedido"
               >
-                <Search className="h-4 w-4 sm:h-5 sm:w-5" />
+                <Package className="h-4 w-4 sm:mr-1.5" />
+                <span className="hidden sm:inline text-xs sm:text-sm">Acompanhar Pedido</span>
               </Button>
               
               {/* Status badge in highlight */}
