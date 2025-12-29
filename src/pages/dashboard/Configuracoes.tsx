@@ -1,4 +1,4 @@
-import { Settings, Printer, Palette, CreditCard, Bell, MessageCircle, ChevronDown, ChevronUp, Monitor, ExternalLink } from "lucide-react";
+import { Settings, Printer, Palette, CreditCard, Bell, MessageCircle, ChevronDown, ChevronUp, Download, Wifi, WifiOff, CheckCircle, XCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -7,12 +7,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWhatsAppNotification } from "@/hooks/useWhatsAppNotification";
+import { useQZTray } from "@/hooks/useQZTray";
 
 type PrintMode = "none" | "on_order" | "on_confirm";
 
@@ -31,10 +33,15 @@ export default function Configuracoes() {
   const { data: establishment, isLoading } = useEstablishment();
   const queryClient = useQueryClient();
   const { defaultTemplates } = useWhatsAppNotification();
+  const qzTray = useQZTray();
   
   // Print settings
   const [printMode, setPrintMode] = useState<PrintMode>("none");
   const [printerName, setPrinterName] = useState("");
+  
+  // QZ Tray settings
+  const [qzTrayEnabled, setQzTrayEnabled] = useState(false);
+  const [qzTrayPrinter, setQzTrayPrinter] = useState("");
   
   // Theme colors
   const [themePrimaryColor, setThemePrimaryColor] = useState("#ea580c");
@@ -58,6 +65,8 @@ export default function Configuracoes() {
     if (establishment) {
       setPrintMode(((establishment as any).print_mode as PrintMode) || "none");
       setPrinterName((establishment as any).printer_name || "");
+      setQzTrayEnabled((establishment as any).qz_tray_enabled === true);
+      setQzTrayPrinter((establishment as any).qz_tray_printer || "");
       setThemePrimaryColor((establishment as any).theme_primary_color || "#ea580c");
       setThemeSecondaryColor((establishment as any).theme_secondary_color || "#1e293b");
       setCardCreditFee(String((establishment as any).card_credit_fee || 0));
@@ -72,6 +81,68 @@ export default function Configuracoes() {
     }
   }, [establishment, defaultTemplates]);
 
+  // Load printers when QZ Tray is connected
+  useEffect(() => {
+    if (qzTray.isConnected && qzTray.printers.length === 0) {
+      qzTray.getPrinters();
+    }
+  }, [qzTray.isConnected]);
+
+  const handleQZConnect = async () => {
+    if (qzTray.isConnected) {
+      await qzTray.disconnect();
+    } else {
+      await qzTray.connect();
+      if (qzTray.isConnected) {
+        await qzTray.getPrinters();
+      }
+    }
+  };
+
+  const handleTestPrint = async () => {
+    if (!qzTray.isConnected) {
+      toast.error("QZ Tray não está conectado");
+      return;
+    }
+    if (!qzTrayPrinter) {
+      toast.error("Selecione uma impressora");
+      return;
+    }
+
+    const testHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @page { margin: 0; size: 58mm auto; }
+    body { font-family: 'Courier New', monospace; font-size: 12px; width: 58mm; padding: 4mm; text-align: center; }
+    .header { font-size: 16px; font-weight: bold; margin-bottom: 8px; }
+    .line { border-top: 1px dashed #000; margin: 8px 0; }
+    .success { font-size: 14px; margin: 16px 0; }
+  </style>
+</head>
+<body>
+  <div class="header">🖨️ TESTE QZ TRAY</div>
+  <div class="line"></div>
+  <div>Impressão silenciosa</div>
+  <div>funcionando corretamente!</div>
+  <div class="line"></div>
+  <div class="success">✅ Configuração OK</div>
+  <div style="font-size: 10px; margin-top: 8px;">
+    ${new Date().toLocaleString("pt-BR")}
+  </div>
+</body>
+</html>`;
+
+    const success = await qzTray.printHtml(testHtml, qzTrayPrinter);
+    if (success) {
+      toast.success("Impressão enviada com sucesso!");
+    } else {
+      toast.error(qzTray.error || "Erro ao imprimir");
+    }
+  };
+
   const handleSave = async () => {
     if (!establishment?.id) return;
 
@@ -82,6 +153,8 @@ export default function Configuracoes() {
         .update({
           print_mode: printMode,
           printer_name: printerName || null,
+          qz_tray_enabled: qzTrayEnabled,
+          qz_tray_printer: qzTrayPrinter || null,
           theme_primary_color: themePrimaryColor,
           theme_secondary_color: themeSecondaryColor,
           card_credit_fee: parseFloat(cardCreditFee.replace(",", ".")) || 0,
@@ -298,156 +371,186 @@ export default function Configuracoes() {
             </div>
           </RadioGroup>
 
-          {/* Printer Configuration Section */}
-          {printMode !== "none" && (
-            <div className="mt-6 pt-6 border-t">
-              <div className="flex items-center gap-2 mb-4">
-                <Monitor className="h-4 w-4 text-muted-foreground" />
-                <h4 className="font-medium">Configuração de Impressão Direta</h4>
+        </CardContent>
+      </Card>
+
+      {/* Card - QZ Tray - Impressão Direta */}
+      {printMode !== "none" && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Printer className="h-5 w-5 text-primary" />
+              <CardTitle>Impressão Direta com QZ Tray</CardTitle>
+            </div>
+            <CardDescription>
+              Configure a impressão silenciosa (sem diálogo) usando o QZ Tray
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Enable/Disable Switch */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div className="space-y-0.5">
+                <Label htmlFor="qz-enabled" className="font-medium cursor-pointer">
+                  Usar QZ Tray para impressão silenciosa
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Imprime diretamente na impressora, sem clicar em "OK"
+                </p>
               </div>
+              <Switch
+                id="qz-enabled"
+                checked={qzTrayEnabled}
+                onCheckedChange={setQzTrayEnabled}
+              />
+            </div>
 
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="printerName">Nome da Impressora (referência)</Label>
-                  <Input
-                    id="printerName"
-                    type="text"
-                    placeholder="Ex: Epson TM-T20, Elgin i9"
-                    value={printerName}
-                    onChange={(e) => setPrinterName(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Anote o nome da sua impressora térmica aqui para referência
-                  </p>
+            {qzTrayEnabled && (
+              <div className="space-y-4 pt-4 border-t">
+                {/* Connection Status */}
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div className="flex items-center gap-2">
+                    {qzTray.isConnected ? (
+                      <>
+                        <Wifi className="h-5 w-5 text-green-600" />
+                        <span className="font-medium text-green-600">Conectado</span>
+                      </>
+                    ) : (
+                      <>
+                        <WifiOff className="h-5 w-5 text-muted-foreground" />
+                        <span className="font-medium text-muted-foreground">Desconectado</span>
+                      </>
+                    )}
+                  </div>
+                  <Button
+                    variant={qzTray.isConnected ? "outline" : "default"}
+                    size="sm"
+                    onClick={handleQZConnect}
+                    disabled={qzTray.isConnecting}
+                  >
+                    {qzTray.isConnecting ? "Conectando..." : qzTray.isConnected ? "Desconectar" : "Conectar"}
+                  </Button>
                 </div>
 
-                <div className="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-900">
-                  <h5 className="font-medium text-amber-800 dark:text-amber-200 mb-2">
-                    ⚡ Como Imprimir Sem Clicar em "OK"
-                  </h5>
-                  <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
-                    Por segurança, navegadores sempre mostram o diálogo de impressão. Para pular essa etapa, 
-                    configure o Chrome da seguinte forma:
-                  </p>
-                  <ol className="text-sm text-amber-700 dark:text-amber-300 space-y-2 list-decimal list-inside">
-                    <li>
-                      <strong>Defina sua impressora térmica como padrão</strong> no Windows/macOS
-                    </li>
-                    <li>
-                      <strong>Crie um atalho do Chrome</strong> com a flag <code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">--kiosk-printing</code>
-                    </li>
-                    <li>
-                      <strong>Acesse sempre pelo novo atalho</strong> para impressão automática
-                    </li>
-                  </ol>
-                </div>
+                {/* Error Message */}
+                {qzTray.error && (
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive">
+                    <XCircle className="h-5 w-5 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-medium">Erro de conexão</p>
+                      <p>{qzTray.error}</p>
+                    </div>
+                  </div>
+                )}
 
+                {/* Printer Selection */}
+                {qzTray.isConnected && (
+                  <div className="space-y-2">
+                    <Label>Impressora</Label>
+                    <Select value={qzTrayPrinter} onValueChange={setQzTrayPrinter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma impressora" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {qzTray.printers.map((printer) => (
+                          <SelectItem key={printer} value={printer}>
+                            {printer}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => qzTray.getPrinters()}
+                      >
+                        Atualizar Lista
+                      </Button>
+                      {qzTrayPrinter && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleTestPrint}
+                        >
+                          <Printer className="h-4 w-4 mr-2" />
+                          Testar Impressão
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Success indicator */}
+                {qzTray.isConnected && qzTrayPrinter && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                    <CheckCircle className="h-5 w-5" />
+                    <span className="text-sm">
+                      Pronto! Os pedidos serão impressos automaticamente em <strong>{qzTrayPrinter}</strong>
+                    </span>
+                  </div>
+                )}
+
+                {/* Requirements */}
                 <Collapsible>
                   <CollapsibleTrigger asChild>
                     <Button variant="outline" className="w-full justify-between">
-                      <span>Ver instruções detalhadas</span>
+                      <span>Requisitos e instalação</span>
                       <ChevronDown className="h-4 w-4" />
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-4 space-y-4">
-                    <div className="p-4 bg-muted/50 rounded-lg space-y-4">
-                      <div>
-                        <h6 className="font-medium mb-2">🖥️ Windows</h6>
-                        <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                          <li>Clique com o botão direito no ícone do Chrome e selecione "Criar atalho"</li>
-                          <li>Clique com botão direito no novo atalho → Propriedades</li>
-                          <li>No campo "Destino", adicione no final: <code className="bg-background px-1 rounded">--kiosk-printing</code></li>
-                          <li>
-                            Ficará assim: <code className="text-xs bg-background px-1 rounded break-all">
-                              "C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk-printing
-                            </code>
-                          </li>
-                          <li>Acesse o Tavindo sempre por esse atalho</li>
-                        </ol>
+                    <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                      <div className="flex items-start gap-3">
+                        <Download className="h-5 w-5 text-primary mt-0.5" />
+                        <div>
+                          <p className="font-medium">1. Baixe e instale o QZ Tray</p>
+                          <p className="text-sm text-muted-foreground">
+                            Acesse{" "}
+                            <a
+                              href="https://qz.io/download/"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline"
+                            >
+                              qz.io/download
+                            </a>{" "}
+                            e baixe a versão para seu sistema
+                          </p>
+                        </div>
                       </div>
-
-                      <div>
-                        <h6 className="font-medium mb-2">🍎 macOS</h6>
-                        <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                          <li>Abra o Terminal</li>
-                          <li>Execute: <code className="text-xs bg-background px-1 rounded break-all">
-                            open -a "Google Chrome" --args --kiosk-printing
-                          </code></li>
-                          <li>Ou crie um script Automator para facilitar</li>
-                        </ol>
+                      <div className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-primary mt-0.5" />
+                        <div>
+                          <p className="font-medium">2. Mantenha o QZ Tray rodando</p>
+                          <p className="text-sm text-muted-foreground">
+                            O ícone do QZ Tray deve aparecer na bandeja do sistema (próximo ao relógio)
+                          </p>
+                        </div>
                       </div>
-
-                      <div>
-                        <h6 className="font-medium mb-2">💡 Dica Extra</h6>
-                        <p className="text-sm text-muted-foreground">
-                          Nas configurações de impressão do Chrome (chrome://settings/printing), 
-                          você também pode definir sua impressora térmica como padrão e ativar 
-                          "Usar diálogo de impressão do sistema" para ter mais controle.
-                        </p>
+                      <div className="flex items-start gap-3">
+                        <Printer className="h-5 w-5 text-primary mt-0.5" />
+                        <div>
+                          <p className="font-medium">3. Configure sua impressora</p>
+                          <p className="text-sm text-muted-foreground">
+                            Clique em "Conectar" acima e selecione sua impressora térmica
+                          </p>
+                        </div>
                       </div>
                     </div>
 
-                    <a 
-                      href="https://support.google.com/chrome/a/answer/6350801" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-primary hover:underline"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      Documentação oficial do Chrome sobre impressão
-                    </a>
+                    <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-900">
+                      <p className="text-sm text-amber-700 dark:text-amber-300">
+                        💡 <strong>Dica:</strong> Na primeira conexão, o QZ Tray pode exibir um aviso de segurança.
+                        Clique em "Lembrar esta decisão" e "Permitir" para não ver o aviso novamente.
+                      </p>
+                    </div>
                   </CollapsibleContent>
                 </Collapsible>
-
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => {
-                    const testContent = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Teste de Impressão</title>
-  <style>
-    @page { margin: 0; size: 58mm auto; }
-    body { font-family: 'Courier New', monospace; font-size: 12px; width: 58mm; padding: 4mm; text-align: center; }
-    .header { font-size: 16px; font-weight: bold; margin-bottom: 8px; }
-    .line { border-top: 1px dashed #000; margin: 8px 0; }
-    .success { font-size: 14px; margin: 16px 0; }
-  </style>
-</head>
-<body>
-  <div class="header">🖨️ TESTE DE IMPRESSÃO</div>
-  <div class="line"></div>
-  <div>Se você está vendo isso,</div>
-  <div>sua impressora está funcionando!</div>
-  <div class="line"></div>
-  <div class="success">✅ Configuração OK</div>
-  <div style="font-size: 10px; margin-top: 8px;">
-    ${new Date().toLocaleString("pt-BR")}
-  </div>
-</body>
-</html>`;
-                    const printWindow = window.open("", "_blank", "width=300,height=400");
-                    if (printWindow) {
-                      printWindow.document.write(testContent);
-                      printWindow.document.close();
-                      printWindow.onload = () => {
-                        printWindow.print();
-                        printWindow.onafterprint = () => printWindow.close();
-                      };
-                    }
-                  }}
-                >
-                  <Printer className="h-4 w-4 mr-2" />
-                  Imprimir Página de Teste
-                </Button>
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Card - Taxas de Pagamento */}
       <Card>

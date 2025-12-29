@@ -1,29 +1,32 @@
 import { Order } from "@/hooks/useOrders";
 import { ptBR } from "date-fns/locale";
 import { formatInSaoPaulo } from "@/lib/dateUtils";
+import { useCallback } from "react";
 
 interface PrintOrderOptions {
   order: Order;
   establishmentName: string;
   logoUrl?: string | null;
+  useQZTray?: boolean;
+  qzTrayPrinter?: string | null;
+  qzPrintFn?: (html: string, printer: string) => Promise<boolean>;
 }
 
-export function usePrintOrder() {
-  const printOrder = ({ order, establishmentName, logoUrl }: PrintOrderOptions) => {
-    const orderTypeLabels: Record<string, string> = {
-      delivery: "Entrega",
-      pickup: "Retirada",
-      dine_in: "No Local",
-    };
+function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: string | null): string {
+  const orderTypeLabels: Record<string, string> = {
+    delivery: "Entrega",
+    pickup: "Retirada",
+    dine_in: "No Local",
+  };
 
-    const paymentMethodLabels: Record<string, string> = {
-      pix: "Pix",
-      credit: "Crédito",
-      debit: "Débito",
-      cash: "Dinheiro",
-    };
+  const paymentMethodLabels: Record<string, string> = {
+    pix: "Pix",
+    credit: "Crédito",
+    debit: "Débito",
+    cash: "Dinheiro",
+  };
 
-    const content = `
+  return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -214,18 +217,47 @@ export function usePrintOrder() {
   </div>
 </body>
 </html>
-    `;
+  `;
+}
 
+export function usePrintOrder() {
+  const printOrder = useCallback(async ({
+    order,
+    establishmentName,
+    logoUrl,
+    useQZTray = false,
+    qzTrayPrinter,
+    qzPrintFn,
+  }: PrintOrderOptions): Promise<boolean> => {
+    const htmlContent = generateReceiptHtml(order, establishmentName, logoUrl);
+
+    // Use QZ Tray for silent printing if enabled
+    if (useQZTray && qzTrayPrinter && qzPrintFn) {
+      try {
+        const success = await qzPrintFn(htmlContent, qzTrayPrinter);
+        return success;
+      } catch (error) {
+        console.error("QZ Tray print failed, falling back to browser print:", error);
+        // Fall through to browser print
+      }
+    }
+
+    // Fallback to browser print
     const printWindow = window.open("", "_blank", "width=300,height=600");
     if (printWindow) {
-      printWindow.document.write(content);
+      printWindow.document.write(htmlContent);
       printWindow.document.close();
       printWindow.onload = () => {
         printWindow.print();
         printWindow.onafterprint = () => printWindow.close();
       };
+      return true;
     }
-  };
+    return false;
+  }, []);
 
   return { printOrder };
 }
+
+// Export HTML generator for use in settings test
+export { generateReceiptHtml };

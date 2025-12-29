@@ -13,12 +13,14 @@ import { startOfDay, startOfWeek, subDays, isAfter } from "date-fns";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { usePrintOrder } from "@/hooks/usePrintOrder";
 import { usePreparationTime } from "@/hooks/usePreparationTime";
+import { useQZTray } from "@/hooks/useQZTray";
 
 export default function Pedidos() {
   const { data: orders, isLoading, refetch } = useOrders();
   const { data: establishment } = useEstablishment();
   const { data: preparationTime } = usePreparationTime();
   const { printOrder } = usePrintOrder();
+  const qzTray = useQZTray();
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -36,6 +38,8 @@ export default function Pedidos() {
   const printMode = ((establishment as any)?.print_mode || "none") as "none" | "on_order" | "on_confirm";
   const establishmentName = establishment?.name || "Estabelecimento";
   const logoUrl = establishment?.logo_url;
+  const qzTrayEnabled = (establishment as any)?.qz_tray_enabled === true;
+  const qzTrayPrinter = (establishment as any)?.qz_tray_printer || "";
 
   // Play notification sound and auto-print when new pending orders arrive
   useEffect(() => {
@@ -51,12 +55,19 @@ export default function Pedidos() {
       
       newPendingOrders.forEach((order) => {
         printedOrdersRef.current.add(order.id);
-        printOrder({ order, establishmentName, logoUrl });
+        printOrder({
+          order,
+          establishmentName,
+          logoUrl,
+          useQZTray: qzTrayEnabled && qzTray.isConnected,
+          qzTrayPrinter,
+          qzPrintFn: qzTray.printHtml,
+        });
       });
     }
     
     previousPendingCountRef.current = pendingCount;
-  }, [pendingCount, soundEnabled, orders, printMode, establishmentName, logoUrl, printOrder]);
+  }, [pendingCount, soundEnabled, orders, printMode, establishmentName, logoUrl, printOrder, qzTrayEnabled, qzTray.isConnected, qzTrayPrinter, qzTray.printHtml]);
 
   const playNotificationSound = () => {
     try {
@@ -239,6 +250,9 @@ export default function Pedidos() {
         establishmentName={establishmentName}
         logoUrl={logoUrl}
         printMode={printMode}
+        qzTrayEnabled={qzTrayEnabled && qzTray.isConnected}
+        qzTrayPrinter={qzTrayPrinter}
+        qzPrintFn={qzTray.printHtml}
       />
     </div>
   );
