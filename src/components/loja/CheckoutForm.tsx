@@ -52,14 +52,26 @@ export function CheckoutForm({ scheduledFor }: CheckoutFormProps) {
   const { items, totalPrice, clearCart } = useCart();
   const { data: establishment } = usePublicEstablishment(slug);
 
-  const [customer, setCustomer] = useState<CustomerForm>({
-    name: "",
-    phone: "",
-    address: "",
-    addressNumber: "",
-    addressComplement: "",
-    neighborhood: "",
-    city: "",
+  const [customer, setCustomer] = useState<CustomerForm>(() => {
+    // Load saved customer data from localStorage
+    const savedCustomer = localStorage.getItem(`customer_${slug}`);
+    if (savedCustomer) {
+      try {
+        const parsed = JSON.parse(savedCustomer);
+        return {
+          name: parsed.name || "",
+          phone: parsed.phone || "",
+          address: parsed.address || "",
+          addressNumber: parsed.addressNumber || "",
+          addressComplement: parsed.addressComplement || "",
+          neighborhood: parsed.neighborhood || "",
+          city: parsed.city || "",
+        };
+      } catch {
+        return { name: "", phone: "", address: "", addressNumber: "", addressComplement: "", neighborhood: "", city: "" };
+      }
+    }
+    return { name: "", phone: "", address: "", addressNumber: "", addressComplement: "", neighborhood: "", city: "" };
   });
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
   const [orderType, setOrderType] = useState<OrderType>("delivery");
@@ -338,6 +350,17 @@ export function CheckoutForm({ scheduledFor }: CheckoutFormProps) {
         orderId: orderData.id,
         orderNumber: orderData.order_number,
         timestamp: Date.now()
+      }));
+
+      // Save customer data to localStorage for future orders
+      localStorage.setItem(`customer_${slug}`, JSON.stringify({
+        name: customer.name,
+        phone: customer.phone,
+        address: customer.address,
+        addressNumber: customer.addressNumber,
+        addressComplement: customer.addressComplement,
+        neighborhood: customer.neighborhood,
+        city: customer.city,
       }));
 
       clearCart();
