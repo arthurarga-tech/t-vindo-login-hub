@@ -43,19 +43,16 @@ let securityConfigured = false;
 const configureSecurityOnce = (qz: any) => {
   if (securityConfigured) return;
 
-  qz.security.setCertificatePromise(() => Promise.resolve(null));
-  qz.security.setSignaturePromise(() => Promise.resolve(null));
-
   // QZ Tray v2.2.5 format for unsigned/demo mode
-  // qz.security.setCertificatePromise(function(resolve: (cert: string) => void, reject: (err: Error) => void) {
-  //   resolve(""); // Empty string for unsigned mode
-  // });
+  qz.security.setCertificatePromise(function (resolve: (cert: string) => void, reject: (err: Error) => void) {
+    resolve(""); // Empty string for unsigned mode
+  });
 
-  // qz.security.setSignaturePromise(function(toSign: string) {
-  //   return function(resolve: (sig: string) => void, reject: (err: Error) => void) {
-  //     resolve(""); // Empty string for unsigned mode
-  //   };
-  // });
+  qz.security.setSignaturePromise(function (toSign: string) {
+    return function (resolve: (sig: string) => void, reject: (err: Error) => void) {
+      resolve(""); // Empty string for unsigned mode
+    };
+  });
 
   securityConfigured = true;
   console.log("[QZContext] Security configured for unsigned mode");
