@@ -25,7 +25,7 @@ let moduleLoaded = false;
 // Load QZ Tray module once
 const getQZ = async () => {
   if (moduleLoaded && qzModule) return qzModule;
-  
+
   try {
     const module = await import("qz-tray");
     qzModule = module.default;
@@ -42,18 +42,21 @@ const getQZ = async () => {
 let securityConfigured = false;
 const configureSecurityOnce = (qz: any) => {
   if (securityConfigured) return;
-  
+
+  qz.security.setCertificatePromise(() => Promise.resolve(null));
+  qz.security.setSignaturePromise(() => Promise.resolve(null));
+
   // QZ Tray v2.2.5 format for unsigned/demo mode
-  qz.security.setCertificatePromise(function(resolve: (cert: string) => void, reject: (err: Error) => void) {
-    resolve(""); // Empty string for unsigned mode
-  });
-  
-  qz.security.setSignaturePromise(function(toSign: string) {
-    return function(resolve: (sig: string) => void, reject: (err: Error) => void) {
-      resolve(""); // Empty string for unsigned mode
-    };
-  });
-  
+  // qz.security.setCertificatePromise(function(resolve: (cert: string) => void, reject: (err: Error) => void) {
+  //   resolve(""); // Empty string for unsigned mode
+  // });
+
+  // qz.security.setSignaturePromise(function(toSign: string) {
+  //   return function(resolve: (sig: string) => void, reject: (err: Error) => void) {
+  //     resolve(""); // Empty string for unsigned mode
+  //   };
+  // });
+
   securityConfigured = true;
   console.log("[QZContext] Security configured for unsigned mode");
 };
@@ -69,7 +72,7 @@ export function QZTrayProvider({ children, enabled = false, savedPrinterName = n
   const [printers, setPrinters] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [savedPrinter, setSavedPrinter] = useState<string | null>(savedPrinterName);
-  
+
   const isOperating = useRef(false);
   const hasAutoConnected = useRef(false);
 
@@ -84,16 +87,16 @@ export function QZTrayProvider({ children, enabled = false, savedPrinterName = n
       try {
         const qz = await getQZ();
         configureSecurityOnce(qz);
-        
+
         if (qz.websocket.isActive()) {
           console.log("[QZContext] Already connected on mount, fetching printers...");
           setConnectionState("connected");
           setError(null);
-          
+
           try {
             const printerList = await qz.printers.find();
-            const foundPrinters = Array.isArray(printerList) 
-              ? printerList.filter((p: any) => p && typeof p === 'string') 
+            const foundPrinters = Array.isArray(printerList)
+              ? printerList.filter((p: any) => p && typeof p === "string")
               : [printerList].filter(Boolean);
             console.log("[QZContext] Lista de impressoras:", foundPrinters);
             setPrinters(foundPrinters);
@@ -122,7 +125,7 @@ export function QZTrayProvider({ children, enabled = false, savedPrinterName = n
         }
       });
     }
-    
+
     // Reset flag if disabled
     if (!enabled) {
       hasAutoConnected.current = false;
@@ -145,14 +148,14 @@ export function QZTrayProvider({ children, enabled = false, savedPrinterName = n
         console.log("[QZContext] Already connected, fetching printers...");
         setConnectionState("connected");
         setError(null);
-        
+
         const printerList = await qz.printers.find();
-        const foundPrinters = Array.isArray(printerList) 
-          ? printerList.filter((p: any) => p && typeof p === 'string') 
+        const foundPrinters = Array.isArray(printerList)
+          ? printerList.filter((p: any) => p && typeof p === "string")
           : [printerList].filter(Boolean);
         console.log("[QZContext] Lista de impressoras:", foundPrinters);
         setPrinters(foundPrinters);
-        
+
         isOperating.current = false;
         return { success: true, printers: foundPrinters };
       }
@@ -166,7 +169,8 @@ export function QZTrayProvider({ children, enabled = false, savedPrinterName = n
           reject(new Error("Timeout: QZ Tray não respondeu em 15 segundos. Verifique se está instalado e rodando."));
         }, 15000);
 
-        qz.websocket.connect()
+        qz.websocket
+          .connect()
           .then(() => {
             clearTimeout(timeout);
             console.log("[QZContext] qz.websocket.connect() resolved");
@@ -183,7 +187,7 @@ export function QZTrayProvider({ children, enabled = false, savedPrinterName = n
 
       const isActive = qz.websocket.isActive();
       console.log("[QZContext] Connection check - isActive:", isActive);
-      
+
       if (!isActive) {
         throw new Error("Conexão estabelecida mas WebSocket não está ativo");
       }
@@ -194,20 +198,19 @@ export function QZTrayProvider({ children, enabled = false, savedPrinterName = n
 
       console.log("[QZContext] Loading printers...");
       const printerList = await qz.printers.find();
-      const foundPrinters = Array.isArray(printerList) 
-        ? printerList.filter((p: any) => p && typeof p === 'string') 
+      const foundPrinters = Array.isArray(printerList)
+        ? printerList.filter((p: any) => p && typeof p === "string")
         : [printerList].filter(Boolean);
       console.log("[QZContext] Lista de impressoras:", foundPrinters);
       setPrinters(foundPrinters);
-      
+
       isOperating.current = false;
       return { success: true, printers: foundPrinters };
-
     } catch (err: any) {
       console.error("[QZContext] Connection error:", err);
-      
+
       let errorMessage = "Erro ao conectar ao QZ Tray.";
-      
+
       if (err.message?.includes("Timeout")) {
         errorMessage = err.message;
       } else if (err.message?.includes("Unable to establish") || err.message?.includes("ECONNREFUSED")) {
@@ -217,11 +220,11 @@ export function QZTrayProvider({ children, enabled = false, savedPrinterName = n
       } else if (err.message) {
         errorMessage = err.message;
       }
-      
+
       setConnectionState("error");
       setPrinters([]);
       setError(errorMessage);
-      
+
       isOperating.current = false;
       return { success: false, printers: [] };
     }
@@ -249,7 +252,7 @@ export function QZTrayProvider({ children, enabled = false, savedPrinterName = n
       console.log("[QZContext] Disconnecting...");
       await qz.websocket.disconnect();
       console.log("[QZContext] Disconnected successfully");
-      
+
       setConnectionState("idle");
       setPrinters([]);
       setError(null);
@@ -266,7 +269,7 @@ export function QZTrayProvider({ children, enabled = false, savedPrinterName = n
   const getPrinters = useCallback(async (): Promise<string[]> => {
     try {
       const qz = await getQZ();
-      
+
       if (!qz.websocket.isActive()) {
         setError("QZ Tray não está conectado");
         return [];
@@ -274,8 +277,8 @@ export function QZTrayProvider({ children, enabled = false, savedPrinterName = n
 
       console.log("[QZContext] Fetching printers...");
       const printerList = await qz.printers.find();
-      const foundPrinters = Array.isArray(printerList) 
-        ? printerList.filter((p: any) => p && typeof p === 'string') 
+      const foundPrinters = Array.isArray(printerList)
+        ? printerList.filter((p: any) => p && typeof p === "string")
         : [printerList].filter(Boolean);
       console.log("[QZContext] Lista de impressoras:", foundPrinters);
       setPrinters(foundPrinters);
@@ -288,53 +291,56 @@ export function QZTrayProvider({ children, enabled = false, savedPrinterName = n
     }
   }, []);
 
-  const printHtml = useCallback(async (htmlContent: string, printerName: string): Promise<boolean> => {
-    try {
-      const qz = await getQZ();
+  const printHtml = useCallback(
+    async (htmlContent: string, printerName: string): Promise<boolean> => {
+      try {
+        const qz = await getQZ();
 
-      if (!qz.websocket.isActive()) {
-        // Try to reconnect before printing
-        console.log("[QZContext] Not connected, attempting reconnect before print...");
-        const result = await connect();
-        if (!result.success) {
-          setError("QZ Tray não está conectado");
+        if (!qz.websocket.isActive()) {
+          // Try to reconnect before printing
+          console.log("[QZContext] Not connected, attempting reconnect before print...");
+          const result = await connect();
+          if (!result.success) {
+            setError("QZ Tray não está conectado");
+            return false;
+          }
+        }
+
+        if (!printerName) {
+          setError("Nenhuma impressora selecionada");
           return false;
         }
-      }
 
-      if (!printerName) {
-        setError("Nenhuma impressora selecionada");
+        console.log("[QZContext] Creating print config for:", printerName);
+        const config = qz.configs.create(printerName, {
+          margins: { top: 0, right: 0, bottom: 0, left: 0 },
+          size: { width: 58, height: null },
+          units: "mm",
+          scaleContent: true,
+          rasterize: true,
+        });
+
+        const data = [
+          {
+            type: "html",
+            format: "plain",
+            data: htmlContent,
+          },
+        ];
+
+        console.log("[QZContext] Sending print job...");
+        await qz.print(config, data);
+        console.log("[QZContext] Print job sent successfully");
+        setError(null);
+        return true;
+      } catch (err: any) {
+        console.error("[QZContext] Print error:", err);
+        setError(err.message || "Erro ao imprimir");
         return false;
       }
-
-      console.log("[QZContext] Creating print config for:", printerName);
-      const config = qz.configs.create(printerName, {
-        margins: { top: 0, right: 0, bottom: 0, left: 0 },
-        size: { width: 58, height: null },
-        units: "mm",
-        scaleContent: true,
-        rasterize: true,
-      });
-
-      const data = [
-        {
-          type: "html",
-          format: "plain",
-          data: htmlContent,
-        },
-      ];
-
-      console.log("[QZContext] Sending print job...");
-      await qz.print(config, data);
-      console.log("[QZContext] Print job sent successfully");
-      setError(null);
-      return true;
-    } catch (err: any) {
-      console.error("[QZContext] Print error:", err);
-      setError(err.message || "Erro ao imprimir");
-      return false;
-    }
-  }, [connect]);
+    },
+    [connect],
+  );
 
   const isConnected = connectionState === "connected";
   const isConnecting = connectionState === "connecting";
@@ -353,11 +359,7 @@ export function QZTrayProvider({ children, enabled = false, savedPrinterName = n
     setSavedPrinter,
   };
 
-  return (
-    <QZTrayContext.Provider value={value}>
-      {children}
-    </QZTrayContext.Provider>
-  );
+  return <QZTrayContext.Provider value={value}>{children}</QZTrayContext.Provider>;
 }
 
 export function useQZTrayContext() {
