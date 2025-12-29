@@ -262,6 +262,7 @@ export type Database = {
           owner_id: string
           phone: string | null
           print_mode: string | null
+          printer_name: string | null
           service_delivery: boolean
           service_dine_in: boolean
           service_pickup: boolean
@@ -292,6 +293,7 @@ export type Database = {
           owner_id: string
           phone?: string | null
           print_mode?: string | null
+          printer_name?: string | null
           service_delivery?: boolean
           service_dine_in?: boolean
           service_pickup?: boolean
@@ -322,6 +324,7 @@ export type Database = {
           owner_id?: string
           phone?: string | null
           print_mode?: string | null
+          printer_name?: string | null
           service_delivery?: boolean
           service_dine_in?: boolean
           service_pickup?: boolean
