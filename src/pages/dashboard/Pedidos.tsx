@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { ClipboardList, LayoutGrid, List, Volume2, VolumeX, RefreshCw, Timer } from "lucide-react";
+import { ClipboardList, LayoutGrid, List, Volume2, VolumeX, RefreshCw, Timer, Wifi, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,14 +13,15 @@ import { startOfDay, startOfWeek, subDays, isAfter } from "date-fns";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { usePrintOrder } from "@/hooks/usePrintOrder";
 import { usePreparationTime } from "@/hooks/usePreparationTime";
-import { useQZTray } from "@/hooks/useQZTray";
+import { useQZTrayContext } from "@/contexts/QZTrayContext";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function Pedidos() {
   const { data: orders, isLoading, refetch } = useOrders();
   const { data: establishment } = useEstablishment();
   const { data: preparationTime } = usePreparationTime();
   const { printOrder } = usePrintOrder();
-  const qzTray = useQZTray();
+  const qzTray = useQZTrayContext();
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -39,31 +40,10 @@ export default function Pedidos() {
   const establishmentName = establishment?.name || "Estabelecimento";
   const logoUrl = establishment?.logo_url;
   const qzTrayEnabled = (establishment as any)?.qz_tray_enabled === true;
-  const qzTrayPrinter = (establishment as any)?.qz_tray_printer || "";
-
-  // Auto-connect QZ Tray when enabled and not connected
-  const hasTriedAutoConnect = useRef(false);
-  useEffect(() => {
-    if (qzTrayEnabled && !qzTray.isConnected && !qzTray.isConnecting && !hasTriedAutoConnect.current) {
-      hasTriedAutoConnect.current = true;
-      console.log("[Pedidos] Auto-conectando ao QZ Tray...");
-      qzTray.connect().then((result) => {
-        if (result.success) {
-          console.log("[Pedidos] QZ Tray conectado com sucesso. Impressoras:", result.printers);
-        } else {
-          console.error("[Pedidos] Falha ao conectar QZ Tray");
-          // Reset para tentar novamente se o usuário navegar para outra página e voltar
-          hasTriedAutoConnect.current = false;
-        }
-      });
-    }
-    // Reset flag if QZ Tray gets disabled
-    if (!qzTrayEnabled) {
-      hasTriedAutoConnect.current = false;
-    }
-  }, [qzTrayEnabled, qzTray.isConnected, qzTray.isConnecting]);
+  const qzTrayPrinter = qzTray.savedPrinter || (establishment as any)?.qz_tray_printer || "";
 
   // Play notification sound and auto-print when new pending orders arrive
+  // Note: QZ Tray auto-connection is now handled by the global QZTrayProvider
   useEffect(() => {
     // Skip first load - don't print existing orders
     if (previousPendingCountRef.current === null) {
@@ -91,30 +71,23 @@ export default function Pedidos() {
       if (newPendingOrders.length > 0) {
         console.log("[Pedidos] Novos pedidos para impressão automática:", newPendingOrders.map(o => o.order_number));
         
-        // Check if QZ Tray should be used and reconnect if needed
-        const shouldUseQZ = qzTrayEnabled && qzTrayPrinter;
+        // Check if QZ Tray should be used
+        const shouldUseQZ = qzTrayEnabled && qzTrayPrinter && qzTray.isConnected;
         
-        newPendingOrders.forEach(async (order) => {
+        newPendingOrders.forEach((order) => {
           printedOrdersRef.current.add(order.id);
           
-          // If QZ Tray enabled but not connected, try to reconnect first
-          let qzConnected = qzTray.isConnected;
-          if (shouldUseQZ && !qzConnected) {
-            console.log("[Pedidos] QZ Tray não conectado, tentando reconectar...");
-            const result = await qzTray.connect();
-            qzConnected = result.success;
-          }
-          
           console.log("[Pedidos] Imprimindo pedido #" + order.order_number, {
-            useQZTray: shouldUseQZ && qzConnected,
-            printer: qzTrayPrinter
+            useQZTray: shouldUseQZ,
+            printer: qzTrayPrinter,
+            qzConnected: qzTray.isConnected
           });
           
           printOrder({
             order,
             establishmentName,
             logoUrl,
-            useQZTray: shouldUseQZ && qzConnected,
+            useQZTray: shouldUseQZ,
             qzTrayPrinter,
             qzPrintFn: qzTray.printHtml,
           });
@@ -123,7 +96,7 @@ export default function Pedidos() {
     }
     
     previousPendingCountRef.current = pendingCount;
-  }, [pendingCount, soundEnabled, orders, printMode, establishmentName, logoUrl, printOrder, qzTrayEnabled, qzTray.isConnected, qzTrayPrinter]);
+  }, [pendingCount, soundEnabled, orders, printMode, establishmentName, logoUrl, printOrder, qzTrayEnabled, qzTray.isConnected, qzTrayPrinter, qzTray.printHtml]);
 
   const playNotificationSound = () => {
     try {
@@ -244,6 +217,30 @@ export default function Pedidos() {
               <Timer className="h-3 w-3" />
               Preparo: ~{preparationTime.averageMinutes} min
             </Badge>
+          )}
+          {/* QZ Tray Status Indicator */}
+          {qzTrayEnabled && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge 
+                  variant={qzTray.isConnected ? "default" : "secondary"} 
+                  className={`flex items-center gap-1 cursor-help ${qzTray.isConnected ? "bg-green-600 hover:bg-green-700" : ""}`}
+                >
+                  {qzTray.isConnected ? (
+                    <Wifi className="h-3 w-3" />
+                  ) : (
+                    <WifiOff className="h-3 w-3" />
+                  )}
+                  {qzTray.isConnected ? "Impressora" : "Offline"}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                {qzTray.isConnected 
+                  ? `QZ Tray conectado - ${qzTrayPrinter || "Sem impressora selecionada"}`
+                  : "QZ Tray desconectado - Vá em Configurações para conectar"
+                }
+              </TooltipContent>
+            </Tooltip>
           )}
         </div>
 
