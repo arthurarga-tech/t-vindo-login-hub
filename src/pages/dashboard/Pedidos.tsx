@@ -41,6 +41,14 @@ export default function Pedidos() {
   const qzTrayEnabled = (establishment as any)?.qz_tray_enabled === true;
   const qzTrayPrinter = (establishment as any)?.qz_tray_printer || "";
 
+  // Auto-connect QZ Tray when enabled and not connected
+  useEffect(() => {
+    if (qzTrayEnabled && !qzTray.isConnected && !qzTray.isConnecting) {
+      console.log("[Pedidos] Auto-conectando ao QZ Tray...");
+      qzTray.connect();
+    }
+  }, [qzTrayEnabled, qzTray.isConnected, qzTray.isConnecting, qzTray.connect]);
+
   // Play notification sound and auto-print when new pending orders arrive
   useEffect(() => {
     if (previousPendingCountRef.current !== null && pendingCount > previousPendingCountRef.current && soundEnabled) {

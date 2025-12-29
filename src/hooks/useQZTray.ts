@@ -8,6 +8,11 @@ interface QZTrayState {
   error: string | null;
 }
 
+interface ConnectResult {
+  success: boolean;
+  printers: string[];
+}
+
 // Global qz instance - singleton pattern
 let qzModule: any = null;
 let moduleLoaded = false;
@@ -20,6 +25,7 @@ const getQZ = async () => {
     const module = await import("qz-tray");
     qzModule = module.default;
     moduleLoaded = true;
+    console.log("[QZ] Module loaded successfully");
     return qzModule;
   } catch (err) {
     console.error("[QZ] Failed to load module:", err);
@@ -32,16 +38,16 @@ let securityConfigured = false;
 const configureSecurityOnce = (qz: any) => {
   if (securityConfigured) return;
   
-  // For unsigned/demo mode - resolve with empty strings
-  // The certificate promise should return a function that returns a promise
-  qz.security.setCertificatePromise((resolve: (cert: string) => void) => {
-    resolve("");
+  // QZ Tray v2.2.5 format for unsigned/demo mode
+  // setCertificatePromise receives a callback with resolve/reject
+  qz.security.setCertificatePromise(function(resolve: (cert: string) => void, reject: (err: Error) => void) {
+    resolve(""); // Empty string for unsigned mode
   });
   
-  // The signature promise should return a function that takes hash and returns a promise
-  qz.security.setSignaturePromise(() => {
-    return (toSign: string) => {
-      return Promise.resolve("");
+  // setSignaturePromise receives hash to sign and returns a callback with resolve/reject  
+  qz.security.setSignaturePromise(function(toSign: string) {
+    return function(resolve: (sig: string) => void, reject: (err: Error) => void) {
+      resolve(""); // Empty string for unsigned mode
     };
   });
   
@@ -63,9 +69,23 @@ export function useQZTray() {
     const syncState = async () => {
       try {
         const qz = await getQZ();
+        configureSecurityOnce(qz);
+        
         if (qz.websocket.isActive()) {
-          console.log("[QZ] Already connected on mount");
+          console.log("[QZ] Already connected on mount, fetching printers...");
           setState(prev => ({ ...prev, connectionState: "connected", error: null }));
+          
+          // Fetch printers since we're already connected
+          try {
+            const printerList = await qz.printers.find();
+            const printers = Array.isArray(printerList) 
+              ? printerList.filter((p: any) => p && typeof p === 'string') 
+              : [printerList].filter(Boolean);
+            console.log("[QZ] Lista de impressoras:", printers);
+            setState(prev => ({ ...prev, printers }));
+          } catch (err) {
+            console.error("[QZ] Error fetching printers on mount:", err);
+          }
         }
       } catch {
         // Module not loaded yet, ignore
@@ -74,11 +94,11 @@ export function useQZTray() {
     syncState();
   }, []);
 
-  const connect = useCallback(async () => {
+  const connect = useCallback(async (): Promise<ConnectResult> => {
     // Prevent multiple simultaneous operations
     if (isOperating.current) {
       console.log("[QZ] Operation in progress, ignoring connect request");
-      return;
+      return { success: false, printers: [] };
     }
 
     try {
@@ -88,27 +108,24 @@ export function useQZTray() {
       // Configure security BEFORE any connection attempt
       configureSecurityOnce(qz);
 
-      // Already connected - just update state
+      // Already connected - just fetch printers and return
       if (qz.websocket.isActive()) {
-        console.log("[QZ] Already connected");
+        console.log("[QZ] Already connected, fetching printers...");
         setState(prev => ({ ...prev, connectionState: "connected", error: null }));
+        
+        const printerList = await qz.printers.find();
+        const printers = Array.isArray(printerList) 
+          ? printerList.filter((p: any) => p && typeof p === 'string') 
+          : [printerList].filter(Boolean);
+        console.log("[QZ] Lista de impressoras:", printers);
+        setState(prev => ({ ...prev, printers }));
+        
         isOperating.current = false;
-        return;
+        return { success: true, printers };
       }
 
       setState(prev => ({ ...prev, connectionState: "connecting", error: null }));
       console.log("[QZ] Starting connection...");
-
-      // Force cleanup any stale connection state
-      try {
-        await qz.websocket.disconnect();
-        console.log("[QZ] Cleaned up stale connection");
-      } catch {
-        // Ignore - no active connection to disconnect
-      }
-
-      // Small delay to ensure cleanup is complete
-      await new Promise(resolve => setTimeout(resolve, 200));
 
       // Connect WITHOUT any parameters - let QZ Tray choose the correct WebSocket endpoint
       // QZ Tray will automatically use:
@@ -148,15 +165,16 @@ export function useQZTray() {
       setState(prev => ({ ...prev, connectionState: "connected", error: null }));
 
       // Auto-load printers after successful connection
-      try {
-        console.log("[QZ] Loading printers...");
-        const printerList = await qz.printers.find();
-        const printers = Array.isArray(printerList) ? printerList : [printerList];
-        console.log("[QZ] Found printers:", printers);
-        setState(prev => ({ ...prev, printers }));
-      } catch (printerErr) {
-        console.error("[QZ] Failed to load printers:", printerErr);
-      }
+      console.log("[QZ] Loading printers...");
+      const printerList = await qz.printers.find();
+      const printers = Array.isArray(printerList) 
+        ? printerList.filter((p: any) => p && typeof p === 'string') 
+        : [printerList].filter(Boolean);
+      console.log("[QZ] Lista de impressoras:", printers);
+      setState(prev => ({ ...prev, printers }));
+      
+      isOperating.current = false;
+      return { success: true, printers };
 
     } catch (err: any) {
       console.error("[QZ] Connection error:", err);
@@ -179,8 +197,9 @@ export function useQZTray() {
         printers: [],
         error: errorMessage,
       }));
-    } finally {
+      
       isOperating.current = false;
+      return { success: false, printers: [] };
     }
   }, []);
 
@@ -243,8 +262,10 @@ export function useQZTray() {
 
       console.log("[QZ] Fetching printers...");
       const printerList = await qz.printers.find();
-      const printers = Array.isArray(printerList) ? printerList : [printerList];
-      console.log("[QZ] Found printers:", printers);
+      const printers = Array.isArray(printerList) 
+        ? printerList.filter((p: any) => p && typeof p === 'string') 
+        : [printerList].filter(Boolean);
+      console.log("[QZ] Lista de impressoras:", printers);
       setState(prev => ({ ...prev, printers, error: null }));
       return printers;
     } catch (err: any) {
@@ -306,23 +327,8 @@ export function useQZTray() {
     []
   );
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      const cleanup = async () => {
-        try {
-          const qz = await getQZ();
-          if (qz.websocket.isActive()) {
-            await qz.websocket.disconnect();
-            console.log("[QZ] Cleanup: disconnected on unmount");
-          }
-        } catch {
-          // Ignore cleanup errors
-        }
-      };
-      cleanup();
-    };
-  }, []);
+  // Do NOT disconnect on unmount - keep connection persistent between pages
+  // The connection should be managed explicitly by the user
 
   // Computed values for backward compatibility
   const isConnected = state.connectionState === "connected";
