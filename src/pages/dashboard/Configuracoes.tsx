@@ -1,4 +1,4 @@
-import { Settings, Printer, Palette, CreditCard, Bell, MessageCircle, ChevronDown, ChevronUp, Download, Wifi, WifiOff, CheckCircle, XCircle } from "lucide-react";
+import { Settings, Printer, Palette, CreditCard, Bell, MessageCircle, ChevronDown, ChevronUp, Download, Wifi, WifiOff, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWhatsAppNotification } from "@/hooks/useWhatsAppNotification";
-import { useQZTray } from "@/hooks/useQZTray";
+import { useQZTrayContext } from "@/contexts/QZTrayContext";
 
 type PrintMode = "none" | "on_order" | "on_confirm";
 
@@ -33,7 +33,7 @@ export default function Configuracoes() {
   const { data: establishment, isLoading } = useEstablishment();
   const queryClient = useQueryClient();
   const { defaultTemplates } = useWhatsAppNotification();
-  const qzTray = useQZTray();
+  const qzTray = useQZTrayContext();
   
   // Print settings
   const [printMode, setPrintMode] = useState<PrintMode>("none");
@@ -61,6 +61,10 @@ export default function Configuracoes() {
   
   const [saving, setSaving] = useState(false);
 
+  // Check if saved printer is available in current printers list
+  const savedPrinterAvailable = qzTrayPrinter && qzTray.printers.includes(qzTrayPrinter);
+  const savedPrinterMissing = qzTrayPrinter && qzTray.isConnected && qzTray.printers.length > 0 && !savedPrinterAvailable;
+
   useEffect(() => {
     if (establishment) {
       setPrintMode(((establishment as any).print_mode as PrintMode) || "none");
@@ -81,6 +85,16 @@ export default function Configuracoes() {
     }
   }, [establishment, defaultTemplates]);
 
+  // Auto-select saved printer when printers are loaded
+  useEffect(() => {
+    if (qzTray.isConnected && qzTray.printers.length > 0 && qzTray.savedPrinter) {
+      if (qzTray.printers.includes(qzTray.savedPrinter)) {
+        console.log("[Config] Auto-selecionando impressora salva:", qzTray.savedPrinter);
+        setQzTrayPrinter(qzTray.savedPrinter);
+      }
+    }
+  }, [qzTray.isConnected, qzTray.printers, qzTray.savedPrinter]);
+
   const handleQZConnect = async () => {
     if (qzTray.isConnected) {
       await qzTray.disconnect();
@@ -94,6 +108,7 @@ export default function Configuracoes() {
   const handlePrinterChange = (printer: string) => {
     console.log("[Config] Impressora selecionada:", printer);
     setQzTrayPrinter(printer);
+    qzTray.setSavedPrinter(printer);
   };
 
   const handleTestPrint = async () => {
@@ -439,6 +454,20 @@ export default function Configuracoes() {
                   </div>
                 )}
 
+                {/* Saved printer warning */}
+                {savedPrinterMissing && (
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
+                    <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-medium text-amber-700 dark:text-amber-300">Impressora não encontrada</p>
+                      <p className="text-amber-600 dark:text-amber-400">
+                        A impressora "{qzTrayPrinter}" salva anteriormente não está mais disponível. 
+                        Por favor, selecione outra impressora.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Printer Selection */}
                 {qzTray.isConnected && (
                   <div className="space-y-2">
@@ -450,7 +479,7 @@ export default function Configuracoes() {
                         </p>
                       </div>
                     ) : (
-                      <Select value={qzTrayPrinter} onValueChange={handlePrinterChange}>
+                      <Select value={savedPrinterAvailable ? qzTrayPrinter : ""} onValueChange={handlePrinterChange}>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione uma impressora" />
                         </SelectTrigger>

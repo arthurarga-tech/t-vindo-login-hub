@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { QZTrayProviderWrapper } from "@/components/QZTrayProviderWrapper";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import { DashboardLayout } from "./components/dashboard/DashboardLayout";
@@ -29,35 +30,37 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<Navigate to="/dashboard/pedidos" replace />} />
-              <Route path="pedidos" element={<Pedidos />} />
-              <Route path="financeiro" element={<Financeiro />} />
-              <Route path="catalogo" element={<Catalogo />} />
-              <Route path="meu-negocio" element={<MeuNegocio />} />
-              <Route path="clientes" element={<Clientes />} />
-              <Route path="estoque" element={<Estoque />} />
-              <Route path="delivery" element={<Delivery />} />
-              <Route path="usuarios" element={<Usuarios />} />
-              <Route path="configuracoes" element={<Configuracoes />} />
-            </Route>
-            <Route path="/loja/:slug" element={<StorePage />} />
-            <Route path="/loja/:slug/checkout" element={<CheckoutPage />} />
-            <Route path="/loja/:slug/pedido/:orderId" element={<OrderConfirmationPage />} />
-            <Route path="/loja/:slug/rastrear" element={<OrderTrackingPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <QZTrayProviderWrapper>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <DashboardLayout />
+                </ProtectedRoute>
+              }>
+                <Route index element={<Navigate to="/dashboard/pedidos" replace />} />
+                <Route path="pedidos" element={<Pedidos />} />
+                <Route path="financeiro" element={<Financeiro />} />
+                <Route path="catalogo" element={<Catalogo />} />
+                <Route path="meu-negocio" element={<MeuNegocio />} />
+                <Route path="clientes" element={<Clientes />} />
+                <Route path="estoque" element={<Estoque />} />
+                <Route path="delivery" element={<Delivery />} />
+                <Route path="usuarios" element={<Usuarios />} />
+                <Route path="configuracoes" element={<Configuracoes />} />
+              </Route>
+              <Route path="/loja/:slug" element={<StorePage />} />
+              <Route path="/loja/:slug/checkout" element={<CheckoutPage />} />
+              <Route path="/loja/:slug/pedido/:orderId" element={<OrderConfirmationPage />} />
+              <Route path="/loja/:slug/rastrear" element={<OrderTrackingPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </QZTrayProviderWrapper>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
