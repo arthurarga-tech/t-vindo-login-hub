@@ -81,22 +81,19 @@ export default function Configuracoes() {
     }
   }, [establishment, defaultTemplates]);
 
-  // Load printers when QZ Tray is connected
-  useEffect(() => {
-    if (qzTray.isConnected && qzTray.printers.length === 0) {
-      qzTray.getPrinters();
-    }
-  }, [qzTray.isConnected]);
-
   const handleQZConnect = async () => {
     if (qzTray.isConnected) {
       await qzTray.disconnect();
     } else {
-      await qzTray.connect();
-      if (qzTray.isConnected) {
-        await qzTray.getPrinters();
-      }
+      const result = await qzTray.connect();
+      console.log("[Config] Conexão resultado:", result);
+      console.log("[Config] Impressoras encontradas:", result?.printers);
     }
+  };
+  
+  const handlePrinterChange = (printer: string) => {
+    console.log("[Config] Impressora selecionada:", printer);
+    setQzTrayPrinter(printer);
   };
 
   const handleTestPrint = async () => {
@@ -446,18 +443,26 @@ export default function Configuracoes() {
                 {qzTray.isConnected && (
                   <div className="space-y-2">
                     <Label>Impressora</Label>
-                    <Select value={qzTrayPrinter} onValueChange={setQzTrayPrinter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma impressora" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {qzTray.printers.map((printer) => (
-                          <SelectItem key={printer} value={printer}>
-                            {printer}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {qzTray.printers.length === 0 ? (
+                      <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
+                        <p className="text-sm text-amber-700 dark:text-amber-300">
+                          Nenhuma impressora instalada no sistema.
+                        </p>
+                      </div>
+                    ) : (
+                      <Select value={qzTrayPrinter} onValueChange={handlePrinterChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione uma impressora" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover">
+                          {qzTray.printers.map((printer) => (
+                            <SelectItem key={printer} value={printer}>
+                              {printer}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                     <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
