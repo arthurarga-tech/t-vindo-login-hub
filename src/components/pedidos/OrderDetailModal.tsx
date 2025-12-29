@@ -37,6 +37,9 @@ interface OrderDetailModalProps {
   establishmentName: string;
   logoUrl?: string | null;
   printMode?: "none" | "on_order" | "on_confirm";
+  qzTrayEnabled?: boolean;
+  qzTrayPrinter?: string;
+  qzPrintFn?: (html: string, printer: string) => Promise<boolean>;
 }
 
 const statusConfig: Record<OrderStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -60,7 +63,7 @@ const paymentLabels: Record<string, string> = {
   cash: "Dinheiro",
 };
 
-export function OrderDetailModal({ order, open, onClose, establishmentName, logoUrl, printMode = "none" }: OrderDetailModalProps) {
+export function OrderDetailModal({ order, open, onClose, establishmentName, logoUrl, printMode = "none", qzTrayEnabled, qzTrayPrinter, qzPrintFn }: OrderDetailModalProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const updateStatus = useUpdateOrderStatus();
   const { printOrder } = usePrintOrder();
@@ -89,7 +92,14 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
     : null;
 
   const handlePrint = () => {
-    printOrder({ order, establishmentName, logoUrl });
+    printOrder({
+      order,
+      establishmentName,
+      logoUrl,
+      useQZTray: qzTrayEnabled,
+      qzTrayPrinter,
+      qzPrintFn,
+    });
   };
 
   const handleStatusChange = async (newStatus: OrderStatus) => {
