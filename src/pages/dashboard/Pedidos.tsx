@@ -42,16 +42,43 @@ export default function Pedidos() {
   const qzTrayPrinter = (establishment as any)?.qz_tray_printer || "";
 
   // Auto-connect QZ Tray when enabled and not connected
+  const hasTriedAutoConnect = useRef(false);
   useEffect(() => {
-    if (qzTrayEnabled && !qzTray.isConnected && !qzTray.isConnecting) {
+    if (qzTrayEnabled && !qzTray.isConnected && !qzTray.isConnecting && !hasTriedAutoConnect.current) {
+      hasTriedAutoConnect.current = true;
       console.log("[Pedidos] Auto-conectando ao QZ Tray...");
-      qzTray.connect();
+      qzTray.connect().then((result) => {
+        if (result.success) {
+          console.log("[Pedidos] QZ Tray conectado com sucesso. Impressoras:", result.printers);
+        } else {
+          console.error("[Pedidos] Falha ao conectar QZ Tray");
+          // Reset para tentar novamente se o usuário navegar para outra página e voltar
+          hasTriedAutoConnect.current = false;
+        }
+      });
     }
-  }, [qzTrayEnabled, qzTray.isConnected, qzTray.isConnecting, qzTray.connect]);
+    // Reset flag if QZ Tray gets disabled
+    if (!qzTrayEnabled) {
+      hasTriedAutoConnect.current = false;
+    }
+  }, [qzTrayEnabled, qzTray.isConnected, qzTray.isConnecting]);
 
   // Play notification sound and auto-print when new pending orders arrive
   useEffect(() => {
-    if (previousPendingCountRef.current !== null && pendingCount > previousPendingCountRef.current && soundEnabled) {
+    // Skip first load - don't print existing orders
+    if (previousPendingCountRef.current === null) {
+      previousPendingCountRef.current = pendingCount;
+      // Mark existing pending orders as "already seen"
+      if (orders) {
+        orders.filter(o => o.status === "pending").forEach(o => {
+          printedOrdersRef.current.add(o.id);
+        });
+      }
+      return;
+    }
+
+    // Play sound for new orders
+    if (pendingCount > previousPendingCountRef.current && soundEnabled) {
       playNotificationSound();
     }
     
@@ -61,21 +88,42 @@ export default function Pedidos() {
         (o) => o.status === "pending" && !printedOrdersRef.current.has(o.id)
       );
       
-      newPendingOrders.forEach((order) => {
-        printedOrdersRef.current.add(order.id);
-        printOrder({
-          order,
-          establishmentName,
-          logoUrl,
-          useQZTray: qzTrayEnabled && qzTray.isConnected,
-          qzTrayPrinter,
-          qzPrintFn: qzTray.printHtml,
+      if (newPendingOrders.length > 0) {
+        console.log("[Pedidos] Novos pedidos para impressão automática:", newPendingOrders.map(o => o.order_number));
+        
+        // Check if QZ Tray should be used and reconnect if needed
+        const shouldUseQZ = qzTrayEnabled && qzTrayPrinter;
+        
+        newPendingOrders.forEach(async (order) => {
+          printedOrdersRef.current.add(order.id);
+          
+          // If QZ Tray enabled but not connected, try to reconnect first
+          let qzConnected = qzTray.isConnected;
+          if (shouldUseQZ && !qzConnected) {
+            console.log("[Pedidos] QZ Tray não conectado, tentando reconectar...");
+            const result = await qzTray.connect();
+            qzConnected = result.success;
+          }
+          
+          console.log("[Pedidos] Imprimindo pedido #" + order.order_number, {
+            useQZTray: shouldUseQZ && qzConnected,
+            printer: qzTrayPrinter
+          });
+          
+          printOrder({
+            order,
+            establishmentName,
+            logoUrl,
+            useQZTray: shouldUseQZ && qzConnected,
+            qzTrayPrinter,
+            qzPrintFn: qzTray.printHtml,
+          });
         });
-      });
+      }
     }
     
     previousPendingCountRef.current = pendingCount;
-  }, [pendingCount, soundEnabled, orders, printMode, establishmentName, logoUrl, printOrder, qzTrayEnabled, qzTray.isConnected, qzTrayPrinter, qzTray.printHtml]);
+  }, [pendingCount, soundEnabled, orders, printMode, establishmentName, logoUrl, printOrder, qzTrayEnabled, qzTray.isConnected, qzTrayPrinter]);
 
   const playNotificationSound = () => {
     try {
