@@ -27,15 +27,26 @@ const getQZ = async () => {
   }
 };
 
-// Configure security once
+// Configure security once - MUST be done before any connection attempt
 let securityConfigured = false;
 const configureSecurityOnce = (qz: any) => {
   if (securityConfigured) return;
   
-  qz.security.setCertificatePromise(() => Promise.resolve(""));
-  qz.security.setSignaturePromise(() => () => Promise.resolve(""));
+  // For unsigned/demo mode - resolve with empty strings
+  // The certificate promise should return a function that returns a promise
+  qz.security.setCertificatePromise((resolve: (cert: string) => void) => {
+    resolve("");
+  });
+  
+  // The signature promise should return a function that takes hash and returns a promise
+  qz.security.setSignaturePromise(() => {
+    return (toSign: string) => {
+      return Promise.resolve("");
+    };
+  });
+  
   securityConfigured = true;
-  console.log("[QZ] Security configured");
+  console.log("[QZ] Security configured for unsigned mode");
 };
 
 export function useQZTray() {
@@ -74,6 +85,9 @@ export function useQZTray() {
       isOperating.current = true;
       const qz = await getQZ();
 
+      // Configure security BEFORE any connection attempt
+      configureSecurityOnce(qz);
+
       // Already connected - just update state
       if (qz.websocket.isActive()) {
         console.log("[QZ] Already connected");
@@ -85,9 +99,6 @@ export function useQZTray() {
       setState(prev => ({ ...prev, connectionState: "connecting", error: null }));
       console.log("[QZ] Starting connection...");
 
-      // Configure security
-      configureSecurityOnce(qz);
-
       // Force cleanup any stale connection state
       try {
         await qz.websocket.disconnect();
@@ -97,21 +108,28 @@ export function useQZTray() {
       }
 
       // Small delay to ensure cleanup is complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 200));
 
-      // Connect with timeout
+      // Connect WITHOUT any parameters - let QZ Tray choose the correct WebSocket endpoint
+      // QZ Tray will automatically use:
+      // - ws://localhost:8181 for HTTP
+      // - wss://localhost:8282 for HTTPS
+      console.log("[QZ] Calling qz.websocket.connect() without parameters...");
+      
       const connectWithTimeout = new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
-          reject(new Error("Timeout: QZ Tray não respondeu em 10 segundos"));
-        }, 10000);
+          reject(new Error("Timeout: QZ Tray não respondeu em 15 segundos. Verifique se está instalado e rodando."));
+        }, 15000);
 
         qz.websocket.connect()
           .then(() => {
             clearTimeout(timeout);
+            console.log("[QZ] qz.websocket.connect() resolved");
             resolve();
           })
           .catch((err: any) => {
             clearTimeout(timeout);
+            console.error("[QZ] qz.websocket.connect() rejected:", err);
             reject(err);
           });
       });
@@ -119,7 +137,10 @@ export function useQZTray() {
       await connectWithTimeout;
 
       // Verify connection is actually active
-      if (!qz.websocket.isActive()) {
+      const isActive = qz.websocket.isActive();
+      console.log("[QZ] Connection check - isActive:", isActive);
+      
+      if (!isActive) {
         throw new Error("Conexão estabelecida mas WebSocket não está ativo");
       }
 
