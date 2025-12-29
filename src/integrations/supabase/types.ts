@@ -758,6 +758,39 @@ export type Database = {
         Args: { est_id: string }
         Returns: undefined
       }
+      create_or_update_public_customer: {
+        Args: {
+          p_address?: string
+          p_address_complement?: string
+          p_address_number?: string
+          p_city?: string
+          p_establishment_id: string
+          p_name: string
+          p_neighborhood?: string
+          p_phone: string
+        }
+        Returns: string
+      }
+      create_public_order: {
+        Args: {
+          p_change_for?: number
+          p_customer_id: string
+          p_delivery_fee: number
+          p_establishment_id: string
+          p_notes?: string
+          p_order_type: string
+          p_payment_method: string
+          p_scheduled_for?: string
+          p_subtotal: number
+          p_total: number
+        }
+        Returns: Json
+      }
+      create_public_order_item_addons: {
+        Args: { p_addons: Json }
+        Returns: undefined
+      }
+      create_public_order_items: { Args: { p_items: Json }; Returns: Json }
       get_public_order_by_id: { Args: { p_order_id: string }; Returns: Json }
       get_public_order_by_number: {
         Args: { p_establishment_id: string; p_order_number: number }

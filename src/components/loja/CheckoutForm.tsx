@@ -189,62 +189,22 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
           : customer.neighborhood
         : null;
 
-      // Try to create customer, if exists use existing record
-      // (Public users cannot update customer records for security)
-      let customerId: string;
-      
-      // First, try to find existing customer
-      const { data: existingCustomer } = await supabase
-        .from("customers")
-        .select("id")
-        .eq("establishment_id", establishment.id)
-        .eq("phone", customer.phone)
-        .maybeSingle();
-      
-      if (existingCustomer) {
-        // Use existing customer
-        customerId = existingCustomer.id;
-      } else {
-        // Create new customer
-        const { data: newCustomer, error: customerError } = await supabase
-          .from("customers")
-          .insert({
-            establishment_id: establishment.id,
-            name: customer.name,
-            phone: customer.phone,
-            address: customerAddress,
-            address_number: needsAddress ? customer.addressNumber : null,
-            address_complement: needsAddress ? customer.addressComplement || null : null,
-            neighborhood: customerNeighborhood,
-            city: needsAddress ? customer.city || null : null,
-          })
-          .select("id")
-          .single();
+      // Use RPC function to create/update customer (bypasses RLS issues)
+      const { data: customerId, error: customerError } = await supabase.rpc(
+        'create_or_update_public_customer',
+        {
+          p_establishment_id: establishment.id,
+          p_name: customer.name,
+          p_phone: customer.phone,
+          p_address: customerAddress,
+          p_address_number: needsAddress ? customer.addressNumber : null,
+          p_address_complement: needsAddress ? customer.addressComplement || null : null,
+          p_neighborhood: customerNeighborhood,
+          p_city: needsAddress ? customer.city || null : null,
+        }
+      );
 
-        if (customerError) throw customerError;
-        customerId = newCustomer.id;
-      }
-
-      // Create order with order_type
-      const { data: orderData, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          establishment_id: establishment.id,
-          customer_id: customerId,
-          payment_method: paymentMethod,
-          order_type: orderType,
-          subtotal: totalPrice,
-          delivery_fee: 0,
-          total: totalPrice,
-          notes: notes || null,
-          status: "pending",
-          change_for: paymentMethod === "cash" && changeForValue > 0 ? changeForValue : null,
-          scheduled_for: scheduledFor?.toISOString() || null,
-        })
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
+      if (customerError) throw customerError;
 
       // SECURITY: Fetch fresh prices from database to prevent client-side manipulation
       const productIds = items.map(i => i.product.id);
@@ -276,8 +236,30 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
         );
       }
 
-      // Create order items with validated prices
-      const orderItems = items.map((item) => {
+      // Use RPC function to create order (bypasses RLS issues)
+      const { data: orderResult, error: orderError } = await supabase.rpc(
+        'create_public_order',
+        {
+          p_establishment_id: establishment.id,
+          p_customer_id: customerId,
+          p_payment_method: paymentMethod,
+          p_order_type: orderType,
+          p_subtotal: totalPrice,
+          p_delivery_fee: 0,
+          p_total: totalPrice,
+          p_notes: notes || null,
+          p_change_for: paymentMethod === "cash" && changeForValue > 0 ? changeForValue : null,
+          p_scheduled_for: scheduledFor?.toISOString() || null,
+        }
+      );
+
+      if (orderError) throw orderError;
+
+      const orderId = (orderResult as any).id;
+      const orderNumber = (orderResult as any).order_number;
+
+      // Prepare order items with validated prices
+      const orderItemsData = items.map((item, index) => {
         const productData = productPriceMap.get(item.product.id);
         if (!productData) {
           throw new Error(`Produto não encontrado ou inativo: ${item.product.name}`);
@@ -292,7 +274,8 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
         }, 0) ?? 0;
 
         return {
-          order_id: orderData.id,
+          index: index.toString(),
+          order_id: orderId,
           product_id: item.product.id,
           product_name: productData.name,
           product_price: productData.price,
@@ -302,58 +285,58 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
         };
       });
 
-      const { data: insertedItems, error: itemsError } = await supabase
-        .from("order_items")
-        .insert(orderItems)
-        .select();
+      // Use RPC function to create order items
+      const { data: insertedItemsResult, error: itemsError } = await supabase.rpc(
+        'create_public_order_items',
+        { p_items: orderItemsData }
+      );
 
       if (itemsError) throw itemsError;
 
-      // Create order item addons with validated prices
-      const orderItemAddons: {
-        order_item_id: string;
-        addon_id: string;
-        addon_name: string;
-        addon_price: number;
-        quantity: number;
-      }[] = [];
+      // Map inserted items by index
+      const insertedItemsMap = new Map<string, string>();
+      if (Array.isArray(insertedItemsResult)) {
+        insertedItemsResult.forEach((item: any) => {
+          insertedItemsMap.set(item.index, item.id);
+        });
+      }
+
+      // Prepare order item addons with validated prices
+      const orderItemAddonsData: any[] = [];
 
       items.forEach((item, index) => {
         if (item.selectedAddons && item.selectedAddons.length > 0) {
-          const orderItemId = insertedItems[index].id;
-          item.selectedAddons.forEach((addon) => {
-            const addonData = addonPriceMap.get(addon.id);
-            if (addonData) {
-              orderItemAddons.push({
-                order_item_id: orderItemId,
-                addon_id: addon.id,
-                addon_name: addonData.name,
-                addon_price: addonData.price,
-                quantity: addon.quantity,
-              });
-            }
-          });
+          const orderItemId = insertedItemsMap.get(index.toString());
+          if (orderItemId) {
+            item.selectedAddons.forEach((addon) => {
+              const addonData = addonPriceMap.get(addon.id);
+              if (addonData) {
+                orderItemAddonsData.push({
+                  order_item_id: orderItemId,
+                  addon_id: addon.id,
+                  addon_name: addonData.name,
+                  addon_price: addonData.price,
+                  quantity: addon.quantity,
+                });
+              }
+            });
+          }
         }
       });
 
-      if (orderItemAddons.length > 0) {
-        const { error: addonsError } = await supabase
-          .from("order_item_addons")
-          .insert(orderItemAddons);
+      if (orderItemAddonsData.length > 0) {
+        const { error: addonsError } = await supabase.rpc(
+          'create_public_order_item_addons',
+          { p_addons: orderItemAddonsData }
+        );
 
         if (addonsError) throw addonsError;
       }
 
-      // Create initial status history
-      await supabase.from("order_status_history").insert({
-        order_id: orderData.id,
-        status: "pending",
-      });
-
       // Save last order to localStorage for quick tracking
       localStorage.setItem(`lastOrder_${slug}`, JSON.stringify({
-        orderId: orderData.id,
-        orderNumber: orderData.order_number,
+        orderId: orderId,
+        orderNumber: orderNumber,
         timestamp: Date.now()
       }));
 
@@ -370,7 +353,7 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
 
       clearCart();
       toast.success("Pedido enviado com sucesso!");
-      navigate(`/loja/${slug}/pedido/${orderData.id}`);
+      navigate(`/loja/${slug}/pedido/${orderId}`);
     } catch (error: any) {
       console.error("Checkout error:", error);
       toast.error("Erro ao enviar pedido: " + error.message);
