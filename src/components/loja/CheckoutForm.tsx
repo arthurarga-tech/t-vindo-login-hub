@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useCart } from "@/hooks/useCart";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, MapPin, ShoppingBag, Truck, Package, UtensilsCrossed, Calendar } from "lucide-react";
+import { ArrowLeft, MapPin, ShoppingBag, Truck, Package, UtensilsCrossed, Calendar, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,7 @@ import { usePublicEstablishment } from "@/hooks/usePublicStore";
 import { z } from "zod";
 import { formatInSaoPaulo } from "@/lib/dateUtils";
 import { ptBR } from "date-fns/locale";
+import { ScheduleSelector } from "./ScheduleSelector";
 
 type PaymentMethod = "cash" | "credit" | "debit" | "pix";
 type OrderType = "delivery" | "pickup" | "dine_in";
@@ -44,13 +45,17 @@ interface CustomerForm {
 
 interface CheckoutFormProps {
   scheduledFor?: Date | null;
+  allowScheduling?: boolean;
+  onScheduleChange?: (date: Date | null) => void;
+  openingHours?: any;
 }
 
-export function CheckoutForm({ scheduledFor }: CheckoutFormProps) {
+export function CheckoutForm({ scheduledFor, allowScheduling = false, onScheduleChange, openingHours }: CheckoutFormProps) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { items, totalPrice, clearCart } = useCart();
   const { data: establishment } = usePublicEstablishment(slug);
+  const [showScheduleOptions, setShowScheduleOptions] = useState(false);
 
   const [customer, setCustomer] = useState<CustomerForm>(() => {
     // Load saved customer data from localStorage
@@ -412,14 +417,106 @@ export function CheckoutForm({ scheduledFor }: CheckoutFormProps) {
       </header>
 
       <main className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
-        {/* Scheduled Order Banner */}
-        {scheduledFor && (
-          <Card className="border-primary bg-primary/5">
+        {/* Scheduling Options */}
+        {allowScheduling && (
+          <>
+            {scheduledFor ? (
+              <Card className="border-purple-500 bg-purple-50/50 dark:bg-purple-950/20">
+                <CardContent className="pt-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <Calendar className="h-5 w-5 text-purple-600" />
+                      <div>
+                        <p className="font-medium text-purple-700 dark:text-purple-400">Pedido Agendado</p>
+                        <p className="text-sm text-muted-foreground">
+                          Para {formatInSaoPaulo(scheduledFor, "EEEE, dd 'de' MMMM", { locale: ptBR })} às {formatInSaoPaulo(scheduledFor, "HH:mm", { locale: ptBR })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowScheduleOptions(true)}
+                        className="text-purple-600 hover:text-purple-700 hover:bg-purple-100"
+                      >
+                        Alterar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onScheduleChange?.(null)}
+                        className="text-muted-foreground hover:text-destructive h-8 w-8"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-dashed border-2">
+                <CardContent className="pt-4">
+                  {showScheduleOptions ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          Agendar para quando?
+                        </h3>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowScheduleOptions(false)}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                      <ScheduleSelector
+                        openingHours={openingHours || (establishment as any)?.opening_hours}
+                        onScheduleSelect={(date) => {
+                          onScheduleChange?.(date);
+                          if (date) setShowScheduleOptions(false);
+                        }}
+                        selectedDate={scheduledFor}
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Calendar className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">Pedido Imediato</p>
+                          <p className="text-sm text-muted-foreground">
+                            Será preparado assim que for confirmado
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowScheduleOptions(true)}
+                        className="gap-2"
+                      >
+                        <Calendar className="h-4 w-4" />
+                        Agendar
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
+
+        {/* Show scheduled banner when scheduling is not allowed but order is scheduled */}
+        {!allowScheduling && scheduledFor && (
+          <Card className="border-purple-500 bg-purple-50/50 dark:bg-purple-950/20">
             <CardContent className="pt-4">
               <div className="flex items-center gap-3">
-                <Calendar className="h-5 w-5 text-primary" />
+                <Calendar className="h-5 w-5 text-purple-600" />
                 <div>
-                  <p className="font-medium text-primary">Pedido Agendado</p>
+                  <p className="font-medium text-purple-700 dark:text-purple-400">Pedido Agendado</p>
                   <p className="text-sm text-muted-foreground">
                     Para {formatInSaoPaulo(scheduledFor, "EEEE, dd 'de' MMMM", { locale: ptBR })} às {formatInSaoPaulo(scheduledFor, "HH:mm", { locale: ptBR })}
                   </p>
