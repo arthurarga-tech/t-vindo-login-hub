@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { usePublicEstablishment } from "@/hooks/usePublicStore";
 import { CartProvider } from "@/hooks/useCart";
@@ -10,6 +10,40 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScheduleSelector } from "@/components/loja/ScheduleSelector";
 
+// Convert hex to HSL for CSS variables
+function hexToHSL(hex: string): string {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return "0 0% 0%";
+
+  let r = parseInt(result[1], 16) / 255;
+  let g = parseInt(result[2], 16) / 255;
+  let b = parseInt(result[3], 16) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        break;
+      case g:
+        h = ((b - r) / d + 2) / 6;
+        break;
+      case b:
+        h = ((r - g) / d + 4) / 6;
+        break;
+    }
+  }
+
+  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+}
+
 export default function CheckoutPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -20,6 +54,17 @@ export default function CheckoutPage() {
   const [showScheduler, setShowScheduler] = useState(false);
 
   const allowScheduling = (establishment as any)?.allow_scheduling ?? false;
+
+  // Generate custom CSS variables for theme
+  const customStyles = useMemo(() => {
+    const primaryColor = (establishment as any)?.theme_primary_color || "#ea580c";
+    const secondaryColor = (establishment as any)?.theme_secondary_color || "#1e293b";
+    
+    return {
+      "--store-primary": hexToHSL(primaryColor),
+      "--store-secondary": hexToHSL(secondaryColor),
+    } as React.CSSProperties;
+  }, [establishment]);
 
   if (isLoading) {
     return (
@@ -46,7 +91,7 @@ export default function CheckoutPage() {
   // Block checkout if store is closed AND scheduling not allowed
   if (!isOpen && !allowScheduling) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4" style={customStyles}>
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center space-y-4">
             <Clock className="h-16 w-16 text-destructive mx-auto" />
@@ -66,13 +111,13 @@ export default function CheckoutPage() {
     );
   }
 
-  // Store is closed but scheduling is allowed - show scheduling option
+  // Store is closed but scheduling is allowed - show scheduling option first
   if (!isOpen && allowScheduling && !showScheduler && !scheduledFor) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4" style={customStyles}>
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center space-y-4">
-            <Calendar className="h-16 w-16 text-primary mx-auto" />
+            <Calendar className="h-16 w-16 mx-auto" style={{ color: `hsl(var(--store-primary, var(--primary)))` }} />
             <h2 className="text-xl font-semibold">Estabelecimento Fechado</h2>
             <p className="text-muted-foreground">
               {nextOpenTime
@@ -83,7 +128,11 @@ export default function CheckoutPage() {
               Mas você pode agendar seu pedido para o próximo horário disponível!
             </p>
             <div className="flex flex-col gap-2">
-              <Button onClick={() => setShowScheduler(true)} className="gap-2">
+              <Button 
+                onClick={() => setShowScheduler(true)} 
+                className="gap-2"
+                style={{ backgroundColor: `hsl(var(--store-primary, var(--primary)))` }}
+              >
                 <Calendar className="h-4 w-4" />
                 Agendar Pedido
               </Button>
@@ -98,10 +147,10 @@ export default function CheckoutPage() {
     );
   }
 
-  // Show scheduler interface when scheduling
+  // Show scheduler interface when scheduling (store closed)
   if (!isOpen && allowScheduling && showScheduler && !scheduledFor) {
     return (
-      <div className="min-h-screen bg-background p-4">
+      <div className="min-h-screen bg-background p-4" style={customStyles}>
         <div className="max-w-md mx-auto space-y-4">
           <Button 
             variant="ghost" 
@@ -123,7 +172,14 @@ export default function CheckoutPage() {
 
   return (
     <CartProvider establishmentSlug={slug || ""}>
-      <CheckoutForm scheduledFor={scheduledFor} />
+      <div style={customStyles}>
+        <CheckoutForm 
+          scheduledFor={scheduledFor} 
+          allowScheduling={allowScheduling}
+          onScheduleChange={setScheduledFor}
+          openingHours={(establishment as any)?.opening_hours}
+        />
+      </div>
     </CartProvider>
   );
 }
