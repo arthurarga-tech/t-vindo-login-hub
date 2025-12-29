@@ -28,6 +28,8 @@ interface StoreHeaderProps {
   phone?: string | null;
   openingHours?: OpeningHours | null;
   primaryColor?: string | null;
+  isStoreOpen?: boolean;
+  allowScheduling?: boolean;
 }
 
 const dayKeys: Array<keyof OpeningHours> = [
@@ -69,7 +71,7 @@ function getCurrentDayStatus(openingHours?: OpeningHours | null): {
   }
 }
 
-export function StoreHeader({ establishmentName, logoUrl, bannerUrl, phone, openingHours, primaryColor }: StoreHeaderProps) {
+export function StoreHeader({ establishmentName, logoUrl, bannerUrl, phone, openingHours, primaryColor, isStoreOpen, allowScheduling = false }: StoreHeaderProps) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const status = getCurrentDayStatus(openingHours);
@@ -144,7 +146,7 @@ export function StoreHeader({ establishmentName, logoUrl, bannerUrl, phone, open
                   <span className="sm:hidden">{status.isOpen ? "✓" : "✕"}</span>
                 </Badge>
               )}
-              <CartDrawer />
+              <CartDrawer isStoreOpen={isStoreOpen} allowScheduling={allowScheduling} />
             </div>
           </div>
           

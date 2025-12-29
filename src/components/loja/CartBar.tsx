@@ -6,9 +6,10 @@ import { toast } from "sonner";
 
 interface CartBarProps {
   isStoreOpen?: boolean;
+  allowScheduling?: boolean;
 }
 
-export function CartBar({ isStoreOpen = true }: CartBarProps) {
+export function CartBar({ isStoreOpen = true, allowScheduling = false }: CartBarProps) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { totalItems, totalPrice } = useCart();
@@ -21,11 +22,18 @@ export function CartBar({ isStoreOpen = true }: CartBarProps) {
   };
 
   const handleClick = () => {
-    if (!isStoreOpen) {
+    if (!isStoreOpen && !allowScheduling) {
       toast.error("Estabelecimento fechado no momento. Consulte os horários de funcionamento.");
       return;
     }
     navigate(`/loja/${slug}/checkout`);
+  };
+
+  const getButtonText = () => {
+    if (!isStoreOpen && allowScheduling) {
+      return "Agendar Pedido";
+    }
+    return "Finalizar Pedido";
   };
 
   return (
@@ -38,7 +46,7 @@ export function CartBar({ isStoreOpen = true }: CartBarProps) {
     >
       <div className="max-w-4xl mx-auto">
         <Button 
-          className={`w-full h-12 sm:h-14 text-sm sm:text-base font-semibold ${!isStoreOpen ? 'opacity-70' : ''}`}
+          className={`w-full h-12 sm:h-14 text-sm sm:text-base font-semibold ${!isStoreOpen && !allowScheduling ? 'opacity-70' : ''}`}
           size="lg"
           onClick={handleClick}
           style={{ 
@@ -47,7 +55,7 @@ export function CartBar({ isStoreOpen = true }: CartBarProps) {
         >
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2">
-              {!isStoreOpen ? (
+              {!isStoreOpen && !allowScheduling ? (
                 <>
                   <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
                   <span className="text-xs sm:text-base">Fechado</span>
@@ -60,10 +68,10 @@ export function CartBar({ isStoreOpen = true }: CartBarProps) {
               )}
             </div>
             <span className="text-xs sm:text-base">
-              {isStoreOpen ? (
+              {isStoreOpen || allowScheduling ? (
                 <>
-                  <span className="hidden sm:inline">Finalizar Pedido • </span>
-                  <span className="sm:hidden">Finalizar • </span>
+                  <span className="hidden sm:inline">{getButtonText()} • </span>
+                  <span className="sm:hidden">{!isStoreOpen ? "Agendar • " : "Finalizar • "}</span>
                   {formatPrice(totalPrice)}
                 </>
               ) : formatPrice(totalPrice)}
