@@ -118,6 +118,8 @@ export default function StorePage() {
           phone={(establishment as any).phone}
           openingHours={(establishment as any).opening_hours}
           primaryColor={(establishment as any).theme_primary_color}
+          isStoreOpen={isOpen}
+          allowScheduling={(establishment as any).allow_scheduling}
         />
         
         <main className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-24">
@@ -182,7 +184,7 @@ export default function StorePage() {
           )}
         </main>
         
-        <CartBar isStoreOpen={isOpen} />
+        <CartBar isStoreOpen={isOpen} allowScheduling={(establishment as any).allow_scheduling} />
       </div>
     </CartProvider>
   );

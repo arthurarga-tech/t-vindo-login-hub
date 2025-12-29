@@ -1,4 +1,4 @@
-import { Search, Filter, X } from "lucide-react";
+import { Search, Filter, X, Calendar } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,6 +10,7 @@ export interface OrderFiltersState {
   status: OrderStatus | "all";
   dateRange: "all" | "today" | "yesterday" | "week";
   showFinished: boolean;
+  showScheduledOnly: boolean;
 }
 
 interface OrderFiltersProps {
@@ -40,7 +41,8 @@ export function OrderFilters({ filters, onChange }: OrderFiltersProps) {
     filters.search || 
     filters.status !== "all" || 
     filters.dateRange !== "all" ||
-    !filters.showFinished;
+    !filters.showFinished ||
+    filters.showScheduledOnly;
 
   const clearFilters = () => {
     onChange({
@@ -48,6 +50,7 @@ export function OrderFilters({ filters, onChange }: OrderFiltersProps) {
       status: "all",
       dateRange: "all",
       showFinished: true,
+      showScheduledOnly: false,
     });
   };
 
@@ -95,6 +98,16 @@ export function OrderFilters({ filters, onChange }: OrderFiltersProps) {
           ))}
         </SelectContent>
       </Select>
+
+      <Button
+        variant={filters.showScheduledOnly ? "default" : "outline"}
+        size="sm"
+        onClick={() => onChange({ ...filters, showScheduledOnly: !filters.showScheduledOnly })}
+        className={filters.showScheduledOnly ? "bg-purple-600 hover:bg-purple-700" : ""}
+      >
+        <Calendar className="h-4 w-4 mr-1" />
+        Agendados
+      </Button>
 
       <Button
         variant={filters.showFinished ? "outline" : "secondary"}

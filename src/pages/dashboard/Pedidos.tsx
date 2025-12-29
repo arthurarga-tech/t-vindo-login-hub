@@ -32,6 +32,7 @@ export default function Pedidos() {
     status: "all",
     dateRange: "all",
     showFinished: true,
+    showScheduledOnly: false,
   });
 
   const pendingOrders = orders?.filter((o) => o.status === "pending") || [];
@@ -182,7 +183,12 @@ export default function Pedidos() {
 
     // Hide finished orders (delivered/cancelled)
     if (!filters.showFinished) {
-      result = result.filter((o) => o.status !== "delivered" && o.status !== "cancelled");
+      result = result.filter((o) => o.status !== "delivered" && o.status !== "cancelled" && o.status !== "picked_up" && o.status !== "served");
+    }
+
+    // Show only scheduled orders
+    if (filters.showScheduledOnly) {
+      result = result.filter((o) => !!(o as any).scheduled_for);
     }
 
     return result;

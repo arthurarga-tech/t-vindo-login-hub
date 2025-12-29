@@ -1,11 +1,17 @@
-import { ShoppingCart, Plus, Minus, Trash2 } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Trash2, Calendar } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { useCart } from "@/hooks/useCart";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
-export function CartDrawer() {
+interface CartDrawerProps {
+  isStoreOpen?: boolean;
+  allowScheduling?: boolean;
+}
+
+export function CartDrawer({ isStoreOpen = true, allowScheduling = false }: CartDrawerProps) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { items, totalItems, totalPrice, updateQuantity, removeItem, clearCart } = useCart();
@@ -125,9 +131,23 @@ export function CartDrawer() {
                   className="w-full" 
                   size="lg" 
                   style={{ backgroundColor: "hsl(var(--store-primary, var(--primary)))" }}
-                  onClick={() => navigate(`/loja/${slug}/checkout`)}
+                  onClick={() => {
+                    if (!isStoreOpen && !allowScheduling) {
+                      toast.error("Estabelecimento fechado no momento.");
+                      return;
+                    }
+                    navigate(`/loja/${slug}/checkout`);
+                  }}
+                  disabled={!isStoreOpen && !allowScheduling}
                 >
-                  Finalizar Pedido
+                  {!isStoreOpen && allowScheduling ? (
+                    <>
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Agendar Pedido
+                    </>
+                  ) : (
+                    "Finalizar Pedido"
+                  )}
                 </Button>
               </SheetClose>
               

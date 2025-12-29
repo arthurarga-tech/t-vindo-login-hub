@@ -86,10 +86,12 @@ export function OrderCard({ order, onClick, onQuickStatusChange, nextStatus, com
     }
   };
 
+  const isScheduled = !!scheduledFor;
+  
   return (
     <Card 
-      className={`cursor-pointer hover:shadow-md transition-shadow border-l-4 ${compact ? 'text-sm' : ''}`}
-      style={{ borderLeftColor: order.status === "pending" ? "hsl(var(--destructive))" : "hsl(var(--primary))" }}
+      className={`cursor-pointer hover:shadow-md transition-shadow border-l-4 ${compact ? 'text-sm' : ''} ${isScheduled ? 'ring-2 ring-purple-500/50 bg-purple-50/30 dark:bg-purple-950/20' : ''}`}
+      style={{ borderLeftColor: isScheduled ? "hsl(270, 70%, 50%)" : order.status === "pending" ? "hsl(var(--destructive))" : "hsl(var(--primary))" }}
       onClick={onClick}
     >
       <CardHeader className={compact ? "p-2 pb-1" : "pb-2"}>
@@ -101,9 +103,9 @@ export function OrderCard({ order, onClick, onQuickStatusChange, nextStatus, com
               {getOrderTypeIcon()} {typeInfo.label}
             </Badge>
             {scheduledFor && (
-              <Badge variant="secondary" className={`flex items-center gap-0.5 ${compact ? "text-[10px] px-1 py-0" : "text-xs"}`}>
-                <Calendar className={compact ? "h-2.5 w-2.5" : "h-3 w-3"} />
-                {format(scheduledFor, "dd/MM HH:mm")}
+              <Badge className={`flex items-center gap-0.5 bg-purple-600 hover:bg-purple-700 text-white ${compact ? "text-[10px] px-1.5 py-0.5" : "text-xs px-2"}`}>
+                <Calendar className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} />
+                <span className="font-semibold">{format(scheduledFor, "dd/MM HH:mm")}</span>
               </Badge>
             )}
           </div>
