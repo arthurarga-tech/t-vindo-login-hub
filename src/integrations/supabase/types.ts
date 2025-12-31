@@ -791,6 +791,45 @@ export type Database = {
         Returns: undefined
       }
       create_public_order_items: { Args: { p_items: Json }; Returns: Json }
+      get_customer_stats_summary: {
+        Args: {
+          p_establishment_id: string
+          p_neighborhood?: string
+          p_search?: string
+        }
+        Returns: {
+          customers_with_orders: number
+          total_customers: number
+          total_orders: number
+          total_revenue: number
+        }[]
+      }
+      get_customers_with_stats: {
+        Args: {
+          p_establishment_id: string
+          p_limit?: number
+          p_neighborhood?: string
+          p_offset?: number
+          p_search?: string
+          p_sort_by?: string
+        }
+        Returns: {
+          address: string
+          address_complement: string
+          address_number: string
+          city: string
+          created_at: string
+          id: string
+          last_order_at: string
+          name: string
+          neighborhood: string
+          phone: string
+          total_count: number
+          total_orders: number
+          total_spent: number
+          updated_at: string
+        }[]
+      }
       get_public_order_by_id: { Args: { p_order_id: string }; Returns: Json }
       get_public_order_by_number: {
         Args: { p_establishment_id: string; p_order_number: number }

@@ -1,14 +1,30 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Users, TrendingUp, ShoppingBag, UserCheck } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCustomers, CustomerWithStats } from "@/hooks/useCustomers";
+import { useCustomers, useCustomerStats, CustomerWithStats } from "@/hooks/useCustomers";
 import { CustomerTable } from "@/components/clientes/CustomerTable";
 import { CustomerFilters, CustomerFiltersState, SortOption } from "@/components/clientes/CustomerFilters";
 import { CustomerDetailModal } from "@/components/clientes/CustomerDetailModal";
+import { usePagination } from "@/hooks/usePagination";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function Clientes() {
-  const { data: customers, isLoading } = useCustomers();
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerWithStats | null>(null);
   const [filters, setFilters] = useState<CustomerFiltersState>({
     search: "",
@@ -16,81 +32,94 @@ export default function Clientes() {
     sortBy: "recent",
   });
 
-  // Get unique neighborhoods for filter
-  const neighborhoods = useMemo(() => {
-    if (!customers) return [];
-    const unique = new Set(
-      customers
-        .map((c) => c.neighborhood)
-        .filter((n): n is string => !!n && n !== "Localização via WhatsApp")
-    );
-    return Array.from(unique).sort();
-  }, [customers]);
+  const {
+    pagination,
+    totalPages,
+    setPage,
+    setPageSize,
+    setTotalCount,
+    hasNextPage,
+    hasPrevPage,
+  } = usePagination({ initialPageSize: 50 });
 
-  // Filter and sort customers
-  const filteredCustomers = useMemo(() => {
-    if (!customers) return [];
+  const { data: customersData, isLoading } = useCustomers(
+    { search: filters.search, neighborhood: filters.neighborhood, sortBy: filters.sortBy },
+    { page: pagination.page, pageSize: pagination.pageSize }
+  );
 
-    let result = [...customers];
+  const { data: stats } = useCustomerStats({
+    search: filters.search,
+    neighborhood: filters.neighborhood,
+  });
 
-    // Search filter
-    if (filters.search) {
-      const search = filters.search.toLowerCase();
-      result = result.filter(
-        (c) =>
-          c.name.toLowerCase().includes(search) ||
-          c.phone.includes(filters.search)
-      );
-    }
-
-    // Neighborhood filter
-    if (filters.neighborhood) {
-      result = result.filter((c) => c.neighborhood === filters.neighborhood);
-    }
-
-    // Sort
-    switch (filters.sortBy) {
-      case "orders":
-        result.sort((a, b) => b.total_orders - a.total_orders);
-        break;
-      case "spent":
-        result.sort((a, b) => b.total_spent - a.total_spent);
-        break;
-      case "name":
-        result.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case "recent":
-      default:
-        result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        break;
-    }
-
-    return result;
-  }, [customers, filters]);
-
-  // Calculate stats
-  const stats = useMemo(() => {
-    if (!customers || customers.length === 0) {
-      return { total: 0, withOrders: 0, totalRevenue: 0, avgTicket: 0 };
-    }
-
-    const withOrders = customers.filter((c) => c.total_orders > 0);
-    const totalRevenue = customers.reduce((sum, c) => sum + c.total_spent, 0);
-    const totalOrders = customers.reduce((sum, c) => sum + c.total_orders, 0);
-
-    return {
-      total: customers.length,
-      withOrders: withOrders.length,
-      totalRevenue,
-      avgTicket: totalOrders > 0 ? totalRevenue / totalOrders : 0,
-    };
-  }, [customers]);
+  // Update total count when data changes
+  if (customersData && customersData.totalCount !== pagination.totalCount) {
+    setTotalCount(customersData.totalCount);
+  }
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
     }).format(price);
+  };
+
+  const renderPaginationItems = () => {
+    const items = [];
+    const maxVisible = 5;
+    let startPage = Math.max(1, pagination.page - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+    if (endPage - startPage + 1 < maxVisible) {
+      startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+
+    if (startPage > 1) {
+      items.push(
+        <PaginationItem key={1}>
+          <PaginationLink onClick={() => setPage(1)}>1</PaginationLink>
+        </PaginationItem>
+      );
+      if (startPage > 2) {
+        items.push(
+          <PaginationItem key="start-ellipsis">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      items.push(
+        <PaginationItem key={i}>
+          <PaginationLink
+            isActive={i === pagination.page}
+            onClick={() => setPage(i)}
+          >
+            {i}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        items.push(
+          <PaginationItem key="end-ellipsis">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+      }
+      items.push(
+        <PaginationItem key={totalPages}>
+          <PaginationLink onClick={() => setPage(totalPages)}>
+            {totalPages}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+
+    return items;
   };
 
   if (isLoading) {
@@ -106,6 +135,13 @@ export default function Clientes() {
       </div>
     );
   }
+
+  const customers = customersData?.customers || [];
+  const neighborhoods = customersData?.neighborhoods || [];
+  const displayStats = stats || { total: 0, withOrders: 0, totalRevenue: 0, avgTicket: 0 };
+
+  const startItem = (pagination.page - 1) * pagination.pageSize + 1;
+  const endItem = Math.min(pagination.page * pagination.pageSize, pagination.totalCount);
 
   return (
     <div className="space-y-6">
@@ -123,7 +159,7 @@ export default function Clientes() {
                 <Users className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-2xl font-bold">{displayStats.total}</p>
                 <p className="text-sm text-muted-foreground">Total de Clientes</p>
               </div>
             </div>
@@ -137,7 +173,7 @@ export default function Clientes() {
                 <UserCheck className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{stats.withOrders}</p>
+                <p className="text-2xl font-bold">{displayStats.withOrders}</p>
                 <p className="text-sm text-muted-foreground">Com Pedidos</p>
               </div>
             </div>
@@ -151,7 +187,7 @@ export default function Clientes() {
                 <TrendingUp className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{formatPrice(stats.totalRevenue)}</p>
+                <p className="text-2xl font-bold">{formatPrice(displayStats.totalRevenue)}</p>
                 <p className="text-sm text-muted-foreground">Receita Total</p>
               </div>
             </div>
@@ -165,7 +201,7 @@ export default function Clientes() {
                 <ShoppingBag className="h-6 w-6 text-amber-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{formatPrice(stats.avgTicket)}</p>
+                <p className="text-2xl font-bold">{formatPrice(displayStats.avgTicket)}</p>
                 <p className="text-sm text-muted-foreground">Ticket Médio</p>
               </div>
             </div>
@@ -174,17 +210,67 @@ export default function Clientes() {
       </div>
 
       {/* Filters */}
-      <CustomerFilters 
+      <CustomerFilters
         filters={filters}
         neighborhoods={neighborhoods}
-        onChange={setFilters}
+        onChange={(newFilters) => {
+          setFilters(newFilters);
+          setPage(1); // Reset to first page when filters change
+        }}
       />
 
       {/* Customer Table */}
-      <CustomerTable 
-        customers={filteredCustomers}
+      <CustomerTable
+        customers={customers}
         onCustomerClick={setSelectedCustomer}
       />
+
+      {/* Pagination */}
+      {pagination.totalCount > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span>
+              Mostrando {startItem}-{endItem} de {pagination.totalCount} clientes
+            </span>
+            <div className="flex items-center gap-2">
+              <span>Por página:</span>
+              <Select
+                value={String(pagination.pageSize)}
+                onValueChange={(value) => setPageSize(Number(value))}
+              >
+                <SelectTrigger className="w-[70px] h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {totalPages > 1 && (
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => hasPrevPage && setPage(pagination.page - 1)}
+                    className={!hasPrevPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+                {renderPaginationItems()}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => hasNextPage && setPage(pagination.page + 1)}
+                    className={!hasNextPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
+        </div>
+      )}
 
       {/* Customer Detail Modal */}
       <CustomerDetailModal
