@@ -10,6 +10,13 @@ interface PrintOrderOptions {
   useQZTray?: boolean;
   qzTrayPrinter?: string | null;
   qzPrintFn?: (html: string, printer: string) => Promise<boolean>;
+  isPrinterAvailable?: boolean;
+}
+
+export interface PrintResult {
+  success: boolean;
+  usedFallback: boolean;
+  printerUnavailable?: boolean;
 }
 
 function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: string | null): string {
@@ -228,17 +235,27 @@ export function usePrintOrder() {
     useQZTray = false,
     qzTrayPrinter,
     qzPrintFn,
-  }: PrintOrderOptions): Promise<boolean> => {
+    isPrinterAvailable = true,
+  }: PrintOrderOptions): Promise<PrintResult> => {
     const htmlContent = generateReceiptHtml(order, establishmentName, logoUrl);
+
+    // Check if printer is available when using QZ Tray
+    if (useQZTray && qzTrayPrinter && !isPrinterAvailable) {
+      console.warn("[usePrintOrder] Impressora não disponível:", qzTrayPrinter);
+      return { success: false, usedFallback: false, printerUnavailable: true };
+    }
 
     // Use QZ Tray for silent printing if enabled
     if (useQZTray && qzTrayPrinter && qzPrintFn) {
       try {
         const success = await qzPrintFn(htmlContent, qzTrayPrinter);
-        return success;
+        if (success) {
+          return { success: true, usedFallback: false };
+        }
+        // If QZ print failed, fall through to browser print
+        console.warn("[usePrintOrder] QZ Tray print failed, falling back to browser print");
       } catch (error) {
-        console.error("QZ Tray print failed, falling back to browser print:", error);
-        // Fall through to browser print
+        console.error("[usePrintOrder] QZ Tray print error, falling back to browser print:", error);
       }
     }
 
@@ -251,9 +268,13 @@ export function usePrintOrder() {
         printWindow.print();
         printWindow.onafterprint = () => printWindow.close();
       };
-      return true;
+      
+      // Return fallback info
+      const usedFallback = useQZTray && !!qzTrayPrinter;
+      return { success: true, usedFallback };
     }
-    return false;
+    
+    return { success: false, usedFallback: false };
   }, []);
 
   return { printOrder };

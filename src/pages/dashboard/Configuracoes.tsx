@@ -387,37 +387,49 @@ export default function Configuracoes() {
       </Card>
 
       {/* Card - QZ Tray - Impressão Direta */}
-      {printMode !== "none" && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Printer className="h-5 w-5 text-primary" />
-              <CardTitle>Impressão Direta com QZ Tray</CardTitle>
-            </div>
-            <CardDescription>
-              Configure a impressão silenciosa (sem diálogo) usando o QZ Tray
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Enable/Disable Switch */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-              <div className="space-y-0.5">
-                <Label htmlFor="qz-enabled" className="font-medium cursor-pointer">
-                  Usar QZ Tray para impressão silenciosa
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Imprime diretamente na impressora, sem clicar em "OK"
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Printer className="h-5 w-5 text-primary" />
+            <CardTitle>Impressão Direta com QZ Tray</CardTitle>
+          </div>
+          <CardDescription>
+            Configure a impressão silenciosa (sem diálogo) usando o QZ Tray
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Warning when print mode is none */}
+          {printMode === "none" && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
+              <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium text-amber-700 dark:text-amber-300">Impressão automática desativada</p>
+                <p className="text-amber-600 dark:text-amber-400">
+                  Para usar impressão automática com QZ Tray, selecione um modo de impressão acima.
                 </p>
               </div>
-              <Switch
-                id="qz-enabled"
-                checked={qzTrayEnabled}
-                onCheckedChange={setQzTrayEnabled}
-              />
             </div>
+          )}
+          
+          {/* Enable/Disable Switch */}
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+            <div className="space-y-0.5">
+              <Label htmlFor="qz-enabled" className="font-medium cursor-pointer">
+                Usar QZ Tray para impressão silenciosa
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Imprime diretamente na impressora, sem clicar em "OK"
+              </p>
+            </div>
+            <Switch
+              id="qz-enabled"
+              checked={qzTrayEnabled}
+              onCheckedChange={setQzTrayEnabled}
+            />
+          </div>
 
-            {qzTrayEnabled && (
-              <div className="space-y-4 pt-4 border-t">
+          {qzTrayEnabled && (
+            <div className="space-y-4 pt-4 border-t">
                 {/* Connection Status */}
                 <div className="flex items-center justify-between p-3 rounded-lg border">
                   <div className="flex items-center gap-2">
@@ -582,9 +594,8 @@ export default function Configuracoes() {
                 </Collapsible>
               </div>
             )}
-          </CardContent>
-        </Card>
-      )}
+        </CardContent>
+      </Card>
 
       {/* Card - Taxas de Pagamento */}
       <Card>
