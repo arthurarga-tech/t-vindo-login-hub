@@ -17,6 +17,12 @@ export interface PrintResult {
   success: boolean;
   usedFallback: boolean;
   printerUnavailable?: boolean;
+  isMobile?: boolean;
+}
+
+// Detect mobile devices
+function isMobileDevice(): boolean {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
 function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: string | null): string {
@@ -269,24 +275,86 @@ export function usePrintOrder() {
     }
 
     // Always fallback to browser print
-    console.log("[usePrintOrder] Usando impressão do navegador");
-    const printWindow = window.open("", "_blank", "width=300,height=600");
-    if (printWindow) {
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-      printWindow.onload = () => {
-        printWindow.print();
-        printWindow.onafterprint = () => printWindow.close();
-      };
+    const mobile = isMobileDevice();
+    console.log("[usePrintOrder] Usando impressão do navegador, isMobile:", mobile);
+    
+    const usedFallback = useQZTray && !!qzTrayPrinter;
+
+    if (mobile) {
+      // Mobile: Open new window with print button for user to tap
+      const mobileHtml = htmlContent.replace('</body>', `
+        <div id="print-button-container" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; text-align: center;">
+          <button onclick="window.print()" style="padding: 16px 32px; font-size: 18px; background: #22c55e; color: white; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); font-weight: bold;">
+            🖨️ Imprimir Pedido
+          </button>
+          <p style="margin-top: 8px; font-size: 12px; color: #666;">Toque no botão acima para imprimir</p>
+        </div>
+        <style>
+          @media print { 
+            #print-button-container { display: none !important; } 
+          }
+        </style>
+      </body>`);
       
-      // Return fallback info only if QZ was supposed to be used
-      const usedFallback = useQZTray && !!qzTrayPrinter;
-      console.log("[usePrintOrder] Janela de impressão aberta, usedFallback:", usedFallback);
-      return { success: true, usedFallback };
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(mobileHtml);
+        printWindow.document.close();
+        console.log("[usePrintOrder] Página mobile de impressão aberta");
+        return { success: true, usedFallback, isMobile: true };
+      }
+    } else {
+      // Desktop: Use hidden iframe for more reliable printing
+      try {
+        const iframe = document.createElement('iframe');
+        iframe.style.cssText = 'position: fixed; top: 0; left: 0; width: 0; height: 0; border: none; visibility: hidden;';
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (doc) {
+          doc.open();
+          doc.write(htmlContent);
+          doc.close();
+          
+          // Wait for content to load before printing
+          setTimeout(() => {
+            try {
+              iframe.contentWindow?.focus();
+              iframe.contentWindow?.print();
+            } catch (e) {
+              console.error("[usePrintOrder] Erro ao imprimir via iframe:", e);
+            }
+            // Remove iframe after printing
+            setTimeout(() => {
+              iframe.remove();
+            }, 1000);
+          }, 250);
+          
+          console.log("[usePrintOrder] Iframe de impressão criado");
+          return { success: true, usedFallback, isMobile: false };
+        }
+        
+        iframe.remove();
+      } catch (error) {
+        console.error("[usePrintOrder] Erro ao criar iframe:", error);
+      }
+      
+      // Fallback: Use window.open if iframe fails
+      console.log("[usePrintOrder] Fallback para window.open");
+      const printWindow = window.open("", "_blank", "width=300,height=600");
+      if (printWindow) {
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        printWindow.onload = () => {
+          printWindow.print();
+          printWindow.onafterprint = () => printWindow.close();
+        };
+        return { success: true, usedFallback, isMobile: false };
+      }
     }
     
     console.error("[usePrintOrder] Falha ao abrir janela de impressão");
-    return { success: false, usedFallback: false };
+    return { success: false, usedFallback: false, isMobile: mobile };
   }, []);
 
   return { printOrder };

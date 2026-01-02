@@ -107,6 +107,10 @@ export default function Pedidos() {
             toast.error(`Impressora "${qzTrayPrinter}" não encontrada`, {
               description: "Verifique se está ligada ou configure outra em Configurações",
             });
+          } else if (result.isMobile) {
+            toast.info("Toque no botão verde para imprimir", {
+              description: "Dispositivo móvel detectado - toque em 'Imprimir Pedido' na nova janela",
+            });
           } else if (result.usedFallback) {
             toast.warning("Usando impressão do navegador", {
               description: "QZ Tray indisponível - confirme a impressão na janela do navegador",
