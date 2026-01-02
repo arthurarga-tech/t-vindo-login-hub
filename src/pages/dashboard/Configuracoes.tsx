@@ -46,6 +46,7 @@ export default function Configuracoes() {
   // Print customization settings
   const [printFontSize, setPrintFontSize] = useState(12);
   const [printMarginLeft, setPrintMarginLeft] = useState(0);
+  const [printMarginRight, setPrintMarginRight] = useState(0);
   
   // Theme colors
   const [themePrimaryColor, setThemePrimaryColor] = useState("#ea580c");
@@ -77,6 +78,7 @@ export default function Configuracoes() {
       setQzTrayPrinter((establishment as any).qz_tray_printer || "");
       setPrintFontSize((establishment as any).print_font_size || 12);
       setPrintMarginLeft((establishment as any).print_margin_left || 0);
+      setPrintMarginRight((establishment as any).print_margin_right || 0);
       setThemePrimaryColor((establishment as any).theme_primary_color || "#ea580c");
       setThemeSecondaryColor((establishment as any).theme_secondary_color || "#1e293b");
       setCardCreditFee(String((establishment as any).card_credit_fee || 0));
@@ -175,6 +177,7 @@ export default function Configuracoes() {
           qz_tray_printer: qzTrayPrinter || null,
           print_font_size: printFontSize,
           print_margin_left: printMarginLeft,
+          print_margin_right: printMarginRight,
           theme_primary_color: themePrimaryColor,
           theme_secondary_color: themeSecondaryColor,
           card_credit_fee: parseFloat(cardCreditFee.replace(",", ".")) || 0,
@@ -454,6 +457,30 @@ export default function Configuracoes() {
                 Ajuste para centralizar o conteúdo na sua impressora térmica
               </p>
             </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="printMarginRight">Ajuste de Margem Direita</Label>
+                <span className="text-sm font-medium text-muted-foreground">{printMarginRight}mm</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-xs text-muted-foreground">-5mm</span>
+                <input
+                  type="range"
+                  id="printMarginRight"
+                  min="-5"
+                  max="10"
+                  step="1"
+                  value={printMarginRight}
+                  onChange={(e) => setPrintMarginRight(Number(e.target.value))}
+                  className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                />
+                <span className="text-xs text-muted-foreground">10mm</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Ajuste para evitar cortes do lado direito
+              </p>
+            </div>
           </div>
 
           {/* Preview */}
@@ -463,7 +490,8 @@ export default function Configuracoes() {
               className="bg-background border rounded p-3 max-w-[200px] mx-auto font-mono"
               style={{ 
                 fontSize: `${Math.max(10, printFontSize - 2)}px`,
-                paddingLeft: `${Math.max(0, printMarginLeft * 2 + 12)}px`
+                paddingLeft: `${Math.max(0, printMarginLeft * 2 + 12)}px`,
+                paddingRight: `${Math.max(0, printMarginRight * 2 + 12)}px`
               }}
             >
               <div className="text-center font-bold mb-1">PEDIDO #123</div>
@@ -478,6 +506,80 @@ export default function Configuracoes() {
                 <span>R$ 25,00</span>
               </div>
             </div>
+          </div>
+
+          {/* Test Print Button */}
+          <div className="pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                const { generateReceiptHtml } = await import("@/hooks/usePrintOrder");
+                const testOrder = {
+                  id: "test",
+                  order_number: 123,
+                  order_type: "delivery",
+                  status: "confirmed",
+                  payment_method: "pix",
+                  subtotal: 25.00,
+                  delivery_fee: 5.00,
+                  total: 30.00,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                  establishment_id: establishment?.id || "",
+                  customer_id: "test",
+                  customer: {
+                    id: "test",
+                    name: "Cliente Teste",
+                    phone: "(11) 99999-9999",
+                    address: "Rua Exemplo",
+                    address_number: "123",
+                    neighborhood: "Centro",
+                    city: "São Paulo",
+                    establishment_id: establishment?.id || "",
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                  },
+                  items: [
+                    {
+                      id: "item1",
+                      order_id: "test",
+                      product_id: "prod1",
+                      product_name: "Produto de Teste",
+                      product_price: 25.00,
+                      quantity: 1,
+                      total: 25.00,
+                      created_at: new Date().toISOString(),
+                      addons: []
+                    }
+                  ]
+                };
+                
+                const html = generateReceiptHtml(
+                  testOrder as any,
+                  establishment?.name || "Estabelecimento",
+                  establishment?.logo_url,
+                  printFontSize,
+                  printMarginLeft,
+                  printMarginRight
+                );
+                
+                const printWindow = window.open("", "_blank", "width=400,height=600");
+                if (printWindow) {
+                  printWindow.document.write(html);
+                  printWindow.document.close();
+                  printWindow.onload = () => {
+                    printWindow.print();
+                  };
+                }
+              }}
+              className="w-full"
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Imprimir Teste
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2 text-center">
+              Imprime um pedido de exemplo com as configurações atuais
+            </p>
           </div>
         </CardContent>
       </Card>

@@ -46,6 +46,7 @@ export default function Pedidos() {
   const printerAvailable = qzTray.isPrinterAvailable(qzTrayPrinter);
   const printFontSize = (establishment as any)?.print_font_size || 12;
   const printMarginLeft = (establishment as any)?.print_margin_left || 0;
+  const printMarginRight = (establishment as any)?.print_margin_right || 0;
   
   // Print mode labels for badge
   const printModeLabels: Record<string, string> = {
@@ -104,6 +105,7 @@ export default function Pedidos() {
             isPrinterAvailable: printerAvailable,
             printFontSize,
             printMarginLeft,
+            printMarginRight,
           });
           
           // Show toast notifications based on result
@@ -360,6 +362,7 @@ export default function Pedidos() {
         isPrinterAvailable={printerAvailable}
         printFontSize={printFontSize}
         printMarginLeft={printMarginLeft}
+        printMarginRight={printMarginRight}
       />
     </div>
   );
