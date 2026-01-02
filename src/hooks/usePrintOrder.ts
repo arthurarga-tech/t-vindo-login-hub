@@ -239,17 +239,26 @@ export function usePrintOrder() {
   }: PrintOrderOptions): Promise<PrintResult> => {
     const htmlContent = generateReceiptHtml(order, establishmentName, logoUrl);
 
+    console.log("[usePrintOrder] Iniciando impressão", {
+      useQZTray,
+      qzTrayPrinter,
+      isPrinterAvailable,
+      hasQzPrintFn: !!qzPrintFn,
+    });
+
     // Check if printer is available when using QZ Tray
     if (useQZTray && qzTrayPrinter && !isPrinterAvailable) {
-      console.warn("[usePrintOrder] Impressora não disponível:", qzTrayPrinter);
-      return { success: false, usedFallback: false, printerUnavailable: true };
+      console.warn("[usePrintOrder] Impressora não disponível, usando fallback do navegador:", qzTrayPrinter);
+      // Fall through to browser print instead of returning error
     }
 
-    // Use QZ Tray for silent printing if enabled
-    if (useQZTray && qzTrayPrinter && qzPrintFn) {
+    // Use QZ Tray for silent printing if enabled and printer is available
+    if (useQZTray && qzTrayPrinter && qzPrintFn && isPrinterAvailable) {
       try {
+        console.log("[usePrintOrder] Tentando imprimir via QZ Tray...");
         const success = await qzPrintFn(htmlContent, qzTrayPrinter);
         if (success) {
+          console.log("[usePrintOrder] Impressão QZ Tray bem sucedida");
           return { success: true, usedFallback: false };
         }
         // If QZ print failed, fall through to browser print
@@ -259,7 +268,8 @@ export function usePrintOrder() {
       }
     }
 
-    // Fallback to browser print
+    // Always fallback to browser print
+    console.log("[usePrintOrder] Usando impressão do navegador");
     const printWindow = window.open("", "_blank", "width=300,height=600");
     if (printWindow) {
       printWindow.document.write(htmlContent);
@@ -269,11 +279,13 @@ export function usePrintOrder() {
         printWindow.onafterprint = () => printWindow.close();
       };
       
-      // Return fallback info
+      // Return fallback info only if QZ was supposed to be used
       const usedFallback = useQZTray && !!qzTrayPrinter;
+      console.log("[usePrintOrder] Janela de impressão aberta, usedFallback:", usedFallback);
       return { success: true, usedFallback };
     }
     
+    console.error("[usePrintOrder] Falha ao abrir janela de impressão");
     return { success: false, usedFallback: false };
   }, []);
 
