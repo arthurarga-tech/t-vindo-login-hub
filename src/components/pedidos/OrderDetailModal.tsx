@@ -93,15 +93,23 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
     : null;
 
   const handlePrint = async () => {
+    console.log("[OrderDetailModal] handlePrint chamado", {
+      qzTrayEnabled,
+      qzTrayPrinter,
+      isPrinterAvailable,
+    });
+    
     const result = await printOrder({
       order,
       establishmentName,
       logoUrl,
-      useQZTray: qzTrayEnabled,
+      useQZTray: qzTrayEnabled && !!qzTrayPrinter,
       qzTrayPrinter,
       qzPrintFn,
       isPrinterAvailable,
     });
+    
+    console.log("[OrderDetailModal] Resultado da impressão:", result);
     
     if (result.printerUnavailable) {
       toast.error(`Impressora "${qzTrayPrinter}" não encontrada`, {
@@ -111,6 +119,8 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
       toast.warning("Usando impressão do navegador", {
         description: "QZ Tray indisponível - confirme a impressão na janela do navegador",
       });
+    } else if (result.success) {
+      toast.success("Pedido enviado para impressão");
     }
   };
 
@@ -127,7 +137,12 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
       
       // Auto print on confirm if configured
       if (printMode === "on_confirm" && newStatus === "confirmed") {
-        handlePrint();
+        console.log("[OrderDetailModal] Imprimindo automaticamente ao confirmar pedido", {
+          qzTrayEnabled,
+          qzTrayPrinter,
+          isPrinterAvailable,
+        });
+        await handlePrint();
       }
       
       onClose(); // Fecha o modal para mostrar dados atualizados
