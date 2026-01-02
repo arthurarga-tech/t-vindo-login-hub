@@ -123,8 +123,16 @@ function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: 
       margin-top: 8px;
     }
     .total-row {
-      display: flex;
-      justify-content: space-between;
+      width: 100%;
+      overflow: hidden;
+    }
+    .total-row .label {
+      float: left;
+    }
+    .total-row .value {
+      float: right;
+      text-align: right;
+      max-width: 50%;
     }
     .total-final {
       font-weight: bold;
@@ -196,23 +204,23 @@ function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: 
     <div class="section-title">Pagamento: ${paymentMethodLabels[order.payment_method] || order.payment_method}</div>
     <div class="totals">
       <div class="total-row">
-        <span>Subtotal</span>
-        <span>R$ ${order.subtotal.toFixed(2).replace(".", ",")}</span>
+        <span class="label">Subtotal</span>
+        <span class="value">R$ ${order.subtotal.toFixed(2).replace(".", ",")}</span>
       </div>
       ${order.delivery_fee > 0 ? `
         <div class="total-row">
-          <span>Taxa de entrega</span>
-          <span>R$ ${order.delivery_fee.toFixed(2).replace(".", ",")}</span>
+          <span class="label">Taxa entrega</span>
+          <span class="value">R$ ${order.delivery_fee.toFixed(2).replace(".", ",")}</span>
         </div>
       ` : ""}
       <div class="total-row total-final">
-        <span>TOTAL</span>
-        <span>R$ ${order.total.toFixed(2).replace(".", ",")}</span>
+        <span class="label">TOTAL</span>
+        <span class="value">R$ ${order.total.toFixed(2).replace(".", ",")}</span>
       </div>
       ${order.payment_method === "cash" && (order as any).change_for && (order as any).change_for > 0 ? `
         <div style="margin-top: 8px; padding: 4px; border: 1px solid #000; text-align: center;">
-          <div><strong>TROCO PARA:</strong> R$ ${((order as any).change_for).toFixed(2).replace(".", ",")}</div>
-          <div style="font-size: 14px; font-weight: bold;">LEVAR: R$ ${((order as any).change_for - order.total).toFixed(2).replace(".", ",")}</div>
+          <div><strong>TROCO:</strong> R$ ${((order as any).change_for).toFixed(2).replace(".", ",")}</div>
+          <div style="font-size: 13px; font-weight: bold;">LEVAR: R$ ${((order as any).change_for - order.total).toFixed(2).replace(".", ",")}</div>
         </div>
       ` : ""}
     </div>
