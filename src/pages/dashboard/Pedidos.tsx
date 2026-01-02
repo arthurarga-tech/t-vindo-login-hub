@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { ClipboardList, LayoutGrid, List, Volume2, VolumeX, RefreshCw, Timer, Wifi, WifiOff } from "lucide-react";
+import { ClipboardList, LayoutGrid, List, Volume2, VolumeX, RefreshCw, Timer, Wifi, WifiOff, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,6 +15,7 @@ import { usePrintOrder } from "@/hooks/usePrintOrder";
 import { usePreparationTime } from "@/hooks/usePreparationTime";
 import { useQZTrayContext } from "@/contexts/QZTrayContext";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 
 export default function Pedidos() {
   const { data: orders, isLoading, refetch } = useOrders();
@@ -42,7 +43,13 @@ export default function Pedidos() {
   const logoUrl = establishment?.logo_url;
   const qzTrayEnabled = (establishment as any)?.qz_tray_enabled === true;
   const qzTrayPrinter = qzTray.savedPrinter || (establishment as any)?.qz_tray_printer || "";
-
+  const printerAvailable = qzTray.isPrinterAvailable(qzTrayPrinter);
+  
+  // Print mode labels for badge
+  const printModeLabels: Record<string, string> = {
+    on_order: "🖨️ Ao receber",
+    on_confirm: "🖨️ Ao confirmar",
+  };
   // Play notification sound and auto-print when new pending orders arrive
   // Note: QZ Tray auto-connection is now handled by the global QZTrayProvider
   useEffect(() => {
@@ -75,29 +82,42 @@ export default function Pedidos() {
         // Check if QZ Tray should be used
         const shouldUseQZ = qzTrayEnabled && qzTrayPrinter && qzTray.isConnected;
         
-        newPendingOrders.forEach((order) => {
+        newPendingOrders.forEach(async (order) => {
           printedOrdersRef.current.add(order.id);
           
           console.log("[Pedidos] Imprimindo pedido #" + order.order_number, {
             useQZTray: shouldUseQZ,
             printer: qzTrayPrinter,
-            qzConnected: qzTray.isConnected
+            qzConnected: qzTray.isConnected,
+            printerAvailable
           });
           
-          printOrder({
+          const result = await printOrder({
             order,
             establishmentName,
             logoUrl,
             useQZTray: shouldUseQZ,
             qzTrayPrinter,
             qzPrintFn: qzTray.printHtml,
+            isPrinterAvailable: printerAvailable,
           });
+          
+          // Show toast notifications based on result
+          if (result.printerUnavailable) {
+            toast.error(`Impressora "${qzTrayPrinter}" não encontrada`, {
+              description: "Verifique se está ligada ou configure outra em Configurações",
+            });
+          } else if (result.usedFallback) {
+            toast.warning("Usando impressão do navegador", {
+              description: "QZ Tray indisponível - confirme a impressão na janela do navegador",
+            });
+          }
         });
       }
     }
     
     previousPendingCountRef.current = pendingCount;
-  }, [pendingCount, soundEnabled, orders, printMode, establishmentName, logoUrl, printOrder, qzTrayEnabled, qzTray.isConnected, qzTrayPrinter, qzTray.printHtml]);
+  }, [pendingCount, soundEnabled, orders, printMode, establishmentName, logoUrl, printOrder, qzTrayEnabled, qzTray.isConnected, qzTrayPrinter, qzTray.printHtml, printerAvailable]);
 
   const playNotificationSound = () => {
     try {
@@ -224,6 +244,23 @@ export default function Pedidos() {
               Preparo: ~{preparationTime.averageMinutes} min
             </Badge>
           )}
+          {/* Print Mode Badge */}
+          {printMode !== "none" && printModeLabels[printMode] && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="outline" className="flex items-center gap-1 cursor-help">
+                  <Printer className="h-3 w-3" />
+                  {printModeLabels[printMode]}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                {printMode === "on_order" 
+                  ? "Pedidos são impressos automaticamente ao serem recebidos"
+                  : "Pedidos são impressos automaticamente ao serem confirmados"
+                }
+              </TooltipContent>
+            </Tooltip>
+          )}
           {/* QZ Tray Status Indicator */}
           {qzTrayEnabled && (
             <Tooltip>
@@ -312,6 +349,7 @@ export default function Pedidos() {
         qzTrayEnabled={qzTrayEnabled && qzTray.isConnected}
         qzTrayPrinter={qzTrayPrinter}
         qzPrintFn={qzTray.printHtml}
+        isPrinterAvailable={printerAvailable}
       />
     </div>
   );

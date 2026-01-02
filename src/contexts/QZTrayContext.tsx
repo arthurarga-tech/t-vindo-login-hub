@@ -14,6 +14,7 @@ interface QZTrayContextState {
   getPrinters: () => Promise<string[]>;
   printHtml: (htmlContent: string, printerName: string) => Promise<boolean>;
   setSavedPrinter: (printer: string | null) => void;
+  isPrinterAvailable: (printerName: string) => boolean;
 }
 
 const QZTrayContext = createContext<QZTrayContextState | null>(null);
@@ -342,6 +343,11 @@ export function QZTrayProvider({ children, enabled = false, savedPrinterName = n
   const isConnected = connectionState === "connected";
   const isConnecting = connectionState === "connecting";
 
+  const isPrinterAvailable = useCallback((printerName: string): boolean => {
+    if (connectionState !== "connected" || !printerName) return false;
+    return printers.includes(printerName);
+  }, [connectionState, printers]);
+
   const value: QZTrayContextState = {
     connectionState,
     isConnected,
@@ -354,6 +360,7 @@ export function QZTrayProvider({ children, enabled = false, savedPrinterName = n
     getPrinters,
     printHtml,
     setSavedPrinter,
+    isPrinterAvailable,
   };
 
   return <QZTrayContext.Provider value={value}>{children}</QZTrayContext.Provider>;

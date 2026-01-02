@@ -40,6 +40,7 @@ interface OrderDetailModalProps {
   qzTrayEnabled?: boolean;
   qzTrayPrinter?: string;
   qzPrintFn?: (html: string, printer: string) => Promise<boolean>;
+  isPrinterAvailable?: boolean;
 }
 
 const statusConfig: Record<OrderStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -63,7 +64,7 @@ const paymentLabels: Record<string, string> = {
   cash: "Dinheiro",
 };
 
-export function OrderDetailModal({ order, open, onClose, establishmentName, logoUrl, printMode = "none", qzTrayEnabled, qzTrayPrinter, qzPrintFn }: OrderDetailModalProps) {
+export function OrderDetailModal({ order, open, onClose, establishmentName, logoUrl, printMode = "none", qzTrayEnabled, qzTrayPrinter, qzPrintFn, isPrinterAvailable = true }: OrderDetailModalProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const updateStatus = useUpdateOrderStatus();
   const { printOrder } = usePrintOrder();
@@ -91,15 +92,26 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
     ? statusFlow[currentStatusIndex - 1] 
     : null;
 
-  const handlePrint = () => {
-    printOrder({
+  const handlePrint = async () => {
+    const result = await printOrder({
       order,
       establishmentName,
       logoUrl,
       useQZTray: qzTrayEnabled,
       qzTrayPrinter,
       qzPrintFn,
+      isPrinterAvailable,
     });
+    
+    if (result.printerUnavailable) {
+      toast.error(`Impressora "${qzTrayPrinter}" não encontrada`, {
+        description: "Verifique se está ligada ou configure outra em Configurações",
+      });
+    } else if (result.usedFallback) {
+      toast.warning("Usando impressão do navegador", {
+        description: "QZ Tray indisponível - confirme a impressão na janela do navegador",
+      });
+    }
   };
 
   const handleStatusChange = async (newStatus: OrderStatus) => {
