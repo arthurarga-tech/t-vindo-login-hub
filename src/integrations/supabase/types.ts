@@ -261,6 +261,8 @@ export type Database = {
           opening_hours: Json | null
           owner_id: string
           phone: string | null
+          print_font_size: number | null
+          print_margin_left: number | null
           print_mode: string | null
           printer_name: string | null
           qz_tray_enabled: boolean | null
@@ -294,6 +296,8 @@ export type Database = {
           opening_hours?: Json | null
           owner_id: string
           phone?: string | null
+          print_font_size?: number | null
+          print_margin_left?: number | null
           print_mode?: string | null
           printer_name?: string | null
           qz_tray_enabled?: boolean | null
@@ -327,6 +331,8 @@ export type Database = {
           opening_hours?: Json | null
           owner_id?: string
           phone?: string | null
+          print_font_size?: number | null
+          print_margin_left?: number | null
           print_mode?: string | null
           printer_name?: string | null
           qz_tray_enabled?: boolean | null
