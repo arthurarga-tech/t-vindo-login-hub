@@ -263,6 +263,7 @@ export type Database = {
           phone: string | null
           print_font_size: number | null
           print_margin_left: number | null
+          print_margin_right: number | null
           print_mode: string | null
           printer_name: string | null
           qz_tray_enabled: boolean | null
@@ -298,6 +299,7 @@ export type Database = {
           phone?: string | null
           print_font_size?: number | null
           print_margin_left?: number | null
+          print_margin_right?: number | null
           print_mode?: string | null
           printer_name?: string | null
           qz_tray_enabled?: boolean | null
@@ -333,6 +335,7 @@ export type Database = {
           phone?: string | null
           print_font_size?: number | null
           print_margin_left?: number | null
+          print_margin_right?: number | null
           print_mode?: string | null
           printer_name?: string | null
           qz_tray_enabled?: boolean | null

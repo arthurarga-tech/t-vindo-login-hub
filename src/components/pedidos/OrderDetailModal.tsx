@@ -43,6 +43,7 @@ interface OrderDetailModalProps {
   isPrinterAvailable?: boolean;
   printFontSize?: number;
   printMarginLeft?: number;
+  printMarginRight?: number;
 }
 
 const statusConfig: Record<OrderStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -66,7 +67,7 @@ const paymentLabels: Record<string, string> = {
   cash: "Dinheiro",
 };
 
-export function OrderDetailModal({ order, open, onClose, establishmentName, logoUrl, printMode = "none", qzTrayEnabled, qzTrayPrinter, qzPrintFn, isPrinterAvailable = true, printFontSize = 12, printMarginLeft = 0 }: OrderDetailModalProps) {
+export function OrderDetailModal({ order, open, onClose, establishmentName, logoUrl, printMode = "none", qzTrayEnabled, qzTrayPrinter, qzPrintFn, isPrinterAvailable = true, printFontSize = 12, printMarginLeft = 0, printMarginRight = 0 }: OrderDetailModalProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const updateStatus = useUpdateOrderStatus();
   const { printOrder } = usePrintOrder();
@@ -111,6 +112,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
       isPrinterAvailable,
       printFontSize,
       printMarginLeft,
+      printMarginRight,
     });
     
     console.log("[OrderDetailModal] Resultado da impressão:", result);

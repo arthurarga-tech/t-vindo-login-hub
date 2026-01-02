@@ -13,6 +13,7 @@ interface PrintOrderOptions {
   isPrinterAvailable?: boolean;
   printFontSize?: number;
   printMarginLeft?: number;
+  printMarginRight?: number;
 }
 
 export interface PrintResult {
@@ -27,7 +28,7 @@ function isMobileDevice(): boolean {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
-function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: string | null, fontSize: number = 12, marginLeft: number = 0): string {
+function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: string | null, fontSize: number = 12, marginLeft: number = 0, marginRight: number = 0): string {
   const orderTypeLabels: Record<string, string> = {
     delivery: "Entrega",
     pickup: "Retirada",
@@ -63,6 +64,7 @@ function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: 
       width: 58mm;
       padding: 4mm;
       padding-left: ${4 + marginLeft}mm;
+      padding-right: ${4 + marginRight}mm;
       line-height: 1.4;
     }
     .header {
@@ -255,8 +257,9 @@ export function usePrintOrder() {
     isPrinterAvailable = true,
     printFontSize = 12,
     printMarginLeft = 0,
+    printMarginRight = 0,
   }: PrintOrderOptions): Promise<PrintResult> => {
-    const htmlContent = generateReceiptHtml(order, establishmentName, logoUrl, printFontSize, printMarginLeft);
+    const htmlContent = generateReceiptHtml(order, establishmentName, logoUrl, printFontSize, printMarginLeft, printMarginRight);
 
     console.log("[usePrintOrder] Iniciando impressão", {
       useQZTray,
