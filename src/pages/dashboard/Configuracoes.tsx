@@ -1,4 +1,4 @@
-import { Settings, Printer, Palette, CreditCard, Bell, MessageCircle, ChevronDown, ChevronUp, Download, Wifi, WifiOff, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Settings, Printer, Palette, CreditCard, Bell, MessageCircle, ChevronDown, ChevronUp, Download, Wifi, WifiOff, CheckCircle, XCircle, AlertCircle, Type } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -43,6 +43,10 @@ export default function Configuracoes() {
   const [qzTrayEnabled, setQzTrayEnabled] = useState(false);
   const [qzTrayPrinter, setQzTrayPrinter] = useState("");
   
+  // Print customization settings
+  const [printFontSize, setPrintFontSize] = useState(12);
+  const [printMarginLeft, setPrintMarginLeft] = useState(0);
+  
   // Theme colors
   const [themePrimaryColor, setThemePrimaryColor] = useState("#ea580c");
   const [themeSecondaryColor, setThemeSecondaryColor] = useState("#1e293b");
@@ -71,6 +75,8 @@ export default function Configuracoes() {
       setPrinterName((establishment as any).printer_name || "");
       setQzTrayEnabled((establishment as any).qz_tray_enabled === true);
       setQzTrayPrinter((establishment as any).qz_tray_printer || "");
+      setPrintFontSize((establishment as any).print_font_size || 12);
+      setPrintMarginLeft((establishment as any).print_margin_left || 0);
       setThemePrimaryColor((establishment as any).theme_primary_color || "#ea580c");
       setThemeSecondaryColor((establishment as any).theme_secondary_color || "#1e293b");
       setCardCreditFee(String((establishment as any).card_credit_fee || 0));
@@ -167,6 +173,8 @@ export default function Configuracoes() {
           printer_name: printerName || null,
           qz_tray_enabled: qzTrayEnabled,
           qz_tray_printer: qzTrayPrinter || null,
+          print_font_size: printFontSize,
+          print_margin_left: printMarginLeft,
           theme_primary_color: themePrimaryColor,
           theme_secondary_color: themeSecondaryColor,
           card_credit_fee: parseFloat(cardCreditFee.replace(",", ".")) || 0,
@@ -383,6 +391,94 @@ export default function Configuracoes() {
             </div>
           </RadioGroup>
 
+        </CardContent>
+      </Card>
+
+      {/* Card - Personalização da Impressão */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Type className="h-5 w-5 text-primary" />
+            <CardTitle>Personalização do Recibo</CardTitle>
+          </div>
+          <CardDescription>
+            Ajuste o tamanho da fonte e centralização do recibo para sua impressora
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="printFontSize">Tamanho da Fonte</Label>
+                <span className="text-sm font-medium text-muted-foreground">{printFontSize}px</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-xs text-muted-foreground">8px</span>
+                <input
+                  type="range"
+                  id="printFontSize"
+                  min="8"
+                  max="18"
+                  step="1"
+                  value={printFontSize}
+                  onChange={(e) => setPrintFontSize(Number(e.target.value))}
+                  className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                />
+                <span className="text-xs text-muted-foreground">18px</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Aumenta o tamanho do texto no recibo impresso
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="printMarginLeft">Ajuste de Margem Esquerda</Label>
+                <span className="text-sm font-medium text-muted-foreground">{printMarginLeft}mm</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-xs text-muted-foreground">-5mm</span>
+                <input
+                  type="range"
+                  id="printMarginLeft"
+                  min="-5"
+                  max="10"
+                  step="1"
+                  value={printMarginLeft}
+                  onChange={(e) => setPrintMarginLeft(Number(e.target.value))}
+                  className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                />
+                <span className="text-xs text-muted-foreground">10mm</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Ajuste para centralizar o conteúdo na sua impressora térmica
+              </p>
+            </div>
+          </div>
+
+          {/* Preview */}
+          <div className="p-4 rounded-lg border bg-muted/30">
+            <p className="text-sm font-medium mb-3">Pré-visualização</p>
+            <div 
+              className="bg-background border rounded p-3 max-w-[200px] mx-auto font-mono"
+              style={{ 
+                fontSize: `${Math.max(10, printFontSize - 2)}px`,
+                paddingLeft: `${Math.max(0, printMarginLeft * 2 + 12)}px`
+              }}
+            >
+              <div className="text-center font-bold mb-1">PEDIDO #123</div>
+              <div className="border-t border-dashed my-1"></div>
+              <div className="flex justify-between">
+                <span>1x Produto</span>
+                <span>R$ 25,00</span>
+              </div>
+              <div className="border-t border-dashed my-1"></div>
+              <div className="flex justify-between font-bold">
+                <span>TOTAL</span>
+                <span>R$ 25,00</span>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

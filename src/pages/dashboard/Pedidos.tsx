@@ -44,6 +44,8 @@ export default function Pedidos() {
   const qzTrayEnabled = (establishment as any)?.qz_tray_enabled === true;
   const qzTrayPrinter = qzTray.savedPrinter || (establishment as any)?.qz_tray_printer || "";
   const printerAvailable = qzTray.isPrinterAvailable(qzTrayPrinter);
+  const printFontSize = (establishment as any)?.print_font_size || 12;
+  const printMarginLeft = (establishment as any)?.print_margin_left || 0;
   
   // Print mode labels for badge
   const printModeLabels: Record<string, string> = {
@@ -100,6 +102,8 @@ export default function Pedidos() {
             qzTrayPrinter,
             qzPrintFn: qzTray.printHtml,
             isPrinterAvailable: printerAvailable,
+            printFontSize,
+            printMarginLeft,
           });
           
           // Show toast notifications based on result
@@ -354,6 +358,8 @@ export default function Pedidos() {
         qzTrayPrinter={qzTrayPrinter}
         qzPrintFn={qzTray.printHtml}
         isPrinterAvailable={printerAvailable}
+        printFontSize={printFontSize}
+        printMarginLeft={printMarginLeft}
       />
     </div>
   );

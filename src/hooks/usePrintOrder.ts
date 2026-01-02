@@ -11,6 +11,8 @@ interface PrintOrderOptions {
   qzTrayPrinter?: string | null;
   qzPrintFn?: (html: string, printer: string) => Promise<boolean>;
   isPrinterAvailable?: boolean;
+  printFontSize?: number;
+  printMarginLeft?: number;
 }
 
 export interface PrintResult {
@@ -25,7 +27,7 @@ function isMobileDevice(): boolean {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
-function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: string | null): string {
+function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: string | null, fontSize: number = 12, marginLeft: number = 0): string {
   const orderTypeLabels: Record<string, string> = {
     delivery: "Entrega",
     pickup: "Retirada",
@@ -57,9 +59,10 @@ function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: 
     }
     body {
       font-family: 'Courier New', monospace;
-      font-size: 12px;
+      font-size: ${fontSize}px;
       width: 58mm;
       padding: 4mm;
+      padding-left: ${4 + marginLeft}mm;
       line-height: 1.4;
     }
     .header {
@@ -79,12 +82,12 @@ function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: 
       margin-bottom: 4px;
     }
     .order-number {
-      font-size: 18px;
+      font-size: ${Math.round(fontSize * 1.5)}px;
       font-weight: bold;
       margin: 8px 0;
     }
     .order-type {
-      font-size: 12px;
+      font-size: ${fontSize}px;
       padding: 2px 6px;
       border: 1px solid #000;
       display: inline-block;
@@ -99,7 +102,7 @@ function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: 
       font-weight: bold;
       margin-bottom: 4px;
       text-transform: uppercase;
-      font-size: 11px;
+      font-size: ${Math.round(fontSize * 0.92)}px;
     }
     .item {
       margin: 4px 0;
@@ -116,7 +119,7 @@ function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: 
     }
     .addon {
       padding-left: 12px;
-      font-size: 11px;
+      font-size: ${Math.round(fontSize * 0.92)}px;
       color: #333;
     }
     .totals {
@@ -136,13 +139,13 @@ function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: 
     }
     .total-final {
       font-weight: bold;
-      font-size: 14px;
+      font-size: ${Math.round(fontSize * 1.17)}px;
       border-top: 1px solid #000;
       padding-top: 4px;
       margin-top: 4px;
     }
     .customer-info {
-      font-size: 11px;
+      font-size: ${Math.round(fontSize * 0.92)}px;
     }
     .notes {
       font-style: italic;
@@ -153,7 +156,7 @@ function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: 
     .footer {
       text-align: center;
       margin-top: 8px;
-      font-size: 10px;
+      font-size: ${Math.round(fontSize * 0.83)}px;
     }
     .clearfix::after {
       content: "";
@@ -250,8 +253,10 @@ export function usePrintOrder() {
     qzTrayPrinter,
     qzPrintFn,
     isPrinterAvailable = true,
+    printFontSize = 12,
+    printMarginLeft = 0,
   }: PrintOrderOptions): Promise<PrintResult> => {
-    const htmlContent = generateReceiptHtml(order, establishmentName, logoUrl);
+    const htmlContent = generateReceiptHtml(order, establishmentName, logoUrl, printFontSize, printMarginLeft);
 
     console.log("[usePrintOrder] Iniciando impressão", {
       useQZTray,
