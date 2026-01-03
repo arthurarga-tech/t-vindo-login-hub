@@ -36,8 +36,8 @@ interface OrderDetailModalProps {
   onClose: () => void;
   establishmentName: string;
   logoUrl?: string | null;
-  printMode?: "none" | "on_order" | "on_confirm";
-  qzTrayEnabled?: boolean;
+  printMode?: string;
+  isQzMode?: boolean;
   qzTrayPrinter?: string;
   qzPrintFn?: (html: string, printer: string) => Promise<boolean>;
   isPrinterAvailable?: boolean;
@@ -67,7 +67,7 @@ const paymentLabels: Record<string, string> = {
   cash: "Dinheiro",
 };
 
-export function OrderDetailModal({ order, open, onClose, establishmentName, logoUrl, printMode = "none", qzTrayEnabled, qzTrayPrinter, qzPrintFn, isPrinterAvailable = true, printFontSize = 12, printMarginLeft = 0, printMarginRight = 0 }: OrderDetailModalProps) {
+export function OrderDetailModal({ order, open, onClose, establishmentName, logoUrl, printMode = "none", isQzMode = false, qzTrayPrinter, qzPrintFn, isPrinterAvailable = true, printFontSize = 12, printMarginLeft = 0, printMarginRight = 0 }: OrderDetailModalProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const updateStatus = useUpdateOrderStatus();
   const { printOrder } = usePrintOrder();
@@ -97,7 +97,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
 
   const handlePrint = async () => {
     console.log("[OrderDetailModal] handlePrint chamado", {
-      qzTrayEnabled,
+      isQzMode,
       qzTrayPrinter,
       isPrinterAvailable,
     });
@@ -106,7 +106,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
       order,
       establishmentName,
       logoUrl,
-      useQZTray: qzTrayEnabled && !!qzTrayPrinter,
+      useQZTray: isQzMode && !!qzTrayPrinter,
       qzTrayPrinter,
       qzPrintFn,
       isPrinterAvailable,
@@ -145,10 +145,11 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
       await updateStatus.mutateAsync({ orderId: order.id, status: newStatus });
       toast.success(`Status atualizado para: ${statusConfig[newStatus].label}`);
       
-      // Auto print on confirm if configured
-      if (printMode === "on_confirm" && newStatus === "confirmed") {
+      // Auto print on confirm if configured (browser_on_confirm or qz_on_confirm)
+      const isPrintOnConfirm = printMode.includes("on_confirm");
+      if (isPrintOnConfirm && newStatus === "confirmed") {
         console.log("[OrderDetailModal] Imprimindo automaticamente ao confirmar pedido", {
-          qzTrayEnabled,
+          isQzMode,
           qzTrayPrinter,
           isPrinterAvailable,
         });

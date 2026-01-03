@@ -38,10 +38,15 @@ export default function Pedidos() {
 
   const pendingOrders = orders?.filter((o) => o.status === "pending") || [];
   const pendingCount = pendingOrders.length;
-  const printMode = ((establishment as any)?.print_mode || "none") as "none" | "on_order" | "on_confirm";
+  
+  // Unified print mode: none, browser_on_order, browser_on_confirm, qz_on_order, qz_on_confirm
+  const printMode = ((establishment as any)?.print_mode || "none") as string;
+  const isQzMode = printMode.startsWith("qz_");
+  const isPrintOnOrder = printMode.includes("on_order");
+  const isPrintOnConfirm = printMode.includes("on_confirm");
+  
   const establishmentName = establishment?.name || "Estabelecimento";
   const logoUrl = establishment?.logo_url;
-  const qzTrayEnabled = (establishment as any)?.qz_tray_enabled === true;
   const qzTrayPrinter = qzTray.savedPrinter || (establishment as any)?.qz_tray_printer || "";
   const printerAvailable = qzTray.isPrinterAvailable(qzTrayPrinter);
   const printFontSize = (establishment as any)?.print_font_size || 12;
@@ -50,8 +55,10 @@ export default function Pedidos() {
   
   // Print mode labels for badge
   const printModeLabels: Record<string, string> = {
-    on_order: "🖨️ Ao receber",
-    on_confirm: "🖨️ Ao confirmar",
+    browser_on_order: "🖨️ Ao receber",
+    browser_on_confirm: "🖨️ Ao confirmar",
+    qz_on_order: "🖨️ Silencioso ao receber",
+    qz_on_confirm: "🖨️ Silencioso ao confirmar",
   };
   // Play notification sound and auto-print when new pending orders arrive
   // Note: QZ Tray auto-connection is now handled by the global QZTrayProvider
@@ -73,8 +80,8 @@ export default function Pedidos() {
       playNotificationSound();
     }
     
-    // Auto print on new order if configured
-    if (printMode === "on_order" && orders) {
+    // Auto print on new order if configured (browser_on_order or qz_on_order)
+    if (isPrintOnOrder && orders) {
       const newPendingOrders = orders.filter(
         (o) => o.status === "pending" && !printedOrdersRef.current.has(o.id)
       );
@@ -82,8 +89,8 @@ export default function Pedidos() {
       if (newPendingOrders.length > 0) {
         console.log("[Pedidos] Novos pedidos para impressão automática:", newPendingOrders.map(o => o.order_number));
         
-        // Check if QZ Tray should be used
-        const shouldUseQZ = qzTrayEnabled && qzTrayPrinter && qzTray.isConnected;
+        // Check if QZ Tray should be used (only for qz_on_order mode)
+        const shouldUseQZ = isQzMode && qzTrayPrinter && qzTray.isConnected;
         
         newPendingOrders.forEach(async (order) => {
           printedOrdersRef.current.add(order.id);
@@ -127,7 +134,7 @@ export default function Pedidos() {
     }
     
     previousPendingCountRef.current = pendingCount;
-  }, [pendingCount, soundEnabled, orders, printMode, establishmentName, logoUrl, printOrder, qzTrayEnabled, qzTray.isConnected, qzTrayPrinter, qzTray.printHtml, printerAvailable]);
+  }, [pendingCount, soundEnabled, orders, printMode, isPrintOnOrder, isQzMode, establishmentName, logoUrl, printOrder, qzTray.isConnected, qzTrayPrinter, qzTray.printHtml, printerAvailable]);
 
   const playNotificationSound = () => {
     try {
@@ -264,7 +271,7 @@ export default function Pedidos() {
                 </Badge>
               </TooltipTrigger>
               <TooltipContent>
-                {printMode === "on_order" 
+                {isPrintOnOrder 
                   ? "Pedidos são impressos automaticamente ao serem recebidos"
                   : "Pedidos são impressos automaticamente ao serem confirmados"
                 }
@@ -272,7 +279,7 @@ export default function Pedidos() {
             </Tooltip>
           )}
           {/* QZ Tray Status Indicator */}
-          {qzTrayEnabled && (
+          {isQzMode && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Badge 
@@ -356,7 +363,7 @@ export default function Pedidos() {
         establishmentName={establishmentName}
         logoUrl={logoUrl}
         printMode={printMode}
-        qzTrayEnabled={qzTrayEnabled && qzTray.isConnected}
+        isQzMode={isQzMode && qzTray.isConnected}
         qzTrayPrinter={qzTrayPrinter}
         qzPrintFn={qzTray.printHtml}
         isPrinterAvailable={printerAvailable}
