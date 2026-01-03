@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+"import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useCart } from "@/hooks/useCart";
 import { supabase } from "@/integrations/supabase/client";
@@ -684,14 +684,14 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
               <Label htmlFor="phone">Telefone / WhatsApp *</Label>
               <Input
                 id="phone"
-                placeholder="(35) 99807-6201"
+                placeholder=""
                 value={formatPhoneDisplay(customer.phone)}
                 onChange={(e) => handleInputChange("phone", extractPhoneNumbers(e.target.value))}
                 maxLength={15}
                 inputMode="numeric"
               />
               <p className="text-xs text-muted-foreground">
-                Apenas números, ex: 35998076201
+                Apenas números, ex: 35988887777
               </p>
             </div>
           </CardContent>
