@@ -28,7 +28,15 @@ function isMobileDevice(): boolean {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
-function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: string | null, fontSize: number = 12, marginLeft: number = 0, marginRight: number = 0): string {
+// Offset de correção para centralização na impressora térmica
+// Esses valores compensam o desalinhamento natural da impressora física
+const PRINTER_OFFSET_LEFT = -4; // mm
+const PRINTER_OFFSET_RIGHT = 10; // mm
+
+function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: string | null, fontSize: number = 12, marginLeft: number = 0, marginRight: number = 0, applyPrinterOffset: boolean = true): string {
+  // Calcula margens finais aplicando offset da impressora apenas na impressão real
+  const finalMarginLeft = applyPrinterOffset ? marginLeft + PRINTER_OFFSET_LEFT : marginLeft;
+  const finalMarginRight = applyPrinterOffset ? marginRight + PRINTER_OFFSET_RIGHT : marginRight;
   const orderTypeLabels: Record<string, string> = {
     delivery: "Entrega",
     pickup: "Retirada",
@@ -63,8 +71,8 @@ function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: 
       font-size: ${fontSize}px;
       width: 58mm;
       padding: 4mm;
-      padding-left: ${4 + marginLeft}mm;
-      padding-right: ${4 + marginRight}mm;
+      padding-left: ${4 + finalMarginLeft}mm;
+      padding-right: ${4 + finalMarginRight}mm;
       line-height: 1.4;
     }
     .header {
@@ -256,10 +264,11 @@ export function usePrintOrder() {
     qzPrintFn,
     isPrinterAvailable = true,
     printFontSize = 12,
-    printMarginLeft = -4,
-    printMarginRight = 10,
+    printMarginLeft = 0,
+    printMarginRight = 0,
   }: PrintOrderOptions): Promise<PrintResult> => {
-    const htmlContent = generateReceiptHtml(order, establishmentName, logoUrl, printFontSize, printMarginLeft, printMarginRight);
+    // Na impressão real, aplica o offset da impressora automaticamente
+    const htmlContent = generateReceiptHtml(order, establishmentName, logoUrl, printFontSize, printMarginLeft, printMarginRight, true);
 
     console.log("[usePrintOrder] Iniciando impressão", {
       useQZTray,
