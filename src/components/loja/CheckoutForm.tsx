@@ -24,7 +24,11 @@ type OrderType = "delivery" | "pickup" | "dine_in";
 // Validation schema for checkout form
 const checkoutSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório").max(100, "Nome muito longo (máx. 100 caracteres)").trim(),
-  phone: z.string().min(10, "Telefone inválido").max(20, "Telefone muito longo").regex(/^[0-9\s()+-]+$/, "Formato de telefone inválido"),
+  phone: z.string()
+    .min(10, "Telefone deve ter no mínimo 10 dígitos")
+    .max(11, "Telefone deve ter no máximo 11 dígitos")
+    .regex(/^[0-9]+$/, "Telefone deve conter apenas números")
+    .refine((val) => val.length === 10 || val.length === 11, "Telefone deve ter 10 ou 11 dígitos"),
   address: z.string().max(200, "Endereço muito longo (máx. 200 caracteres)").trim().optional(),
   addressNumber: z.string().max(20, "Número muito longo").trim().optional(),
   addressComplement: z.string().max(100, "Complemento muito longo").trim().optional(),
@@ -32,6 +36,20 @@ const checkoutSchema = z.object({
   city: z.string().max(100, "Cidade muito longa").trim().optional(),
   notes: z.string().max(500, "Observação muito longa (máx. 500 caracteres)").trim().optional(),
 });
+
+// Format phone with Brazilian mask (XX) XXXXX-XXXX or (XX) XXXX-XXXX
+const formatPhoneDisplay = (value: string): string => {
+  const numbers = value.replace(/\D/g, '').slice(0, 11);
+  if (numbers.length <= 2) return numbers;
+  if (numbers.length <= 6) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+  if (numbers.length <= 10) return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 6)}-${numbers.slice(6)}`;
+  return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+};
+
+// Extract only numbers from phone
+const extractPhoneNumbers = (value: string): string => {
+  return value.replace(/\D/g, '').slice(0, 11);
+};
 
 interface CustomerForm {
   name: string;
@@ -65,7 +83,7 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
         const parsed = JSON.parse(savedCustomer);
         return {
           name: parsed.name || "",
-          phone: parsed.phone || "",
+          phone: extractPhoneNumbers(parsed.phone || ""),
           address: parsed.address || "",
           addressNumber: parsed.addressNumber || "",
           addressComplement: parsed.addressComplement || "",
@@ -666,11 +684,15 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
               <Label htmlFor="phone">Telefone / WhatsApp *</Label>
               <Input
                 id="phone"
-                placeholder="(00) 00000-0000"
-                value={customer.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
-                maxLength={20}
+                placeholder="(35) 99807-6201"
+                value={formatPhoneDisplay(customer.phone)}
+                onChange={(e) => handleInputChange("phone", extractPhoneNumbers(e.target.value))}
+                maxLength={15}
+                inputMode="numeric"
               />
+              <p className="text-xs text-muted-foreground">
+                Apenas números, ex: 35998076201
+              </p>
             </div>
           </CardContent>
         </Card>
