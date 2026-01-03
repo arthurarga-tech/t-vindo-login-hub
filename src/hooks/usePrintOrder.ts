@@ -256,8 +256,8 @@ export function usePrintOrder() {
     qzPrintFn,
     isPrinterAvailable = true,
     printFontSize = 12,
-    printMarginLeft = 0,
-    printMarginRight = 0,
+    printMarginLeft = -4,
+    printMarginRight = 10,
   }: PrintOrderOptions): Promise<PrintResult> => {
     const htmlContent = generateReceiptHtml(order, establishmentName, logoUrl, printFontSize, printMarginLeft, printMarginRight);
 

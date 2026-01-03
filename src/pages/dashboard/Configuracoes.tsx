@@ -43,8 +43,8 @@ export default function Configuracoes() {
   
   // Print customization settings
   const [printFontSize, setPrintFontSize] = useState(12);
-  const [printMarginLeft, setPrintMarginLeft] = useState(0);
-  const [printMarginRight, setPrintMarginRight] = useState(0);
+  const [printMarginLeft, setPrintMarginLeft] = useState(-4);
+  const [printMarginRight, setPrintMarginRight] = useState(10);
   
   // Theme colors
   const [themePrimaryColor, setThemePrimaryColor] = useState("#ea580c");
@@ -87,8 +87,8 @@ export default function Configuracoes() {
       setPrintMode(newPrintMode);
       setQzTrayPrinter((establishment as any).qz_tray_printer || "");
       setPrintFontSize((establishment as any).print_font_size || 12);
-      setPrintMarginLeft((establishment as any).print_margin_left || 0);
-      setPrintMarginRight((establishment as any).print_margin_right || 0);
+      setPrintMarginLeft((establishment as any).print_margin_left ?? -4);
+      setPrintMarginRight((establishment as any).print_margin_right ?? 10);
       setThemePrimaryColor((establishment as any).theme_primary_color || "#ea580c");
       setThemeSecondaryColor((establishment as any).theme_secondary_color || "#1e293b");
       setCardCreditFee(String((establishment as any).card_credit_fee || 0));
