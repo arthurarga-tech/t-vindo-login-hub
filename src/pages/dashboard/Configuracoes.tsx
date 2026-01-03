@@ -16,7 +16,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useWhatsAppNotification } from "@/hooks/useWhatsAppNotification";
 import { useQZTrayContext } from "@/contexts/QZTrayContext";
 
-type PrintMode = "none" | "on_order" | "on_confirm";
+// Unified print mode: method_trigger or "none"
+// browser_on_order, browser_on_confirm, qz_on_order, qz_on_confirm, none
+type PrintMode = "none" | "browser_on_order" | "browser_on_confirm" | "qz_on_order" | "qz_on_confirm";
 
 const templateLabels: Record<string, { label: string; description: string }> = {
   confirmed: { label: "Pedido Confirmado", description: "Quando o pedido é confirmado" },
@@ -35,12 +37,8 @@ export default function Configuracoes() {
   const { defaultTemplates } = useWhatsAppNotification();
   const qzTray = useQZTrayContext();
   
-  // Print settings
+  // Unified print mode
   const [printMode, setPrintMode] = useState<PrintMode>("none");
-  const [printerName, setPrinterName] = useState("");
-  
-  // QZ Tray settings
-  const [qzTrayEnabled, setQzTrayEnabled] = useState(false);
   const [qzTrayPrinter, setQzTrayPrinter] = useState("");
   
   // Print customization settings
@@ -72,9 +70,21 @@ export default function Configuracoes() {
 
   useEffect(() => {
     if (establishment) {
-      setPrintMode(((establishment as any).print_mode as PrintMode) || "none");
-      setPrinterName((establishment as any).printer_name || "");
-      setQzTrayEnabled((establishment as any).qz_tray_enabled === true);
+      // Convert legacy format to new unified format
+      const legacyPrintMode = (establishment as any).print_mode;
+      const legacyQzEnabled = (establishment as any).qz_tray_enabled === true;
+      
+      let newPrintMode: PrintMode = "none";
+      if (legacyPrintMode === "on_order") {
+        newPrintMode = legacyQzEnabled ? "qz_on_order" : "browser_on_order";
+      } else if (legacyPrintMode === "on_confirm") {
+        newPrintMode = legacyQzEnabled ? "qz_on_confirm" : "browser_on_confirm";
+      } else if (legacyPrintMode === "browser_on_order" || legacyPrintMode === "browser_on_confirm" || 
+                 legacyPrintMode === "qz_on_order" || legacyPrintMode === "qz_on_confirm") {
+        newPrintMode = legacyPrintMode as PrintMode;
+      }
+      
+      setPrintMode(newPrintMode);
       setQzTrayPrinter((establishment as any).qz_tray_printer || "");
       setPrintFontSize((establishment as any).print_font_size || 12);
       setPrintMarginLeft((establishment as any).print_margin_left || 0);
@@ -168,12 +178,17 @@ export default function Configuracoes() {
 
     setSaving(true);
     try {
+      // Derive legacy fields from unified print mode for backward compatibility
+      const isQzMode = printMode.startsWith("qz_");
+      const legacyPrintMode = printMode === "none" ? "none" 
+        : (printMode.includes("on_order") ? "on_order" : "on_confirm");
+      
       const { error } = await supabase
         .from("establishments")
         .update({
-          print_mode: printMode,
-          printer_name: printerName || null,
-          qz_tray_enabled: qzTrayEnabled,
+          print_mode: printMode, // Store new unified format
+          printer_name: null, // Deprecated
+          qz_tray_enabled: isQzMode,
           qz_tray_printer: qzTrayPrinter || null,
           print_font_size: printFontSize,
           print_margin_left: printMarginLeft,
@@ -344,7 +359,7 @@ export default function Configuracoes() {
         </CardContent>
       </Card>
 
-      {/* Card - Impressão de Pedidos */}
+      {/* Card - Impressão de Pedidos (Unificado) */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -352,11 +367,12 @@ export default function Configuracoes() {
             <CardTitle>Impressão de Pedidos</CardTitle>
           </div>
           <CardDescription>
-            Configure quando os pedidos devem ser impressos automaticamente (impressora térmica 58mm)
+            Configure quando e como os pedidos devem ser impressos automaticamente (impressora térmica 58mm)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <RadioGroup value={printMode} onValueChange={(value) => setPrintMode(value as PrintMode)}>
+            {/* Desativado */}
             <div className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50">
               <RadioGroupItem value="none" id="print-none" className="mt-0.5" />
               <div>
@@ -364,36 +380,218 @@ export default function Configuracoes() {
                   Não imprimir automaticamente
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Você pode imprimir manualmente a qualquer momento clicando no botão de impressão do pedido
+                  Você pode imprimir manualmente clicando no botão de impressão do pedido
                 </p>
               </div>
             </div>
             
+            {/* Navegador - Ao pedir */}
             <div className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50">
-              <RadioGroupItem value="on_order" id="print-on-order" className="mt-0.5" />
+              <RadioGroupItem value="browser_on_order" id="print-browser-on-order" className="mt-0.5" />
               <div>
-                <Label htmlFor="print-on-order" className="font-medium cursor-pointer">
-                  Imprimir quando o pedido é feito
+                <Label htmlFor="print-browser-on-order" className="font-medium cursor-pointer">
+                  Navegador - Ao receber pedido
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  O pedido será impresso automaticamente assim que o cliente finalizar o pedido
+                  Abre diálogo de impressão do navegador quando um novo pedido chegar
                 </p>
               </div>
             </div>
             
+            {/* Navegador - Ao confirmar */}
             <div className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50">
-              <RadioGroupItem value="on_confirm" id="print-on-confirm" className="mt-0.5" />
+              <RadioGroupItem value="browser_on_confirm" id="print-browser-on-confirm" className="mt-0.5" />
               <div>
-                <Label htmlFor="print-on-confirm" className="font-medium cursor-pointer">
-                  Imprimir ao confirmar pedido
+                <Label htmlFor="print-browser-on-confirm" className="font-medium cursor-pointer">
+                  Navegador - Ao confirmar pedido
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  O pedido será impresso automaticamente quando você confirmar o pedido no painel
+                  Abre diálogo de impressão quando você confirmar o pedido no painel
+                </p>
+              </div>
+            </div>
+
+            {/* QZ Tray - Ao pedir */}
+            <div className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50 border-l-4 border-primary">
+              <RadioGroupItem value="qz_on_order" id="print-qz-on-order" className="mt-0.5" />
+              <div className="flex-1">
+                <Label htmlFor="print-qz-on-order" className="font-medium cursor-pointer flex items-center gap-2">
+                  QZ Tray - Ao receber pedido
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">Silencioso</span>
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Imprime diretamente sem diálogo quando um novo pedido chegar (requer QZ Tray)
+                </p>
+              </div>
+            </div>
+            
+            {/* QZ Tray - Ao confirmar */}
+            <div className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50 border-l-4 border-primary">
+              <RadioGroupItem value="qz_on_confirm" id="print-qz-on-confirm" className="mt-0.5" />
+              <div className="flex-1">
+                <Label htmlFor="print-qz-on-confirm" className="font-medium cursor-pointer flex items-center gap-2">
+                  QZ Tray - Ao confirmar pedido
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">Silencioso</span>
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Imprime diretamente sem diálogo quando você confirmar o pedido (requer QZ Tray)
                 </p>
               </div>
             </div>
           </RadioGroup>
 
+          {/* QZ Tray Configuration - Only show when QZ mode is selected */}
+          {(printMode === "qz_on_order" || printMode === "qz_on_confirm") && (
+            <div className="space-y-4 pt-4 border-t mt-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Wifi className={qzTray.isConnected ? "h-4 w-4 text-green-600" : "h-4 w-4 text-muted-foreground"} />
+                <span className="font-medium text-sm">Configuração QZ Tray</span>
+              </div>
+
+              {/* Connection Status */}
+              <div className="flex items-center justify-between p-3 rounded-lg border">
+                <div className="flex items-center gap-2">
+                  {qzTray.isConnected ? (
+                    <>
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                      <span className="font-medium text-green-600">Conectado</span>
+                    </>
+                  ) : (
+                    <>
+                      <WifiOff className="h-5 w-5 text-muted-foreground" />
+                      <span className="font-medium text-muted-foreground">Desconectado</span>
+                    </>
+                  )}
+                </div>
+                <Button
+                  variant={qzTray.isConnected ? "outline" : "default"}
+                  size="sm"
+                  onClick={handleQZConnect}
+                  disabled={qzTray.isConnecting}
+                >
+                  {qzTray.isConnecting ? "Conectando..." : qzTray.isConnected ? "Desconectar" : "Conectar"}
+                </Button>
+              </div>
+
+              {/* Error Message */}
+              {qzTray.error && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive">
+                  <XCircle className="h-5 w-5 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-medium">Erro de conexão</p>
+                    <p>{qzTray.error}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Saved printer warning */}
+              {savedPrinterMissing && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
+                  <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-medium text-amber-700 dark:text-amber-300">Impressora não encontrada</p>
+                    <p className="text-amber-600 dark:text-amber-400">
+                      A impressora "{qzTrayPrinter}" salva anteriormente não está mais disponível.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Printer Selection */}
+              {qzTray.isConnected && (
+                <div className="space-y-2">
+                  <Label>Impressora</Label>
+                  {qzTray.printers.length === 0 ? (
+                    <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
+                      <p className="text-sm text-amber-700 dark:text-amber-300">
+                        Nenhuma impressora instalada no sistema.
+                      </p>
+                    </div>
+                  ) : (
+                    <Select value={savedPrinterAvailable ? qzTrayPrinter : ""} onValueChange={handlePrinterChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma impressora" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        {qzTray.printers.map((printer) => (
+                          <SelectItem key={printer} value={printer}>
+                            {printer}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => qzTray.getPrinters()}
+                    >
+                      Atualizar Lista
+                    </Button>
+                    {qzTrayPrinter && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleTestPrint}
+                      >
+                        <Printer className="h-4 w-4 mr-2" />
+                        Testar
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Success indicator */}
+              {qzTray.isConnected && qzTrayPrinter && savedPrinterAvailable && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                  <CheckCircle className="h-5 w-5" />
+                  <span className="text-sm">
+                    Pronto! Impressão silenciosa em <strong>{qzTrayPrinter}</strong>
+                  </span>
+                </div>
+              )}
+
+              {/* Requirements */}
+              <Collapsible>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground">
+                    <span>Como instalar QZ Tray?</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-2 space-y-3">
+                  <div className="p-3 bg-muted/50 rounded-lg space-y-2 text-sm">
+                    <div className="flex items-start gap-2">
+                      <Download className="h-4 w-4 text-primary mt-0.5" />
+                      <div>
+                        <p className="font-medium">1. Baixe o QZ Tray</p>
+                        <p className="text-muted-foreground">
+                          <a
+                            href="https://qz.io/download/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            qz.io/download
+                          </a>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
+                      <p className="font-medium">2. Mantenha o QZ Tray rodando na bandeja do sistema</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Printer className="h-4 w-4 text-primary mt-0.5" />
+                      <p className="font-medium">3. Conecte e selecione sua impressora acima</p>
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -581,217 +779,6 @@ export default function Configuracoes() {
               Imprime um pedido de exemplo com as configurações atuais
             </p>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Card - QZ Tray - Impressão Direta */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Printer className="h-5 w-5 text-primary" />
-            <CardTitle>Impressão Direta com QZ Tray</CardTitle>
-          </div>
-          <CardDescription>
-            Configure a impressão silenciosa (sem diálogo) usando o QZ Tray
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Warning when print mode is none */}
-          {printMode === "none" && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
-              <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
-              <div className="text-sm">
-                <p className="font-medium text-amber-700 dark:text-amber-300">Impressão automática desativada</p>
-                <p className="text-amber-600 dark:text-amber-400">
-                  Para usar impressão automática com QZ Tray, selecione um modo de impressão acima.
-                </p>
-              </div>
-            </div>
-          )}
-          
-          {/* Enable/Disable Switch */}
-          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-            <div className="space-y-0.5">
-              <Label htmlFor="qz-enabled" className="font-medium cursor-pointer">
-                Usar QZ Tray para impressão silenciosa
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Imprime diretamente na impressora, sem clicar em "OK"
-              </p>
-            </div>
-            <Switch
-              id="qz-enabled"
-              checked={qzTrayEnabled}
-              onCheckedChange={setQzTrayEnabled}
-            />
-          </div>
-
-          {qzTrayEnabled && (
-            <div className="space-y-4 pt-4 border-t">
-                {/* Connection Status */}
-                <div className="flex items-center justify-between p-3 rounded-lg border">
-                  <div className="flex items-center gap-2">
-                    {qzTray.isConnected ? (
-                      <>
-                        <Wifi className="h-5 w-5 text-green-600" />
-                        <span className="font-medium text-green-600">Conectado</span>
-                      </>
-                    ) : (
-                      <>
-                        <WifiOff className="h-5 w-5 text-muted-foreground" />
-                        <span className="font-medium text-muted-foreground">Desconectado</span>
-                      </>
-                    )}
-                  </div>
-                  <Button
-                    variant={qzTray.isConnected ? "outline" : "default"}
-                    size="sm"
-                    onClick={handleQZConnect}
-                    disabled={qzTray.isConnecting}
-                  >
-                    {qzTray.isConnecting ? "Conectando..." : qzTray.isConnected ? "Desconectar" : "Conectar"}
-                  </Button>
-                </div>
-
-                {/* Error Message */}
-                {qzTray.error && (
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive">
-                    <XCircle className="h-5 w-5 mt-0.5" />
-                    <div className="text-sm">
-                      <p className="font-medium">Erro de conexão</p>
-                      <p>{qzTray.error}</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Saved printer warning */}
-                {savedPrinterMissing && (
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
-                    <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
-                    <div className="text-sm">
-                      <p className="font-medium text-amber-700 dark:text-amber-300">Impressora não encontrada</p>
-                      <p className="text-amber-600 dark:text-amber-400">
-                        A impressora "{qzTrayPrinter}" salva anteriormente não está mais disponível. 
-                        Por favor, selecione outra impressora.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Printer Selection */}
-                {qzTray.isConnected && (
-                  <div className="space-y-2">
-                    <Label>Impressora</Label>
-                    {qzTray.printers.length === 0 ? (
-                      <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
-                        <p className="text-sm text-amber-700 dark:text-amber-300">
-                          Nenhuma impressora instalada no sistema.
-                        </p>
-                      </div>
-                    ) : (
-                      <Select value={savedPrinterAvailable ? qzTrayPrinter : ""} onValueChange={handlePrinterChange}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione uma impressora" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-popover">
-                          {qzTray.printers.map((printer) => (
-                            <SelectItem key={printer} value={printer}>
-                              {printer}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => qzTray.getPrinters()}
-                      >
-                        Atualizar Lista
-                      </Button>
-                      {qzTrayPrinter && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleTestPrint}
-                        >
-                          <Printer className="h-4 w-4 mr-2" />
-                          Testar Impressão
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Success indicator */}
-                {qzTray.isConnected && qzTrayPrinter && (
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300">
-                    <CheckCircle className="h-5 w-5" />
-                    <span className="text-sm">
-                      Pronto! Os pedidos serão impressos automaticamente em <strong>{qzTrayPrinter}</strong>
-                    </span>
-                  </div>
-                )}
-
-                {/* Requirements */}
-                <Collapsible>
-                  <CollapsibleTrigger asChild>
-                    <Button variant="outline" className="w-full justify-between">
-                      <span>Requisitos e instalação</span>
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-4 space-y-4">
-                    <div className="p-4 bg-muted/50 rounded-lg space-y-3">
-                      <div className="flex items-start gap-3">
-                        <Download className="h-5 w-5 text-primary mt-0.5" />
-                        <div>
-                          <p className="font-medium">1. Baixe e instale o QZ Tray</p>
-                          <p className="text-sm text-muted-foreground">
-                            Acesse{" "}
-                            <a
-                              href="https://qz.io/download/"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary hover:underline"
-                            >
-                              qz.io/download
-                            </a>{" "}
-                            e baixe a versão para seu sistema
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <CheckCircle className="h-5 w-5 text-primary mt-0.5" />
-                        <div>
-                          <p className="font-medium">2. Mantenha o QZ Tray rodando</p>
-                          <p className="text-sm text-muted-foreground">
-                            O ícone do QZ Tray deve aparecer na bandeja do sistema (próximo ao relógio)
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <Printer className="h-5 w-5 text-primary mt-0.5" />
-                        <div>
-                          <p className="font-medium">3. Configure sua impressora</p>
-                          <p className="text-sm text-muted-foreground">
-                            Clique em "Conectar" acima e selecione sua impressora térmica
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-900">
-                      <p className="text-sm text-amber-700 dark:text-amber-300">
-                        💡 <strong>Dica:</strong> Na primeira conexão, o QZ Tray pode exibir um aviso de segurança.
-                        Clique em "Lembrar esta decisão" e "Permitir" para não ver o aviso novamente.
-                      </p>
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              </div>
-            )}
         </CardContent>
       </Card>
 
