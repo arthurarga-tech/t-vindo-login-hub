@@ -260,7 +260,14 @@ export type Database = {
           notification_sound_enabled: boolean | null
           opening_hours: Json | null
           owner_id: string
+          payment_cash_enabled: boolean | null
+          payment_credit_enabled: boolean | null
+          payment_debit_enabled: boolean | null
+          payment_pix_enabled: boolean | null
           phone: string | null
+          pix_holder_name: string | null
+          pix_key: string | null
+          pix_key_type: string | null
           print_font_size: number | null
           print_margin_left: number | null
           print_margin_right: number | null
@@ -296,7 +303,14 @@ export type Database = {
           notification_sound_enabled?: boolean | null
           opening_hours?: Json | null
           owner_id: string
+          payment_cash_enabled?: boolean | null
+          payment_credit_enabled?: boolean | null
+          payment_debit_enabled?: boolean | null
+          payment_pix_enabled?: boolean | null
           phone?: string | null
+          pix_holder_name?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
           print_font_size?: number | null
           print_margin_left?: number | null
           print_margin_right?: number | null
@@ -332,7 +346,14 @@ export type Database = {
           notification_sound_enabled?: boolean | null
           opening_hours?: Json | null
           owner_id?: string
+          payment_cash_enabled?: boolean | null
+          payment_credit_enabled?: boolean | null
+          payment_debit_enabled?: boolean | null
+          payment_pix_enabled?: boolean | null
           phone?: string | null
+          pix_holder_name?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
           print_font_size?: number | null
           print_margin_left?: number | null
           print_margin_right?: number | null

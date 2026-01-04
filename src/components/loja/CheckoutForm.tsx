@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useCart } from "@/hooks/useCart";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, MapPin, ShoppingBag, Truck, Package, UtensilsCrossed, Calendar, X } from "lucide-react";
+import { ArrowLeft, MapPin, ShoppingBag, Truck, Package, UtensilsCrossed, Calendar, X, QrCode, Copy, Check, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -96,12 +96,23 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
     }
     return { name: "", phone: "", address: "", addressNumber: "", addressComplement: "", neighborhood: "", city: "" };
   });
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">("");
   const [orderType, setOrderType] = useState<OrderType>("delivery");
   const [notes, setNotes] = useState("");
   const [shareLocationViaWhatsApp, setShareLocationViaWhatsApp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [changeFor, setChangeFor] = useState<string>("");
+  const [pixKeyCopied, setPixKeyCopied] = useState(false);
+
+  // Get payment method settings from establishment
+  const paymentPixEnabled = (establishment as any)?.payment_pix_enabled ?? true;
+  const paymentCreditEnabled = (establishment as any)?.payment_credit_enabled ?? true;
+  const paymentDebitEnabled = (establishment as any)?.payment_debit_enabled ?? true;
+  const paymentCashEnabled = (establishment as any)?.payment_cash_enabled ?? true;
+  const pixKey = (establishment as any)?.pix_key || "";
+  const pixKeyType = (establishment as any)?.pix_key_type || "";
+  const pixHolderName = (establishment as any)?.pix_holder_name || "";
+  const establishmentPhone = (establishment as any)?.phone || "";
 
   // Calculate change
   const changeForValue = parseFloat(changeFor.replace(",", ".")) || 0;
@@ -126,6 +137,21 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
     }
   }, [establishment, serviceDelivery, servicePickup, serviceDineIn]);
 
+  // Set default payment method based on available options
+  useEffect(() => {
+    if (establishment && !paymentMethod) {
+      if (paymentPixEnabled) {
+        setPaymentMethod("pix");
+      } else if (paymentCreditEnabled) {
+        setPaymentMethod("credit");
+      } else if (paymentDebitEnabled) {
+        setPaymentMethod("debit");
+      } else if (paymentCashEnabled) {
+        setPaymentMethod("cash");
+      }
+    }
+  }, [establishment, paymentPixEnabled, paymentCreditEnabled, paymentDebitEnabled, paymentCashEnabled, paymentMethod]);
+
   // Count enabled modalities
   const enabledModalitiesCount = [serviceDelivery, servicePickup, serviceDineIn].filter(Boolean).length;
   const showModalitySelector = enabledModalitiesCount > 1;
@@ -140,6 +166,28 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
 
   const handleInputChange = (field: keyof CustomerForm, value: string) => {
     setCustomer((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const copyPixKey = async () => {
+    try {
+      await navigator.clipboard.writeText(pixKey);
+      setPixKeyCopied(true);
+      toast.success("Chave PIX copiada!");
+      setTimeout(() => setPixKeyCopied(false), 2000);
+    } catch {
+      toast.error("Erro ao copiar chave PIX");
+    }
+  };
+
+  const getPixKeyTypeLabel = (type: string) => {
+    switch (type) {
+      case "cpf": return "CPF";
+      case "cnpj": return "CNPJ";
+      case "email": return "Email";
+      case "phone": return "Telefone";
+      case "random": return "Chave Aleatória";
+      default: return "Chave PIX";
+    }
   };
 
   const validateForm = () => {
@@ -352,10 +400,12 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
       }
 
       // Save last order to localStorage for quick tracking
+      // Also save whether location was shared via WhatsApp for the confirmation page
       localStorage.setItem(`lastOrder_${slug}`, JSON.stringify({
         orderId: orderId,
         orderNumber: orderNumber,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        sharedLocationViaWhatsApp: shareLocationViaWhatsApp,
       }));
 
       // Save customer data to localStorage for future orders
@@ -371,6 +421,37 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
 
       clearCart();
       toast.success("Pedido enviado com sucesso!");
+
+      // Send unified WhatsApp message if needed (PIX payment or location sharing)
+      const needsWhatsApp = (shareLocationViaWhatsApp && needsAddress) || (paymentMethod === "pix" && pixKey);
+      
+      if (needsWhatsApp && establishmentPhone) {
+        const storePhone = establishmentPhone.replace(/\D/g, "");
+        const formattedPhone = storePhone.startsWith("55") ? storePhone : `55${storePhone}`;
+        
+        let message = `Olá! Pedido #${orderNumber}\n`;
+        message += `Cliente: ${customer.name}\n\n`;
+        
+        if ((shareLocationViaWhatsApp && needsAddress) && (paymentMethod === "pix" && pixKey)) {
+          // Scenario 1: PIX + Location
+          message += `Estou enviando:\n`;
+          message += `📍 Minha localização para entrega (Número: ${customer.addressNumber})\n`;
+          message += `💳 Comprovante do pagamento Pix\n\n`;
+          message += `Valor: ${formatPrice(totalPrice)}`;
+        } else if (shareLocationViaWhatsApp && needsAddress) {
+          // Scenario 2: Location only
+          message += `📍 Estou enviando minha localização para entrega.\n`;
+          message += `Número da casa: ${customer.addressNumber}`;
+        } else if (paymentMethod === "pix" && pixKey) {
+          // Scenario 3: PIX only
+          message += `💳 Estou enviando o comprovante do pagamento Pix.\n\n`;
+          message += `Valor: ${formatPrice(totalPrice)}`;
+        }
+        
+        const encodedMessage = encodeURIComponent(message);
+        window.open(`https://wa.me/${formattedPhone}?text=${encodedMessage}`, "_blank");
+      }
+
       navigate(`/loja/${slug}/pedido/${orderId}`);
     } catch (error: any) {
       console.error("Checkout error:", error);
@@ -797,43 +878,81 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
               onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
               className="space-y-3"
             >
-              <div className="flex items-center space-x-3 p-3 border rounded-lg">
-                <RadioGroupItem value="pix" id="pix" />
-                <Label htmlFor="pix" className="flex-1 cursor-pointer">
-                  <span className="font-medium">Pix</span>
-                  <p className="text-sm text-muted-foreground">
-                    {orderType === "delivery" ? "Pague na entrega" : "Pague no local"}
-                  </p>
-                </Label>
-              </div>
-              <div className="flex items-center space-x-3 p-3 border rounded-lg">
-                <RadioGroupItem value="credit" id="credit" />
-                <Label htmlFor="credit" className="flex-1 cursor-pointer">
-                  <span className="font-medium">Cartão de Crédito</span>
-                  <p className="text-sm text-muted-foreground">
-                    {orderType === "delivery" ? "Pague na entrega" : "Pague no local"}
-                  </p>
-                </Label>
-              </div>
-              <div className="flex items-center space-x-3 p-3 border rounded-lg">
-                <RadioGroupItem value="debit" id="debit" />
-                <Label htmlFor="debit" className="flex-1 cursor-pointer">
-                  <span className="font-medium">Cartão de Débito</span>
-                  <p className="text-sm text-muted-foreground">
-                    {orderType === "delivery" ? "Pague na entrega" : "Pague no local"}
-                  </p>
-                </Label>
-              </div>
-              <div className="flex items-center space-x-3 p-3 border rounded-lg">
-                <RadioGroupItem value="cash" id="cash" />
-                <Label htmlFor="cash" className="flex-1 cursor-pointer">
-                  <span className="font-medium">Dinheiro</span>
-                  <p className="text-sm text-muted-foreground">
-                    {orderType === "delivery" ? "Pague na entrega" : "Pague no local"}
-                  </p>
-                </Label>
-              </div>
+              {paymentPixEnabled && (
+                <div className="flex items-center space-x-3 p-3 border rounded-lg">
+                  <RadioGroupItem value="pix" id="pix" />
+                  <Label htmlFor="pix" className="flex-1 cursor-pointer">
+                    <span className="font-medium">Pix</span>
+                    <p className="text-sm text-muted-foreground">
+                      {pixKey ? "Pagamento antecipado via Pix" : orderType === "delivery" ? "Pague na entrega" : "Pague no local"}
+                    </p>
+                  </Label>
+                </div>
+              )}
+              {paymentCreditEnabled && (
+                <div className="flex items-center space-x-3 p-3 border rounded-lg">
+                  <RadioGroupItem value="credit" id="credit" />
+                  <Label htmlFor="credit" className="flex-1 cursor-pointer">
+                    <span className="font-medium">Cartão de Crédito</span>
+                    <p className="text-sm text-muted-foreground">
+                      {orderType === "delivery" ? "Pague na entrega" : "Pague no local"}
+                    </p>
+                  </Label>
+                </div>
+              )}
+              {paymentDebitEnabled && (
+                <div className="flex items-center space-x-3 p-3 border rounded-lg">
+                  <RadioGroupItem value="debit" id="debit" />
+                  <Label htmlFor="debit" className="flex-1 cursor-pointer">
+                    <span className="font-medium">Cartão de Débito</span>
+                    <p className="text-sm text-muted-foreground">
+                      {orderType === "delivery" ? "Pague na entrega" : "Pague no local"}
+                    </p>
+                  </Label>
+                </div>
+              )}
+              {paymentCashEnabled && (
+                <div className="flex items-center space-x-3 p-3 border rounded-lg">
+                  <RadioGroupItem value="cash" id="cash" />
+                  <Label htmlFor="cash" className="flex-1 cursor-pointer">
+                    <span className="font-medium">Dinheiro</span>
+                    <p className="text-sm text-muted-foreground">
+                      {orderType === "delivery" ? "Pague na entrega" : "Pague no local"}
+                    </p>
+                  </Label>
+                </div>
+              )}
             </RadioGroup>
+
+            {/* PIX Key Display */}
+            {paymentMethod === "pix" && pixKey && (
+              <div className="mt-4 space-y-3 p-4 border rounded-lg bg-muted/30">
+                <div className="flex items-center gap-2">
+                  <QrCode className="h-5 w-5 text-primary" />
+                  <span className="font-medium">Chave Pix para pagamento</span>
+                </div>
+                <div className="bg-background p-3 rounded border">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {getPixKeyTypeLabel(pixKeyType)}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-sm break-all font-mono">{pixKey}</code>
+                    <Button variant="outline" size="sm" onClick={copyPixKey} className="shrink-0">
+                      {pixKeyCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  {pixHolderName && (
+                    <p className="text-sm mt-2 text-muted-foreground">
+                      Titular: <span className="font-medium text-foreground">{pixHolderName}</span>
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-start gap-2 text-sm text-amber-600 dark:text-amber-500">
+                  <MessageCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>Após o pedido, você será direcionado para enviar o comprovante pelo WhatsApp</span>
+                </div>
+              </div>
+            )}
 
             {/* Change calculation for cash */}
             {paymentMethod === "cash" && (
