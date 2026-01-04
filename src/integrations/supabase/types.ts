@@ -250,6 +250,7 @@ export type Database = {
           card_debit_fee: number | null
           city: string | null
           created_at: string
+          delivery_fee: number | null
           delivery_info: string | null
           description: string | null
           id: string
@@ -293,6 +294,7 @@ export type Database = {
           card_debit_fee?: number | null
           city?: string | null
           created_at?: string
+          delivery_fee?: number | null
           delivery_info?: string | null
           description?: string | null
           id?: string
@@ -336,6 +338,7 @@ export type Database = {
           card_debit_fee?: number | null
           city?: string | null
           created_at?: string
+          delivery_fee?: number | null
           delivery_info?: string | null
           description?: string | null
           id?: string

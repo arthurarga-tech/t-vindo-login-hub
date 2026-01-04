@@ -75,6 +75,7 @@ export default function MeuNegocio() {
   // Delivery info
   const [deliveryInfo, setDeliveryInfo] = useState("");
   const [minOrderValue, setMinOrderValue] = useState("");
+  const [deliveryFee, setDeliveryFee] = useState("");
   
   // Opening hours
   const [openingHours, setOpeningHours] = useState<OpeningHours>(defaultOpeningHours);
@@ -112,6 +113,7 @@ export default function MeuNegocio() {
       setCity((establishment as any).city || "");
       setDeliveryInfo((establishment as any).delivery_info || "");
       setMinOrderValue((establishment as any).min_order_value?.toString() || "");
+      setDeliveryFee((establishment as any).delivery_fee?.toString() || "");
       
       const hours = (establishment as any).opening_hours;
       if (hours && typeof hours === "object") {
@@ -232,6 +234,7 @@ export default function MeuNegocio() {
           city,
           delivery_info: deliveryInfo,
           min_order_value: minOrderValue ? parseFloat(minOrderValue) : 0,
+          delivery_fee: deliveryFee ? parseFloat(deliveryFee) : 0,
           opening_hours: JSON.parse(JSON.stringify(openingHours)),
           service_delivery: serviceDelivery,
           service_pickup: servicePickup,
@@ -699,6 +702,21 @@ export default function MeuNegocio() {
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
+              <Label htmlFor="deliveryFee">Taxa de Entrega (R$)</Label>
+              <Input
+                id="deliveryFee"
+                type="number"
+                min="0"
+                step="0.01"
+                value={deliveryFee}
+                onChange={(e) => setDeliveryFee(e.target.value)}
+                placeholder="0,00"
+              />
+              <p className="text-xs text-muted-foreground">
+                Taxa fixa cobrada em todos os pedidos de entrega
+              </p>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="minOrderValue">Pedido Mínimo (R$)</Label>
               <Input
                 id="minOrderValue"
@@ -709,6 +727,9 @@ export default function MeuNegocio() {
                 onChange={(e) => setMinOrderValue(e.target.value)}
                 placeholder="0,00"
               />
+              <p className="text-xs text-muted-foreground">
+                Valor mínimo para aceitar pedidos
+              </p>
             </div>
           </div>
           
