@@ -1,4 +1,4 @@
-import { Building2, Link2, Check, Copy, Clock, MapPin, Phone, FileText, Truck, Package, Store, UtensilsCrossed, CalendarClock } from "lucide-react";
+import { Building2, Link2, Check, Copy, Clock, MapPin, Phone, FileText, Truck, Package, Store, UtensilsCrossed, CalendarClock, CreditCard, Wallet, QrCode, Banknote } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { ImageUpload } from "@/components/catalogo/ImageUpload";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface DayHours {
   open: string;
@@ -80,6 +87,15 @@ export default function MeuNegocio() {
   // Scheduling
   const [allowScheduling, setAllowScheduling] = useState(false);
   
+  // Payment methods
+  const [paymentPixEnabled, setPaymentPixEnabled] = useState(true);
+  const [paymentCreditEnabled, setPaymentCreditEnabled] = useState(true);
+  const [paymentDebitEnabled, setPaymentDebitEnabled] = useState(true);
+  const [paymentCashEnabled, setPaymentCashEnabled] = useState(true);
+  const [pixKey, setPixKey] = useState("");
+  const [pixKeyType, setPixKeyType] = useState("");
+  const [pixHolderName, setPixHolderName] = useState("");
+  
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -109,6 +125,15 @@ export default function MeuNegocio() {
       
       // Scheduling
       setAllowScheduling((establishment as any).allow_scheduling ?? false);
+      
+      // Payment methods
+      setPaymentPixEnabled((establishment as any).payment_pix_enabled ?? true);
+      setPaymentCreditEnabled((establishment as any).payment_credit_enabled ?? true);
+      setPaymentDebitEnabled((establishment as any).payment_debit_enabled ?? true);
+      setPaymentCashEnabled((establishment as any).payment_cash_enabled ?? true);
+      setPixKey((establishment as any).pix_key || "");
+      setPixKeyType((establishment as any).pix_key_type || "");
+      setPixHolderName((establishment as any).pix_holder_name || "");
     }
   }, [establishment]);
 
@@ -166,6 +191,18 @@ export default function MeuNegocio() {
       return;
     }
 
+    // Validate at least one payment method is enabled
+    if (!paymentPixEnabled && !paymentCreditEnabled && !paymentDebitEnabled && !paymentCashEnabled) {
+      toast.error("Habilite pelo menos uma forma de pagamento");
+      return;
+    }
+
+    // Validate PIX key if PIX is enabled
+    if (paymentPixEnabled && pixKey && !pixKeyType) {
+      toast.error("Selecione o tipo da chave PIX");
+      return;
+    }
+
     setSaving(true);
     try {
       // Check if slug is already taken
@@ -200,6 +237,13 @@ export default function MeuNegocio() {
           service_pickup: servicePickup,
           service_dine_in: serviceDineIn,
           allow_scheduling: allowScheduling,
+          payment_pix_enabled: paymentPixEnabled,
+          payment_credit_enabled: paymentCreditEnabled,
+          payment_debit_enabled: paymentDebitEnabled,
+          payment_cash_enabled: paymentCashEnabled,
+          pix_key: pixKey || null,
+          pix_key_type: pixKeyType || null,
+          pix_holder_name: pixHolderName || null,
         })
         .eq("id", establishment.id);
 
@@ -513,6 +557,131 @@ export default function MeuNegocio() {
           {allowScheduling && (
             <p className="text-sm text-muted-foreground">
               Quando a loja estiver fechada, os clientes poderão agendar pedidos para o próximo horário disponível.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Card - Payment Methods */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Wallet className="h-5 w-5 text-primary" />
+            <CardTitle>Formas de Pagamento</CardTitle>
+          </div>
+          <CardDescription>Configure quais formas de pagamento você aceita</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            {/* PIX */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-3">
+                  <QrCode className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="font-medium">Pix</p>
+                    <p className="text-sm text-muted-foreground">Pagamento instantâneo</p>
+                  </div>
+                </div>
+                <Switch
+                  checked={paymentPixEnabled}
+                  onCheckedChange={setPaymentPixEnabled}
+                />
+              </div>
+              
+              {paymentPixEnabled && (
+                <div className="ml-8 space-y-3 p-3 border rounded-lg bg-background">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="pixKeyType">Tipo da Chave</Label>
+                      <Select value={pixKeyType} onValueChange={setPixKeyType}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cpf">CPF</SelectItem>
+                          <SelectItem value="cnpj">CNPJ</SelectItem>
+                          <SelectItem value="email">Email</SelectItem>
+                          <SelectItem value="phone">Telefone</SelectItem>
+                          <SelectItem value="random">Chave Aleatória</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="pixKey">Chave PIX</Label>
+                      <Input
+                        id="pixKey"
+                        value={pixKey}
+                        onChange={(e) => setPixKey(e.target.value)}
+                        placeholder="Sua chave PIX"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="pixHolderName">Nome do Titular</Label>
+                    <Input
+                      id="pixHolderName"
+                      value={pixHolderName}
+                      onChange={(e) => setPixHolderName(e.target.value)}
+                      placeholder="Nome que aparece na transferência"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Configure a chave PIX para que clientes possam pagar antecipadamente e enviar o comprovante.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Credit Card */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-3">
+                <CreditCard className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium">Cartão de Crédito</p>
+                  <p className="text-sm text-muted-foreground">Pagamento na entrega/local</p>
+                </div>
+              </div>
+              <Switch
+                checked={paymentCreditEnabled}
+                onCheckedChange={setPaymentCreditEnabled}
+              />
+            </div>
+
+            {/* Debit Card */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-3">
+                <CreditCard className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium">Cartão de Débito</p>
+                  <p className="text-sm text-muted-foreground">Pagamento na entrega/local</p>
+                </div>
+              </div>
+              <Switch
+                checked={paymentDebitEnabled}
+                onCheckedChange={setPaymentDebitEnabled}
+              />
+            </div>
+
+            {/* Cash */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-3">
+                <Banknote className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium">Dinheiro</p>
+                  <p className="text-sm text-muted-foreground">Pagamento na entrega/local</p>
+                </div>
+              </div>
+              <Switch
+                checked={paymentCashEnabled}
+                onCheckedChange={setPaymentCashEnabled}
+              />
+            </div>
+          </div>
+          
+          {!paymentPixEnabled && !paymentCreditEnabled && !paymentDebitEnabled && !paymentCashEnabled && (
+            <p className="text-sm text-destructive">
+              Selecione pelo menos uma forma de pagamento
             </p>
           )}
         </CardContent>

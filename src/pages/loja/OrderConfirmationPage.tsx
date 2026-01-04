@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle, Clock, Package, Truck, Home, ArrowLeft, Copy, Link2, XCircle } from "lucide-react";
-import { useEffect } from "react";
+import { CheckCircle, Clock, Package, Truck, Home, ArrowLeft, Copy, Link2, XCircle, MessageCircle, QrCode } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const statusConfig: Record<string, { label: string; icon: React.ComponentType<any>; color: string }> = {
@@ -63,6 +63,7 @@ export default function OrderConfirmationPage() {
   const { slug, orderId } = useParams<{ slug: string; orderId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [sharedLocationViaWhatsApp, setSharedLocationViaWhatsApp] = useState(false);
 
   // Use secure RPC function instead of direct query
   const { data: order, isLoading } = useQuery({
@@ -79,16 +80,69 @@ export default function OrderConfirmationPage() {
     enabled: !!orderId,
   });
 
-  // Save order to localStorage for quick tracking
+  // Save order to localStorage for quick tracking and check if location was shared
   useEffect(() => {
     if (order && slug) {
+      // Check if this order had location shared via WhatsApp
+      const savedOrder = localStorage.getItem(`lastOrder_${slug}`);
+      if (savedOrder) {
+        try {
+          const parsed = JSON.parse(savedOrder);
+          if (parsed.orderId === order.id) {
+            setSharedLocationViaWhatsApp(parsed.sharedLocationViaWhatsApp || false);
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+
       localStorage.setItem(`lastOrder_${slug}`, JSON.stringify({
         orderId: order.id,
         orderNumber: order.order_number,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        sharedLocationViaWhatsApp: sharedLocationViaWhatsApp,
       }));
     }
-  }, [order, slug]);
+  }, [order, slug, sharedLocationViaWhatsApp]);
+
+  // Fetch establishment phone for PIX receipt WhatsApp message
+  const { data: establishmentData } = useQuery({
+    queryKey: ["establishment-phone", order?.establishment_id],
+    queryFn: async () => {
+      if (!order?.establishment_id) return null;
+      const { data } = await supabase
+        .from('establishments')
+        .select('phone, pix_key')
+        .eq('id', order.establishment_id)
+        .single();
+      return data;
+    },
+    enabled: !!order?.establishment_id && order?.payment_method === "pix",
+  });
+
+  const establishmentPhone = establishmentData?.phone || "";
+  const establishmentPixKey = establishmentData?.pix_key || "";
+
+  // Show PIX receipt button only if:
+  // 1. Payment method is PIX
+  // 2. PIX key is configured
+  // 3. Location was NOT shared via WhatsApp (to avoid duplicate messages)
+  const showPixReceiptButton = order?.payment_method === "pix" && 
+    establishmentPixKey && 
+    !sharedLocationViaWhatsApp && 
+    establishmentPhone;
+
+  const sendPixReceipt = () => {
+    if (!establishmentPhone || !order) return;
+    
+    const storePhone = establishmentPhone.replace(/\D/g, "");
+    const formattedPhone = storePhone.startsWith("55") ? storePhone : `55${storePhone}`;
+    
+    const message = `Olá! Estou enviando o comprovante do pagamento Pix.\n\nPedido #${order.order_number}\nCliente: ${order.customer?.name}\nValor: ${formatPrice(order.total)}`;
+    const encodedMessage = encodeURIComponent(message);
+    
+    window.open(`https://wa.me/${formattedPhone}?text=${encodedMessage}`, "_blank");
+  };
 
   // Real-time subscription for order status updates
   useEffect(() => {
@@ -301,7 +355,11 @@ export default function OrderConfirmationPage() {
           </CardHeader>
           <CardContent className="space-y-2">
             <p className="font-medium">{paymentMethodLabels[order.payment_method]}</p>
-            <p className="text-sm text-muted-foreground">Pagamento na entrega</p>
+            {order.payment_method === "pix" && establishmentPixKey ? (
+              <p className="text-sm text-muted-foreground">Pagamento antecipado via Pix</p>
+            ) : (
+              <p className="text-sm text-muted-foreground">Pagamento na entrega</p>
+            )}
             {order.payment_method === "cash" && order.change_for && order.change_for > 0 && (
               <div className="pt-2 border-t space-y-1">
                 <p className="text-sm">
@@ -314,6 +372,28 @@ export default function OrderConfirmationPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* PIX Receipt Button */}
+        {showPixReceiptButton && (
+          <Card className="border-green-200 bg-green-50 dark:bg-green-950/20">
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <QrCode className="h-5 w-5 text-green-600" />
+                <span className="font-medium text-green-800 dark:text-green-400">Pagamento via Pix</span>
+              </div>
+              <p className="text-sm text-green-700 dark:text-green-500">
+                Por favor, envie o comprovante de pagamento pelo WhatsApp.
+              </p>
+              <Button
+                className="w-full bg-green-600 hover:bg-green-700"
+                onClick={sendPixReceipt}
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Enviar Comprovante via WhatsApp
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {order.notes && (
           <Card>
