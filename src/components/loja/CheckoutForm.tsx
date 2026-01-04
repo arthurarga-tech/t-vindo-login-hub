@@ -114,9 +114,16 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
   const pixHolderName = (establishment as any)?.pix_holder_name || "";
   const establishmentPhone = (establishment as any)?.phone || "";
 
+  // Get delivery fee from establishment
+  const establishmentDeliveryFee = (establishment as any)?.delivery_fee ?? 0;
+
+  // Calculate delivery fee based on order type
+  const deliveryFee = orderType === "delivery" ? establishmentDeliveryFee : 0;
+  const orderTotal = totalPrice + deliveryFee;
+
   // Calculate change
   const changeForValue = parseFloat(changeFor.replace(",", ".")) || 0;
-  const changeAmount = changeForValue > totalPrice ? changeForValue - totalPrice : 0;
+  const changeAmount = changeForValue > orderTotal ? changeForValue - orderTotal : 0;
   const needsChange = paymentMethod === "cash" && changeForValue > 0;
 
   // Get available service modalities
@@ -311,8 +318,8 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
           p_payment_method: paymentMethod,
           p_order_type: orderType,
           p_subtotal: totalPrice,
-          p_delivery_fee: 0,
-          p_total: totalPrice,
+          p_delivery_fee: deliveryFee,
+          p_total: orderTotal,
           p_notes: notes || null,
           p_change_for: paymentMethod === "cash" && changeForValue > 0 ? changeForValue : null,
           p_scheduled_for: scheduledFor?.toISOString() || null,
@@ -437,7 +444,7 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
           message += `Estou enviando:\n`;
           message += `📍 Minha localização para entrega (Número: ${customer.addressNumber})\n`;
           message += `💳 Comprovante do pagamento Pix\n\n`;
-          message += `Valor: ${formatPrice(totalPrice)}`;
+          message += `Valor: ${formatPrice(orderTotal)}`;
         } else if (shareLocationViaWhatsApp && needsAddress) {
           // Scenario 2: Location only
           message += `📍 Estou enviando minha localização para entrega.\n`;
@@ -445,7 +452,7 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
         } else if (paymentMethod === "pix" && pixKey) {
           // Scenario 3: PIX only
           message += `💳 Estou enviando o comprovante do pagamento Pix.\n\n`;
-          message += `Valor: ${formatPrice(totalPrice)}`;
+          message += `Valor: ${formatPrice(orderTotal)}`;
         }
         
         const encodedMessage = encodeURIComponent(message);
@@ -646,9 +653,19 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
               );
             })}
             <Separator />
-            <div className="flex justify-between font-semibold">
+            <div className="flex justify-between text-sm">
+              <span>Subtotal</span>
+              <span>{formatPrice(totalPrice)}</span>
+            </div>
+            {deliveryFee > 0 && (
+              <div className="flex justify-between text-sm">
+                <span>Taxa de entrega</span>
+                <span>{formatPrice(deliveryFee)}</span>
+              </div>
+            )}
+            <div className="flex justify-between font-semibold text-base pt-1 border-t">
               <span>Total</span>
-              <span style={{ color: "hsl(var(--store-primary, var(--primary)))" }}>{formatPrice(totalPrice)}</span>
+              <span style={{ color: "hsl(var(--store-primary, var(--primary)))" }}>{formatPrice(orderTotal)}</span>
             </div>
           </CardContent>
         </Card>
@@ -981,9 +998,9 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
                     </span>
                   </div>
                 )}
-                {changeForValue > 0 && changeForValue < totalPrice && (
+                {changeForValue > 0 && changeForValue < orderTotal && (
                   <p className="text-sm text-destructive">
-                    O valor deve ser maior que o total do pedido ({formatPrice(totalPrice)})
+                    O valor deve ser maior que o total do pedido ({formatPrice(orderTotal)})
                   </p>
                 )}
               </div>
@@ -1018,7 +1035,7 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
           onClick={handleSubmit}
           disabled={submitting}
         >
-          {submitting ? "Enviando..." : `Enviar Pedido • ${formatPrice(totalPrice)}`}
+          {submitting ? "Enviando..." : `Enviar Pedido • ${formatPrice(orderTotal)}`}
         </Button>
       </main>
     </div>
