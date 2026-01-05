@@ -101,8 +101,8 @@ export function DashboardSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
-                      className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent/50 transition-colors"
-                      activeClassName="bg-primary/10 text-primary font-medium"
+                      className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-secondary/10 transition-colors text-foreground/80"
+                      activeClassName="bg-primary/10 text-primary font-medium border-l-2 border-primary"
                     >
                       <item.icon className="h-5 w-5" />
                       <span>{item.title}</span>

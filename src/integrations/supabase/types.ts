@@ -269,7 +269,10 @@ export type Database = {
           pix_holder_name: string | null
           pix_key: string | null
           pix_key_type: string | null
+          print_contrast_high: boolean | null
+          print_font_bold: boolean | null
           print_font_size: number | null
+          print_line_height: number | null
           print_margin_left: number | null
           print_margin_right: number | null
           print_mode: string | null
@@ -313,7 +316,10 @@ export type Database = {
           pix_holder_name?: string | null
           pix_key?: string | null
           pix_key_type?: string | null
+          print_contrast_high?: boolean | null
+          print_font_bold?: boolean | null
           print_font_size?: number | null
+          print_line_height?: number | null
           print_margin_left?: number | null
           print_margin_right?: number | null
           print_mode?: string | null
@@ -357,7 +363,10 @@ export type Database = {
           pix_holder_name?: string | null
           pix_key?: string | null
           pix_key_type?: string | null
+          print_contrast_high?: boolean | null
+          print_font_bold?: boolean | null
           print_font_size?: number | null
+          print_line_height?: number | null
           print_margin_left?: number | null
           print_margin_right?: number | null
           print_mode?: string | null

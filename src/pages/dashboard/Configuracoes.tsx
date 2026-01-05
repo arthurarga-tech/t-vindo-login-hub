@@ -45,6 +45,9 @@ export default function Configuracoes() {
   const [printFontSize, setPrintFontSize] = useState(12);
   const [printMarginLeft, setPrintMarginLeft] = useState(0);
   const [printMarginRight, setPrintMarginRight] = useState(0);
+  const [printFontBold, setPrintFontBold] = useState(true);
+  const [printLineHeight, setPrintLineHeight] = useState(1.4);
+  const [printContrastHigh, setPrintContrastHigh] = useState(false);
   
   // Theme colors
   const [themePrimaryColor, setThemePrimaryColor] = useState("#ea580c");
@@ -89,6 +92,9 @@ export default function Configuracoes() {
       setPrintFontSize((establishment as any).print_font_size || 12);
       setPrintMarginLeft((establishment as any).print_margin_left ?? 0);
       setPrintMarginRight((establishment as any).print_margin_right ?? 0);
+      setPrintFontBold((establishment as any).print_font_bold !== false);
+      setPrintLineHeight((establishment as any).print_line_height || 1.4);
+      setPrintContrastHigh((establishment as any).print_contrast_high === true);
       setThemePrimaryColor((establishment as any).theme_primary_color || "#ea580c");
       setThemeSecondaryColor((establishment as any).theme_secondary_color || "#1e293b");
       setCardCreditFee(String((establishment as any).card_credit_fee || 0));
@@ -193,6 +199,9 @@ export default function Configuracoes() {
           print_font_size: printFontSize,
           print_margin_left: printMarginLeft,
           print_margin_right: printMarginRight,
+          print_font_bold: printFontBold,
+          print_line_height: printLineHeight,
+          print_contrast_high: printContrastHigh,
           theme_primary_color: themePrimaryColor,
           theme_secondary_color: themeSecondaryColor,
           card_credit_fee: parseFloat(cardCreditFee.replace(",", ".")) || 0,
@@ -679,6 +688,65 @@ export default function Configuracoes() {
                 Ajuste para evitar cortes do lado direito
               </p>
             </div>
+
+            {/* New print visibility options */}
+            <div className="space-y-4 pt-4 border-t">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                <div className="space-y-0.5">
+                  <Label htmlFor="printFontBold" className="font-medium cursor-pointer">
+                    Texto em Negrito
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Usa fonte em negrito para melhor visibilidade
+                  </p>
+                </div>
+                <Switch
+                  id="printFontBold"
+                  checked={printFontBold}
+                  onCheckedChange={setPrintFontBold}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="printLineHeight">Espaçamento de Linhas</Label>
+                  <span className="text-sm font-medium text-muted-foreground">{printLineHeight.toFixed(1)}</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-xs text-muted-foreground">1.2</span>
+                  <input
+                    type="range"
+                    id="printLineHeight"
+                    min="1.2"
+                    max="2.0"
+                    step="0.1"
+                    value={printLineHeight}
+                    onChange={(e) => setPrintLineHeight(Number(e.target.value))}
+                    className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                  />
+                  <span className="text-xs text-muted-foreground">2.0</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Aumenta o espaço entre linhas para melhor legibilidade
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                <div className="space-y-0.5">
+                  <Label htmlFor="printContrastHigh" className="font-medium cursor-pointer">
+                    Alto Contraste
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Linhas mais grossas e separadores mais visíveis
+                  </p>
+                </div>
+                <Switch
+                  id="printContrastHigh"
+                  checked={printContrastHigh}
+                  onCheckedChange={setPrintContrastHigh}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Preview */}
@@ -688,18 +756,20 @@ export default function Configuracoes() {
               className="bg-background border rounded p-3 max-w-[200px] mx-auto font-mono"
               style={{ 
                 fontSize: `${Math.max(10, printFontSize - 2)}px`,
+                fontWeight: printFontBold ? 'bold' : 'normal',
+                lineHeight: printLineHeight,
                 paddingLeft: `${Math.max(0, printMarginLeft * 2 + 12)}px`,
                 paddingRight: `${Math.max(0, printMarginRight * 2 + 12)}px`
               }}
             >
-              <div className="text-center font-bold mb-1">PEDIDO #123</div>
-              <div className="border-t border-dashed my-1"></div>
+              <div className="text-center mb-1" style={{ fontWeight: printFontBold ? '900' : 'bold' }}>PEDIDO #123</div>
+              <div className={`border-t my-1 ${printContrastHigh ? 'border-2 border-dashed' : 'border-dashed'}`}></div>
               <div className="flex justify-between">
                 <span>1x Produto</span>
                 <span>R$ 25,00</span>
               </div>
-              <div className="border-t border-dashed my-1"></div>
-              <div className="flex justify-between font-bold">
+              <div className={`border-t my-1 ${printContrastHigh ? 'border-2 border-dashed' : 'border-dashed'}`}></div>
+              <div className="flex justify-between" style={{ fontWeight: printFontBold ? '900' : 'bold' }}>
                 <span>TOTAL</span>
                 <span>R$ 25,00</span>
               </div>
@@ -758,7 +828,11 @@ export default function Configuracoes() {
                   establishment?.logo_url,
                   printFontSize,
                   printMarginLeft,
-                  printMarginRight
+                  printMarginRight,
+                  false,
+                  printFontBold,
+                  printLineHeight,
+                  printContrastHigh
                 );
                 
                 const printWindow = window.open("", "_blank", "width=400,height=600");

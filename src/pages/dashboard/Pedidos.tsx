@@ -52,6 +52,9 @@ export default function Pedidos() {
   const printFontSize = (establishment as any)?.print_font_size || 12;
   const printMarginLeft = (establishment as any)?.print_margin_left || 0;
   const printMarginRight = (establishment as any)?.print_margin_right || 0;
+  const printFontBold = (establishment as any)?.print_font_bold !== false;
+  const printLineHeight = (establishment as any)?.print_line_height || 1.4;
+  const printContrastHigh = (establishment as any)?.print_contrast_high === true;
   
   // Print mode labels for badge
   const printModeLabels: Record<string, string> = {
@@ -113,6 +116,9 @@ export default function Pedidos() {
             printFontSize,
             printMarginLeft,
             printMarginRight,
+            printFontBold,
+            printLineHeight,
+            printContrastHigh,
           });
           
           // Show toast notifications based on result
@@ -370,6 +376,9 @@ export default function Pedidos() {
         printFontSize={printFontSize}
         printMarginLeft={printMarginLeft}
         printMarginRight={printMarginRight}
+        printFontBold={printFontBold}
+        printLineHeight={printLineHeight}
+        printContrastHigh={printContrastHigh}
       />
     </div>
   );
