@@ -50,12 +50,19 @@ export function DashboardLayout() {
     
     if (primaryColor) {
       const hsl = hexToHSL(primaryColor);
-      if (hsl) styles["--primary"] = hsl;
+      if (hsl) {
+        styles["--primary"] = hsl;
+        styles["--sidebar-primary"] = hsl;
+        styles["--ring"] = hsl;
+      }
     }
     
     if (secondaryColor) {
       const hsl = hexToHSL(secondaryColor);
-      if (hsl) styles["--secondary"] = hsl;
+      if (hsl) {
+        styles["--secondary"] = hsl;
+        styles["--sidebar-accent"] = hsl;
+      }
     }
     
     return styles;

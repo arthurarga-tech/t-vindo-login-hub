@@ -14,6 +14,9 @@ interface PrintOrderOptions {
   printFontSize?: number;
   printMarginLeft?: number;
   printMarginRight?: number;
+  printFontBold?: boolean;
+  printLineHeight?: number;
+  printContrastHigh?: boolean;
 }
 
 export interface PrintResult {
@@ -33,7 +36,18 @@ function isMobileDevice(): boolean {
 const PRINTER_OFFSET_LEFT = -4; // mm
 const PRINTER_OFFSET_RIGHT = 10; // mm
 
-function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: string | null, fontSize: number = 12, marginLeft: number = 0, marginRight: number = 0, applyPrinterOffset: boolean = true): string {
+function generateReceiptHtml(
+  order: Order, 
+  establishmentName: string, 
+  logoUrl?: string | null, 
+  fontSize: number = 12, 
+  marginLeft: number = 0, 
+  marginRight: number = 0, 
+  applyPrinterOffset: boolean = true,
+  fontBold: boolean = true,
+  lineHeight: number = 1.4,
+  highContrast: boolean = false
+): string {
   // Calcula margens finais aplicando offset da impressora apenas na impressão real
   const finalMarginLeft = applyPrinterOffset ? marginLeft + PRINTER_OFFSET_LEFT : marginLeft;
   const finalMarginRight = applyPrinterOffset ? marginRight + PRINTER_OFFSET_RIGHT : marginRight;
@@ -49,6 +63,11 @@ function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: 
     debit: "Débito",
     cash: "Dinheiro",
   };
+
+  const fontWeight = fontBold ? 'bold' : 'normal';
+  const extraBoldWeight = fontBold ? '900' : 'bold';
+  const borderStyle = highContrast ? '2px dashed #000' : '1px dashed #000';
+  const solidBorderStyle = highContrast ? '2px solid #000' : '1px solid #000';
 
   return `
 <!DOCTYPE html>
@@ -69,16 +88,17 @@ function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: 
     body {
       font-family: 'Courier New', monospace;
       font-size: ${fontSize}px;
+      font-weight: ${fontWeight};
       width: 58mm;
       padding: 4mm;
       padding-left: ${4 + finalMarginLeft}mm;
       padding-right: ${4 + finalMarginRight}mm;
-      line-height: 1.4;
+      line-height: ${lineHeight};
     }
     .header {
       text-align: center;
       margin-bottom: 8px;
-      border-bottom: 1px dashed #000;
+      border-bottom: ${borderStyle};
       padding-bottom: 8px;
     }
     .store-logo {
@@ -88,28 +108,29 @@ function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: 
     }
     .store-name {
       font-size: 14px;
-      font-weight: bold;
+      font-weight: ${extraBoldWeight};
       margin-bottom: 4px;
     }
     .order-number {
       font-size: ${Math.round(fontSize * 1.5)}px;
-      font-weight: bold;
+      font-weight: ${extraBoldWeight};
       margin: 8px 0;
     }
     .order-type {
       font-size: ${fontSize}px;
       padding: 2px 6px;
-      border: 1px solid #000;
+      border: ${highContrast ? '2px' : '1px'} solid #000;
       display: inline-block;
       margin-bottom: 4px;
+      font-weight: ${fontBold ? 'bold' : 'normal'};
     }
     .section {
       margin: 8px 0;
-      border-bottom: 1px dashed #000;
+      border-bottom: ${borderStyle};
       padding-bottom: 8px;
     }
     .section-title {
-      font-weight: bold;
+      font-weight: ${extraBoldWeight};
       margin-bottom: 4px;
       text-transform: uppercase;
       font-size: ${Math.round(fontSize * 0.92)}px;
@@ -118,7 +139,7 @@ function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: 
       margin: 4px 0;
     }
     .item-name {
-      font-weight: bold;
+      font-weight: ${extraBoldWeight};
     }
     .item-qty {
       display: inline-block;
@@ -148,9 +169,9 @@ function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: 
       max-width: 50%;
     }
     .total-final {
-      font-weight: bold;
+      font-weight: ${extraBoldWeight};
       font-size: ${Math.round(fontSize * 1.17)}px;
-      border-top: 1px solid #000;
+      border-top: ${solidBorderStyle};
       padding-top: 4px;
       margin-top: 4px;
     }
@@ -231,9 +252,9 @@ function generateReceiptHtml(order: Order, establishmentName: string, logoUrl?: 
         <span class="value">R$ ${order.total.toFixed(2).replace(".", ",")}</span>
       </div>
       ${order.payment_method === "cash" && (order as any).change_for && (order as any).change_for > 0 ? `
-        <div style="margin-top: 8px; padding: 4px; border: 1px solid #000; text-align: center;">
+        <div style="margin-top: 8px; padding: 4px; border: ${highContrast ? '2px' : '1px'} solid #000; text-align: center;">
           <div><strong>TROCO:</strong> R$ ${((order as any).change_for).toFixed(2).replace(".", ",")}</div>
-          <div style="font-size: 13px; font-weight: bold;">LEVAR: R$ ${((order as any).change_for - order.total).toFixed(2).replace(".", ",")}</div>
+          <div style="font-size: 13px; font-weight: ${extraBoldWeight};">LEVAR: R$ ${((order as any).change_for - order.total).toFixed(2).replace(".", ",")}</div>
         </div>
       ` : ""}
     </div>
@@ -266,9 +287,23 @@ export function usePrintOrder() {
     printFontSize = 12,
     printMarginLeft = 0,
     printMarginRight = 0,
+    printFontBold = true,
+    printLineHeight = 1.4,
+    printContrastHigh = false,
   }: PrintOrderOptions): Promise<PrintResult> => {
     // Na impressão real, aplica o offset da impressora automaticamente
-    const htmlContent = generateReceiptHtml(order, establishmentName, logoUrl, printFontSize, printMarginLeft, printMarginRight, true);
+    const htmlContent = generateReceiptHtml(
+      order, 
+      establishmentName, 
+      logoUrl, 
+      printFontSize, 
+      printMarginLeft, 
+      printMarginRight, 
+      true,
+      printFontBold,
+      printLineHeight,
+      printContrastHigh
+    );
 
     console.log("[usePrintOrder] Iniciando impressão", {
       useQZTray,
