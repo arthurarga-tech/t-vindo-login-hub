@@ -1,10 +1,10 @@
 import { useQZTrayContext } from "../contexts/QZTrayContext";
 
 export const useQZTray = () => {
-  const { isConnected, printers, print } = useQZTrayContext();
+  const { isConnected, printers, printHtml } = useQZTrayContext();
 
   const printText = async (printer: string, text: string) => {
-    await print(printer, [text]);
+    await printHtml(printer, text);
   };
 
   return {
