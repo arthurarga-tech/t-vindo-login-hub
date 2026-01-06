@@ -40,17 +40,18 @@ const getQZ = async () => {
 };
 
 // Configure security once - MUST be done before any connection attempt
+let securityConfigured = false;
+
 const configureSecurityOnce = (qz: any) => {
   if (securityConfigured) return;
 
-  // UNSIGNED MODE REAL
+  // UNSIGNED MODE REAL (válido para QZ Tray)
   qz.security.setCertificatePromise(() => Promise.resolve(null));
   qz.security.setSignaturePromise(() => Promise.resolve(null));
 
   securityConfigured = true;
-  console.log("[QZContext] Security configured for unsigned mode (real)");
+  console.log("[QZContext] Security configured for unsigned mode");
 };
-
 
   // QZ Tray v2.2.5 format for unsigned/demo mode
   qz.security.setCertificatePromise(function (resolve: (cert: string) => void, reject: (err: Error) => void) {
