@@ -97,7 +97,7 @@ function generateReceiptHtml(
 @page {
   margin: 0;
   padding: 0;
-  size: 58mm auto;
+  size: 58mm;
 }
 @media print {
   html, body {
@@ -105,6 +105,7 @@ function generateReceiptHtml(
     max-width: 58mm !important;
     margin: 0 !important;
     padding: 0 !important;
+    height: auto !important;
   }
 }
 * {
@@ -116,9 +117,9 @@ body {
   font-family: 'Courier New', monospace;
   font-size: ${fontSize}px;
   font-weight: ${fontWeight};
-  width: 58mm;
-  max-width: 58mm;
-  min-height: fit-content;
+  width: 54mm;
+  max-width: 54mm;
+  margin: 0 auto;
   padding: 2mm ${paddingRight}mm 2mm ${paddingLeft}mm;
   line-height: ${lineHeight};
   -webkit-print-color-adjust: exact;
