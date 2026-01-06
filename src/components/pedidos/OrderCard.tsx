@@ -90,10 +90,17 @@ export function OrderCard({ order, onClick, onQuickStatusChange, nextStatus, com
   
   return (
     <Card 
-      className={`cursor-pointer hover:shadow-md transition-shadow border-l-4 ${compact ? 'text-sm' : ''} ${isScheduled ? 'ring-2 ring-purple-500/50 bg-purple-50/30 dark:bg-purple-950/20' : ''}`}
+      className={`cursor-pointer hover:shadow-md transition-shadow border-l-4 ${compact ? 'text-sm' : ''} ${isScheduled ? 'ring-2 ring-purple-500/50 bg-purple-50/50 dark:bg-purple-950/30' : ''}`}
       style={{ borderLeftColor: isScheduled ? "hsl(270, 70%, 50%)" : order.status === "pending" ? "hsl(var(--destructive))" : "hsl(var(--primary))" }}
       onClick={onClick}
     >
+      {/* Scheduled order banner */}
+      {isScheduled && (
+        <div className="bg-purple-600 text-white px-3 py-1.5 flex items-center justify-center gap-2 rounded-t-lg -mt-px -mx-px">
+          <Calendar className="h-4 w-4" />
+          <span className="font-bold text-sm">AGENDADO PARA {format(scheduledFor!, "dd/MM 'às' HH:mm")}</span>
+        </div>
+      )}
       <CardHeader className={compact ? "p-2 pb-1" : "pb-2"}>
         <div className="flex items-center justify-between gap-1">
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -102,12 +109,6 @@ export function OrderCard({ order, onClick, onQuickStatusChange, nextStatus, com
             <Badge variant="outline" className={`flex items-center gap-0.5 ${compact ? "text-[10px] px-1 py-0" : "text-xs"}`}>
               {getOrderTypeIcon()} {typeInfo.label}
             </Badge>
-            {scheduledFor && (
-              <Badge className={`flex items-center gap-0.5 bg-purple-600 hover:bg-purple-700 text-white ${compact ? "text-[10px] px-1.5 py-0.5" : "text-xs px-2"}`}>
-                <Calendar className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} />
-                <span className="font-semibold">{format(scheduledFor, "dd/MM HH:mm")}</span>
-              </Badge>
-            )}
           </div>
           <div className={`flex items-center gap-1 text-muted-foreground ${compact ? 'text-[10px]' : 'text-xs'}`}>
             <Clock className={compact ? "h-2.5 w-2.5" : "h-3 w-3"} />
