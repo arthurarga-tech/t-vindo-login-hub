@@ -145,6 +145,38 @@ export default function Pedidos() {
     previousPendingCountRef.current = pendingCount;
   }, [pendingCount, soundEnabled, orders, printMode, isPrintOnOrder, isQzMode, establishmentName, logoUrl, printOrder, qzTray.isConnected, qzTrayPrinter, qzTray.printHtml, printerAvailable]);
 
+  // Function to print an order from the card
+  const handlePrintOrder = async (order: Order) => {
+    const shouldUseQZ = isQzMode && qzTrayPrinter && qzTray.isConnected;
+    
+    console.log("[Pedidos] Imprimindo pedido #" + order.order_number + " via botão do card", {
+      useQZTray: shouldUseQZ,
+      printer: qzTrayPrinter,
+    });
+    
+    const result = await printOrder({
+      order,
+      establishmentName,
+      logoUrl,
+      useQZTray: shouldUseQZ,
+      qzTrayPrinter,
+      qzPrintFn: qzTray.printHtml,
+      isPrinterAvailable: printerAvailable,
+      printFontSize,
+      printMarginLeft,
+      printMarginRight,
+      printFontBold,
+      printLineHeight,
+      printContrastHigh,
+    });
+    
+    if (result.printerUnavailable) {
+      toast.error(`Impressora "${qzTrayPrinter}" não encontrada`);
+    } else if (result.isMobile) {
+      toast.info("Toque no botão verde para imprimir");
+    }
+  };
+
   const playNotificationSound = () => {
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -357,11 +389,13 @@ export default function Pedidos() {
         <OrderKanban 
           orders={filteredOrders} 
           onOrderClick={setSelectedOrder}
+          onPrint={handlePrintOrder}
         />
       ) : (
         <OrderList 
           orders={filteredOrders} 
           onOrderClick={setSelectedOrder}
+          onPrint={handlePrintOrder}
         />
       )}
 

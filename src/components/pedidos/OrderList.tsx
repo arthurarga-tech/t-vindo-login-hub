@@ -5,9 +5,10 @@ import { toast } from "sonner";
 interface OrderListProps {
   orders: Order[];
   onOrderClick: (order: Order) => void;
+  onPrint?: (order: Order) => void;
 }
 
-export function OrderList({ orders, onOrderClick }: OrderListProps) {
+export function OrderList({ orders, onOrderClick, onPrint }: OrderListProps) {
   const updateStatus = useUpdateOrderStatus();
 
   const handleQuickStatusChange = async (order: Order, newStatus: OrderStatus) => {
@@ -44,6 +45,7 @@ export function OrderList({ orders, onOrderClick }: OrderListProps) {
           order={order} 
           onClick={() => onOrderClick(order)}
           onQuickStatusChange={handleQuickStatusChange}
+          onPrint={onPrint}
           nextStatus={getNextStatus(order)}
           compact
         />
