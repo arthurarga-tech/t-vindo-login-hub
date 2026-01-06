@@ -45,6 +45,9 @@ export default function Pedidos() {
   const isPrintOnOrder = printMode.includes("on_order");
   const isPrintOnConfirm = printMode.includes("on_confirm");
   
+  // Debug: verificar valor do printMode carregado
+  console.log("[Pedidos] printMode carregado:", printMode, { isQzMode, isPrintOnOrder, isPrintOnConfirm });
+  
   const establishmentName = establishment?.name || "Estabelecimento";
   const logoUrl = establishment?.logo_url;
   const qzTrayPrinter = qzTray.savedPrinter || (establishment as any)?.qz_tray_printer || "";
