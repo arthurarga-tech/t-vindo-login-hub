@@ -1,3 +1,15 @@
-// Re-export the context hook for backward compatibility
-// The actual implementation is in QZTrayContext.tsx
-export { useQZTrayContext as useQZTray } from "@/contexts/QZTrayContext";
+import { useQZTrayContext } from "../contexts/QZTrayContext";
+
+export const useQZTray = () => {
+  const { isConnected, printers, print } = useQZTrayContext();
+
+  const printText = async (printer: string, text: string) => {
+    await print(printer, [text]);
+  };
+
+  return {
+    isConnected,
+    printers,
+    printText,
+  };
+};
