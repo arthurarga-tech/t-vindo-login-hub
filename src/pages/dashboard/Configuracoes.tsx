@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWhatsAppNotification } from "@/hooks/useWhatsAppNotification";
 import { useQZTrayContext } from "@/contexts/QZTrayContext";
+import { generateReceiptHtml } from "@/hooks/usePrintOrder";
 
 // Unified print mode: method_trigger or "none"
 // browser_on_order, browser_on_confirm, qz_on_order, qz_on_confirm, none
@@ -749,30 +750,65 @@ export default function Configuracoes() {
             </div>
           </div>
 
-          {/* Preview */}
+          {/* Preview Real usando iframe */}
           <div className="p-4 rounded-lg border bg-muted/30">
-            <p className="text-sm font-medium mb-3">Pré-visualização</p>
-            <div 
-              className="bg-background border rounded p-3 max-w-[200px] mx-auto font-mono"
-              style={{ 
-                fontSize: `${Math.max(10, printFontSize - 2)}px`,
-                fontWeight: printFontBold ? 'bold' : 'normal',
-                lineHeight: printLineHeight,
-                paddingLeft: `${Math.max(0, printMarginLeft * 2 + 12)}px`,
-                paddingRight: `${Math.max(0, printMarginRight * 2 + 12)}px`
-              }}
-            >
-              <div className="text-center mb-1" style={{ fontWeight: printFontBold ? '900' : 'bold' }}>PEDIDO #123</div>
-              <div className={`border-t my-1 ${printContrastHigh ? 'border-2 border-dashed' : 'border-dashed'}`}></div>
-              <div className="flex justify-between">
-                <span>1x Produto</span>
-                <span>R$ 25,00</span>
-              </div>
-              <div className={`border-t my-1 ${printContrastHigh ? 'border-2 border-dashed' : 'border-dashed'}`}></div>
-              <div className="flex justify-between" style={{ fontWeight: printFontBold ? '900' : 'bold' }}>
-                <span>TOTAL</span>
-                <span>R$ 25,00</span>
-              </div>
+            <p className="text-sm font-medium mb-3">Pré-visualização (58mm)</p>
+            <div className="bg-white border rounded overflow-hidden mx-auto" style={{ maxWidth: '220px' }}>
+              <iframe
+                srcDoc={(() => {
+                  const testOrderPreview = {
+                    order_number: 123,
+                    order_type: 'delivery',
+                    status: 'confirmed',
+                    payment_method: 'cash',
+                    subtotal: 89.80,
+                    delivery_fee: 5.00,
+                    total: 94.80,
+                    change_for: 100,
+                    notes: 'Sem cebola',
+                    created_at: new Date().toISOString(),
+                    customer: {
+                      name: 'João Silva',
+                      phone: '(11) 99999-9999',
+                      address: 'Rua das Flores',
+                      address_number: '123',
+                      neighborhood: 'Centro',
+                      city: 'São Paulo'
+                    },
+                    items: [
+                      {
+                        quantity: 2,
+                        product_name: 'Pizza Grande',
+                        product_price: 44.90,
+                        total: 89.80,
+                        addons: [
+                          { quantity: 1, addon_name: 'Borda recheada', addon_price: 5.00 }
+                        ]
+                      }
+                    ]
+                  };
+                  return generateReceiptHtml(
+                    testOrderPreview as any,
+                    establishment?.name || "Estabelecimento",
+                    null,
+                    printFontSize,
+                    printMarginLeft,
+                    printMarginRight,
+                    true,
+                    printFontBold,
+                    printLineHeight,
+                    printContrastHigh
+                  );
+                })()}
+                style={{ 
+                  width: '100%', 
+                  height: '350px', 
+                  border: 'none',
+                  pointerEvents: 'none',
+                  background: 'white'
+                }}
+                title="Preview do recibo"
+              />
             </div>
           </div>
 
@@ -822,18 +858,18 @@ export default function Configuracoes() {
                   ]
                 };
                 
-                const html = generateReceiptHtml(
-                  testOrder as any,
-                  establishment?.name || "Estabelecimento",
-                  establishment?.logo_url,
-                  printFontSize,
-                  printMarginLeft,
-                  printMarginRight,
-                  false,
-                  printFontBold,
-                  printLineHeight,
-                  printContrastHigh
-                );
+                  const html = generateReceiptHtml(
+                    testOrder as any,
+                    establishment?.name || "Estabelecimento",
+                    establishment?.logo_url,
+                    printFontSize,
+                    printMarginLeft,
+                    printMarginRight,
+                    true,
+                    printFontBold,
+                    printLineHeight,
+                    printContrastHigh
+                  );
                 
                 const printWindow = window.open("", "_blank", "width=400,height=600");
                 if (printWindow) {
