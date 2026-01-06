@@ -152,18 +152,34 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
       toast.success(`Status atualizado para: ${statusConfig[newStatus].label}`);
       
       // Auto print on confirm if configured (browser_on_confirm or qz_on_confirm)
-      const isPrintOnConfirm = printMode.includes("on_confirm");
+      const isPrintOnConfirm = printMode && printMode.includes("on_confirm");
+      
+      console.log("[OrderDetailModal] Verificando impressão automática", {
+        printMode,
+        newStatus,
+        isPrintOnConfirm,
+        isConfirmed: newStatus === "confirmed",
+      });
+      
       if (isPrintOnConfirm && newStatus === "confirmed") {
-        console.log("[OrderDetailModal] Imprimindo automaticamente ao confirmar pedido", {
+        console.log("[OrderDetailModal] DISPARANDO impressão automática ao confirmar pedido", {
           isQzMode,
           qzTrayPrinter,
           isPrinterAvailable,
         });
-        await handlePrint();
+        
+        try {
+          await handlePrint();
+          console.log("[OrderDetailModal] Impressão automática concluída");
+        } catch (printError) {
+          console.error("[OrderDetailModal] Erro na impressão automática:", printError);
+          toast.error("Erro ao imprimir automaticamente");
+        }
       }
       
       onClose(); // Fecha o modal para mostrar dados atualizados
     } catch (error) {
+      console.error("[OrderDetailModal] Erro ao atualizar status:", error);
       toast.error("Erro ao atualizar status");
     }
   };
