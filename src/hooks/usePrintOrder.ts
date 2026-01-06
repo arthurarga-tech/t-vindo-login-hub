@@ -84,15 +84,11 @@ function generateReceiptHtml(
   const borderStyle = highContrast ? '2px dashed #000' : '1px dashed #000';
   const solidBorderStyle = highContrast ? '2px solid #000' : '1px solid #000';
 
-  // Margens: valores negativos movem conteúdo para esquerda, positivos para direita
-  // Base de 2mm em cada lado, ajustado pelo usuário
-  const basePadding = 2;
-  const finalPaddingLeft = Math.max(0, basePadding + marginLeft);
-  const finalPaddingRight = Math.max(0, basePadding + marginRight);
-  
-  // Largura útil do papel: 58mm - margens mecânicas (~2mm cada lado) = ~54mm
-  // Ajustar a largura interna baseado nas margens configuradas
-  const contentWidth = 54 - finalPaddingLeft - finalPaddingRight;
+  // Centralizar: calcular padding esquerdo e direito baseado nas configurações
+  // marginLeft/Right positivo = mais padding, negativo = menos padding
+  const basePadding = 3; // 3mm base padding
+  const finalPaddingLeft = Math.max(1, basePadding + marginLeft);
+  const finalPaddingRight = Math.max(1, basePadding + marginRight);
 
   return `<!DOCTYPE html>
 <html>
@@ -105,16 +101,6 @@ function generateReceiptHtml(
   padding: 0;
   size: 58mm auto;
 }
-@media print {
-  html, body {
-    width: 58mm !important;
-    max-width: 58mm !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    height: auto !important;
-    overflow: visible !important;
-  }
-}
 * {
   margin: 0;
   padding: 0;
@@ -122,18 +108,32 @@ function generateReceiptHtml(
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
+html {
+  width: 58mm;
+}
 body {
   font-family: 'Courier New', monospace;
   font-size: ${fontSize}px;
   font-weight: ${fontWeight};
   width: 58mm;
   max-width: 58mm;
-  margin: 0;
-  padding: 2mm ${finalPaddingRight}mm 2mm ${finalPaddingLeft}mm;
+  margin: 0 auto;
+  padding-top: 2mm;
+  padding-bottom: 2mm;
+  padding-left: ${finalPaddingLeft}mm;
+  padding-right: ${finalPaddingRight}mm;
   line-height: ${lineHeight};
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
-  overflow: hidden;
+}
+@media print {
+  html, body {
+    width: 58mm !important;
+    max-width: 58mm !important;
+    margin: 0 auto !important;
+    padding-left: ${finalPaddingLeft}mm !important;
+    padding-right: ${finalPaddingRight}mm !important;
+  }
 }
     .header {
       text-align: center;
