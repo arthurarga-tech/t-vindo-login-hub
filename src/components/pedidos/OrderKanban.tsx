@@ -7,6 +7,7 @@ import { toast } from "sonner";
 interface OrderKanbanProps {
   orders: Order[];
   onOrderClick: (order: Order) => void;
+  onPrint?: (order: Order) => void;
 }
 
 interface KanbanColumn {
@@ -26,7 +27,7 @@ const columns: KanbanColumn[] = [
   { id: "completed", statuses: ["delivered", "picked_up", "served"], label: "Finalizados", color: "bg-green-500" },
 ];
 
-export function OrderKanban({ orders, onOrderClick }: OrderKanbanProps) {
+export function OrderKanban({ orders, onOrderClick, onPrint }: OrderKanbanProps) {
   const updateStatus = useUpdateOrderStatus();
 
   const getOrdersByStatuses = (statuses: OrderStatus[]) => {
@@ -81,6 +82,7 @@ export function OrderKanban({ orders, onOrderClick }: OrderKanbanProps) {
                       order={order} 
                       onClick={() => onOrderClick(order)}
                       onQuickStatusChange={handleQuickStatusChange}
+                      onPrint={onPrint}
                       nextStatus={getNextStatus(order)}
                       compact
                     />

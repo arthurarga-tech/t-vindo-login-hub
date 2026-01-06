@@ -1,4 +1,4 @@
-import { Clock, User, MapPin, Phone, CreditCard, MessageSquare, Truck, Package, UtensilsCrossed, ChevronRight, Calendar } from "lucide-react";
+import { Clock, User, MapPin, Phone, CreditCard, MessageSquare, Truck, Package, UtensilsCrossed, ChevronRight, Calendar, Printer } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ interface OrderCardProps {
   order: Order;
   onClick: () => void;
   onQuickStatusChange?: (order: Order, newStatus: OrderStatus) => void;
+  onPrint?: (order: Order) => void;
   nextStatus?: OrderStatus | null;
   compact?: boolean;
 }
@@ -51,7 +52,7 @@ const paymentLabels: Record<string, string> = {
   cash: "Dinheiro",
 };
 
-export function OrderCard({ order, onClick, onQuickStatusChange, nextStatus, compact = false }: OrderCardProps) {
+export function OrderCard({ order, onClick, onQuickStatusChange, onPrint, nextStatus, compact = false }: OrderCardProps) {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -86,6 +87,13 @@ export function OrderCard({ order, onClick, onQuickStatusChange, nextStatus, com
     }
   };
 
+  const handlePrint = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onPrint) {
+      onPrint(order);
+    }
+  };
+
   const isScheduled = !!scheduledFor;
   
   return (
@@ -105,6 +113,17 @@ export function OrderCard({ order, onClick, onQuickStatusChange, nextStatus, com
         <div className="flex items-center justify-between gap-1">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className={`font-bold ${compact ? 'text-base' : 'text-lg'}`}>#{order.order_number}</span>
+            {onPrint && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={compact ? "h-5 w-5" : "h-6 w-6"}
+                onClick={handlePrint}
+                title="Imprimir pedido"
+              >
+                <Printer className={compact ? "h-3 w-3" : "h-4 w-4"} />
+              </Button>
+            )}
             <Badge variant={status.variant} className={compact ? "text-[10px] px-1.5 py-0" : ""}>{status.label}</Badge>
             <Badge variant="outline" className={`flex items-center gap-0.5 ${compact ? "text-[10px] px-1 py-0" : "text-xs"}`}>
               {getOrderTypeIcon()} {typeInfo.label}
