@@ -197,6 +197,14 @@ function generateReceiptHtml(
   </style>
 </head>
 <body>
+  ${(order as any).scheduled_for ? `
+  <div style="border: 3px solid #000; padding: 8px; margin-bottom: 8px; text-align: center; background: #f0f0f0;">
+    <div style="font-size: ${Math.round(fontSize * 1.2)}px; font-weight: 900;">⏰ AGENDADO</div>
+    <div style="font-size: ${Math.round(fontSize * 1.3)}px; font-weight: 900; margin-top: 4px;">
+      ${formatInSaoPaulo((order as any).scheduled_for, "dd/MM 'às' HH:mm", { locale: ptBR })}
+    </div>
+  </div>
+  ` : ''}
   <div class="header">
     ${logoUrl ? `<img src="${logoUrl}" alt="${establishmentName}" class="store-logo" />` : ''}
     <div class="store-name">${establishmentName}</div>
