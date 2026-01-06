@@ -648,18 +648,18 @@ export default function Configuracoes() {
                 <span className="text-sm font-medium text-muted-foreground">{printMarginLeft}mm</span>
               </div>
               <div className="flex items-center gap-4">
-                <span className="text-xs text-muted-foreground">-5mm</span>
+                <span className="text-xs text-muted-foreground">-15mm</span>
                 <input
                   type="range"
                   id="printMarginLeft"
-                  min="-5"
-                  max="10"
+                  min="-15"
+                  max="20"
                   step="1"
                   value={printMarginLeft}
                   onChange={(e) => setPrintMarginLeft(Number(e.target.value))}
                   className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
                 />
-                <span className="text-xs text-muted-foreground">10mm</span>
+                <span className="text-xs text-muted-foreground">20mm</span>
               </div>
               <p className="text-xs text-muted-foreground">
                 Ajuste para centralizar o conteúdo na sua impressora térmica
@@ -672,18 +672,18 @@ export default function Configuracoes() {
                 <span className="text-sm font-medium text-muted-foreground">{printMarginRight}mm</span>
               </div>
               <div className="flex items-center gap-4">
-                <span className="text-xs text-muted-foreground">-5mm</span>
+                <span className="text-xs text-muted-foreground">-15mm</span>
                 <input
                   type="range"
                   id="printMarginRight"
-                  min="-5"
-                  max="10"
+                  min="-15"
+                  max="20"
                   step="1"
                   value={printMarginRight}
                   onChange={(e) => setPrintMarginRight(Number(e.target.value))}
                   className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
                 />
-                <span className="text-xs text-muted-foreground">10mm</span>
+                <span className="text-xs text-muted-foreground">20mm</span>
               </div>
               <p className="text-xs text-muted-foreground">
                 Ajuste para evitar cortes do lado direito
