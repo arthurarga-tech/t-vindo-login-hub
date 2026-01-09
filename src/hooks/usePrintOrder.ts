@@ -7,10 +7,6 @@ interface PrintOrderOptions {
   order: Order;
   establishmentName: string;
   logoUrl?: string | null;
-  useQZTray?: boolean;
-  qzTrayPrinter?: string | null;
-  qzPrintFn?: (html: string, printer: string) => Promise<boolean>;
-  isPrinterAvailable?: boolean;
   printFontSize?: number;
   printMarginLeft?: number;
   printMarginRight?: number;
@@ -21,8 +17,6 @@ interface PrintOrderOptions {
 
 export interface PrintResult {
   success: boolean;
-  usedFallback: boolean;
-  printerUnavailable?: boolean;
   isMobile?: boolean;
 }
 
@@ -61,6 +55,8 @@ function generateReceiptHtml(
     orderNumber: safeOrder.order_number,
     itemCount: safeOrder.items.length,
     hasCustomer: !!safeOrder.customer?.name,
+    logoUrl: logoUrl || "NÃO DEFINIDA",
+    hasLogo: !!logoUrl && logoUrl.trim() !== '',
     fontSize,
     marginLeft,
     marginRight,
@@ -89,6 +85,12 @@ function generateReceiptHtml(
   const basePadding = 3; // 3mm base padding
   const finalPaddingLeft = Math.max(1, basePadding + marginLeft);
   const finalPaddingRight = Math.max(1, basePadding + marginRight);
+
+  // Validate logo URL and create logo HTML
+  const hasValidLogo = logoUrl && logoUrl.trim() !== '';
+  const logoHtml = hasValidLogo 
+    ? `<img src="${logoUrl}" alt="${establishmentName}" class="store-logo" onerror="console.error('[Print] Erro ao carregar logo:', this.src); this.style.display='none';" />`
+    : `<!-- Logo não definida -->`;
 
   return `<!DOCTYPE html>
 <html>
@@ -247,7 +249,7 @@ body {
 ${formatInSaoPaulo((order as any).scheduled_for, "dd/MM 'às' HH:mm", { locale: ptBR })}
 </div>
 </div>` : ''}
-<div class="header">${logoUrl ? `<img src="${logoUrl}" alt="${establishmentName}" class="store-logo" />` : ''}
+<div class="header">${logoHtml}
 <div class="store-name">${establishmentName}</div>
 <div class="order-number">PEDIDO #${safeOrder.order_number}</div>
 <div class="order-type">${orderTypeLabels[safeOrder.order_type] || safeOrder.order_type}</div>
@@ -308,10 +310,6 @@ export function usePrintOrder() {
     order,
     establishmentName,
     logoUrl,
-    useQZTray = false,
-    qzTrayPrinter,
-    qzPrintFn,
-    isPrinterAvailable = true,
     printFontSize = 12,
     printMarginLeft = 0,
     printMarginRight = 0,
@@ -319,7 +317,6 @@ export function usePrintOrder() {
     printLineHeight = 1.4,
     printContrastHigh = false,
   }: PrintOrderOptions): Promise<PrintResult> => {
-    // Na impressão real, aplica o offset da impressora automaticamente
     const htmlContent = generateReceiptHtml(
       order, 
       establishmentName, 
@@ -334,75 +331,61 @@ export function usePrintOrder() {
     );
 
     console.log("[usePrintOrder] Iniciando impressão", {
-      useQZTray,
-      qzTrayPrinter,
-      isPrinterAvailable,
-      hasQzPrintFn: !!qzPrintFn,
+      hasLogo: !!logoUrl && logoUrl.trim() !== '',
+      logoUrl: logoUrl || "NÃO DEFINIDA",
     });
 
-    // Check if printer is available when using QZ Tray
-    if (useQZTray && qzTrayPrinter && !isPrinterAvailable) {
-      console.warn("[usePrintOrder] Impressora não disponível, usando fallback do navegador:", qzTrayPrinter);
-      // Fall through to browser print instead of returning error
-    }
-
-    // Use QZ Tray for silent printing if enabled and printer is available
-    if (useQZTray && qzTrayPrinter && qzPrintFn && isPrinterAvailable) {
-      try {
-        console.log("[usePrintOrder] Tentando imprimir via QZ Tray...");
-        const success = await qzPrintFn(htmlContent, qzTrayPrinter);
-        if (success) {
-          console.log("[usePrintOrder] Impressão QZ Tray bem sucedida");
-          return { success: true, usedFallback: false };
-        }
-        // If QZ print failed, fall through to browser print
-        console.warn("[usePrintOrder] QZ Tray print failed, falling back to browser print");
-      } catch (error) {
-        console.error("[usePrintOrder] QZ Tray print error, falling back to browser print:", error);
-      }
-    }
-
-    // Always fallback to browser print
     const mobile = isMobileDevice();
     console.log("[usePrintOrder] Usando impressão do navegador, isMobile:", mobile);
-    console.log("[usePrintOrder] Logo URL:", logoUrl || "NÃO DEFINIDA");
-    
-    const usedFallback = useQZTray && !!qzTrayPrinter;
 
-    // Helper function to wait for all images to load
+    // Helper function to wait for all images to load with improved validation
     const waitForImages = (doc: Document): Promise<void> => {
       return new Promise((resolve) => {
         const images = doc.querySelectorAll('img');
+        
         if (images.length === 0) {
+          console.log("[usePrintOrder] Nenhuma imagem para carregar");
           resolve();
           return;
         }
 
+        console.log(`[usePrintOrder] Aguardando ${images.length} imagem(ns) carregar...`);
+
         let loadedCount = 0;
         const checkComplete = () => {
           loadedCount++;
+          console.log(`[usePrintOrder] Imagem ${loadedCount}/${images.length} processada`);
           if (loadedCount >= images.length) {
             resolve();
           }
         };
 
-        images.forEach((img) => {
-          if (img.complete) {
+        images.forEach((img, index) => {
+          // Check if image loaded successfully (naturalWidth > 0 means it loaded)
+          if (img.complete && img.naturalWidth > 0) {
+            console.log(`[usePrintOrder] Imagem ${index + 1} já carregada com sucesso`);
+            checkComplete();
+          } else if (img.complete && img.naturalWidth === 0) {
+            // Image failed to load
+            console.warn(`[usePrintOrder] Imagem ${index + 1} falhou ao carregar:`, img.src);
             checkComplete();
           } else {
-            img.onload = checkComplete;
+            img.onload = () => {
+              console.log(`[usePrintOrder] Imagem ${index + 1} carregou via onload`);
+              checkComplete();
+            };
             img.onerror = () => {
-              console.warn("[usePrintOrder] Erro ao carregar imagem:", img.src);
-              checkComplete(); // Continue even if image fails
+              console.warn(`[usePrintOrder] Imagem ${index + 1} erro ao carregar:`, img.src);
+              checkComplete();
             };
           }
         });
 
-        // Timeout fallback - don't wait more than 3 seconds
+        // Timeout fallback - don't wait more than 5 seconds
         setTimeout(() => {
-          console.log("[usePrintOrder] Timeout aguardando imagens, prosseguindo com impressão");
+          console.warn("[usePrintOrder] Timeout aguardando imagens, prosseguindo com impressão");
           resolve();
-        }, 3000);
+        }, 5000);
       });
     };
 
@@ -427,7 +410,7 @@ export function usePrintOrder() {
         printWindow.document.write(mobileHtml);
         printWindow.document.close();
         console.log("[usePrintOrder] Página mobile de impressão aberta");
-        return { success: true, usedFallback, isMobile: true };
+        return { success: true, isMobile: true };
       }
     } else {
       // Desktop: Use hidden iframe for more reliable printing
@@ -461,7 +444,7 @@ export function usePrintOrder() {
           }, 2000);
           
           console.log("[usePrintOrder] Iframe de impressão criado e imagens carregadas");
-          return { success: true, usedFallback, isMobile: false };
+          return { success: true, isMobile: false };
         }
         
         iframe.remove();
@@ -479,12 +462,12 @@ export function usePrintOrder() {
           printWindow.print();
           printWindow.onafterprint = () => printWindow.close();
         };
-        return { success: true, usedFallback, isMobile: false };
+        return { success: true, isMobile: false };
       }
     }
     
     console.error("[usePrintOrder] Falha ao abrir janela de impressão");
-    return { success: false, usedFallback: false, isMobile: mobile };
+    return { success: false, isMobile: mobile };
   }, []);
 
   return { printOrder };

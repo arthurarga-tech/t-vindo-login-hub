@@ -521,7 +521,7 @@ export default function Configuracoes() {
                   return generateReceiptHtml(
                     testOrderPreview as any,
                     establishment?.name || "Estabelecimento",
-                    null,
+                    (establishment as any)?.logo_url || null,
                     printFontSize,
                     printMarginLeft,
                     printMarginRight,
