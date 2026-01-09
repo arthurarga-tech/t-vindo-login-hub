@@ -74,11 +74,22 @@ export function ImageCropModal({
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
 
-    // Set canvas size to the cropped area size
-    canvas.width = completedCrop.width * scaleX;
-    canvas.height = completedCrop.height * scaleY;
+    // Calculate cropped dimensions
+    let cropWidth = completedCrop.width * scaleX;
+    let cropHeight = completedCrop.height * scaleY;
 
-    // Draw the cropped image
+    // Limit max dimension to 1200px for performance
+    const maxDimension = 1200;
+    if (cropWidth > maxDimension || cropHeight > maxDimension) {
+      const scaleFactor = maxDimension / Math.max(cropWidth, cropHeight);
+      cropWidth = Math.round(cropWidth * scaleFactor);
+      cropHeight = Math.round(cropHeight * scaleFactor);
+    }
+
+    canvas.width = cropWidth;
+    canvas.height = cropHeight;
+
+    // Draw the cropped image with optional resizing
     ctx.drawImage(
       image,
       completedCrop.x * scaleX,
@@ -87,8 +98,8 @@ export function ImageCropModal({
       completedCrop.height * scaleY,
       0,
       0,
-      canvas.width,
-      canvas.height
+      cropWidth,
+      cropHeight
     );
 
     return new Promise((resolve) => {
@@ -97,7 +108,7 @@ export function ImageCropModal({
           resolve(blob);
         },
         "image/jpeg",
-        0.9
+        0.8 // Compress to 80% quality
       );
     });
   }, [completedCrop]);

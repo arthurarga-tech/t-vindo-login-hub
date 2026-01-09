@@ -306,8 +306,6 @@ export type Database = {
           print_margin_right: number | null
           print_mode: string | null
           printer_name: string | null
-          qz_tray_enabled: boolean | null
-          qz_tray_printer: string | null
           service_delivery: boolean
           service_dine_in: boolean
           service_pickup: boolean
@@ -354,8 +352,6 @@ export type Database = {
           print_margin_right?: number | null
           print_mode?: string | null
           printer_name?: string | null
-          qz_tray_enabled?: boolean | null
-          qz_tray_printer?: string | null
           service_delivery?: boolean
           service_dine_in?: boolean
           service_pickup?: boolean
@@ -402,8 +398,6 @@ export type Database = {
           print_margin_right?: number | null
           print_mode?: string | null
           printer_name?: string | null
-          qz_tray_enabled?: boolean | null
-          qz_tray_printer?: string | null
           service_delivery?: boolean
           service_dine_in?: boolean
           service_pickup?: boolean

@@ -42,8 +42,6 @@ export default function Pedidos() {
   const isPrintOnOrder = printMode.includes("on_order");
   const isPrintOnConfirm = printMode.includes("on_confirm");
   
-  // Debug: verificar valor do printMode carregado
-  console.log("[Pedidos] printMode carregado:", printMode, { isPrintOnOrder, isPrintOnConfirm });
   
   const establishmentName = establishment?.name || "Estabelecimento";
   const logoUrl = establishment?.logo_url;
@@ -85,12 +83,8 @@ export default function Pedidos() {
       );
       
       if (newPendingOrders.length > 0) {
-        console.log("[Pedidos] Novos pedidos para impressão automática:", newPendingOrders.map(o => o.order_number));
-        
         newPendingOrders.forEach(async (order) => {
           printedOrdersRef.current.add(order.id);
-          
-          console.log("[Pedidos] Imprimindo pedido #" + order.order_number);
           
           const result = await printOrder({
             order,
@@ -119,8 +113,6 @@ export default function Pedidos() {
 
   // Function to print an order from the card
   const handlePrintOrder = async (order: Order) => {
-    console.log("[Pedidos] Imprimindo pedido #" + order.order_number + " via botão do card");
-    
     const result = await printOrder({
       order,
       establishmentName,
@@ -165,8 +157,8 @@ export default function Pedidos() {
         osc2.start();
         osc2.stop(audioContext.currentTime + 0.3);
       }, 200);
-    } catch (error) {
-      console.log("Audio notification not supported");
+    } catch {
+      // Audio notification not supported
     }
   };
 

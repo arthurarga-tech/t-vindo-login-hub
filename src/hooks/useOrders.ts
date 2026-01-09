@@ -115,8 +115,8 @@ function useOrderNotificationSound() {
       playNote(659, now + 0.12, 0.15); // E5
       playNote(784, now + 0.24, 0.2);  // G5
 
-    } catch (error) {
-      console.error("Error playing notification sound:", error);
+    } catch {
+      // Audio notification not supported in this browser
     }
   }, []);
 
@@ -146,7 +146,8 @@ export function useOrders() {
           )
         `)
         .eq("establishment_id", establishment.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(100); // Limit initial load for performance
 
       if (error) throw error;
       return data as Order[];
@@ -169,7 +170,6 @@ export function useOrders() {
           filter: `establishment_id=eq.${establishment.id}`,
         },
         (payload) => {
-          console.log("New order received:", payload);
           // Check if notification sound is enabled
           const isSoundEnabled = (establishment as any).notification_sound_enabled !== false;
           if (isSoundEnabled) {

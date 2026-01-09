@@ -51,16 +51,6 @@ function generateReceiptHtml(
     created_at: order.created_at || new Date().toISOString(),
   };
 
-  console.log("[usePrintOrder] Gerando HTML do recibo", {
-    orderNumber: safeOrder.order_number,
-    itemCount: safeOrder.items.length,
-    hasCustomer: !!safeOrder.customer?.name,
-    logoUrl: logoUrl || "NÃO DEFINIDA",
-    hasLogo: !!logoUrl && logoUrl.trim() !== '',
-    fontSize,
-    marginLeft,
-    marginRight,
-  });
 
   const orderTypeLabels: Record<string, string> = {
     delivery: "Entrega",
@@ -330,13 +320,7 @@ export function usePrintOrder() {
       printContrastHigh
     );
 
-    console.log("[usePrintOrder] Iniciando impressão", {
-      hasLogo: !!logoUrl && logoUrl.trim() !== '',
-      logoUrl: logoUrl || "NÃO DEFINIDA",
-    });
-
     const mobile = isMobileDevice();
-    console.log("[usePrintOrder] Usando impressão do navegador, isMobile:", mobile);
 
     // Helper function to wait for all images to load with improved validation
     const waitForImages = (doc: Document): Promise<void> => {
@@ -344,48 +328,29 @@ export function usePrintOrder() {
         const images = doc.querySelectorAll('img');
         
         if (images.length === 0) {
-          console.log("[usePrintOrder] Nenhuma imagem para carregar");
           resolve();
           return;
         }
 
-        console.log(`[usePrintOrder] Aguardando ${images.length} imagem(ns) carregar...`);
-
         let loadedCount = 0;
         const checkComplete = () => {
           loadedCount++;
-          console.log(`[usePrintOrder] Imagem ${loadedCount}/${images.length} processada`);
           if (loadedCount >= images.length) {
             resolve();
           }
         };
 
-        images.forEach((img, index) => {
-          // Check if image loaded successfully (naturalWidth > 0 means it loaded)
-          if (img.complete && img.naturalWidth > 0) {
-            console.log(`[usePrintOrder] Imagem ${index + 1} já carregada com sucesso`);
-            checkComplete();
-          } else if (img.complete && img.naturalWidth === 0) {
-            // Image failed to load
-            console.warn(`[usePrintOrder] Imagem ${index + 1} falhou ao carregar:`, img.src);
+        images.forEach((img) => {
+          if (img.complete) {
             checkComplete();
           } else {
-            img.onload = () => {
-              console.log(`[usePrintOrder] Imagem ${index + 1} carregou via onload`);
-              checkComplete();
-            };
-            img.onerror = () => {
-              console.warn(`[usePrintOrder] Imagem ${index + 1} erro ao carregar:`, img.src);
-              checkComplete();
-            };
+            img.onload = () => checkComplete();
+            img.onerror = () => checkComplete();
           }
         });
 
         // Timeout fallback - don't wait more than 5 seconds
-        setTimeout(() => {
-          console.warn("[usePrintOrder] Timeout aguardando imagens, prosseguindo com impressão");
-          resolve();
-        }, 5000);
+        setTimeout(() => resolve(), 5000);
       });
     };
 
@@ -409,7 +374,6 @@ export function usePrintOrder() {
       if (printWindow) {
         printWindow.document.write(mobileHtml);
         printWindow.document.close();
-        console.log("[usePrintOrder] Página mobile de impressão aberta");
         return { success: true, isMobile: true };
       }
     } else {
@@ -434,8 +398,8 @@ export function usePrintOrder() {
           try {
             iframe.contentWindow?.focus();
             iframe.contentWindow?.print();
-          } catch (e) {
-            console.error("[usePrintOrder] Erro ao imprimir via iframe:", e);
+          } catch {
+            // Print dialog may have been cancelled
           }
           
           // Remove iframe after printing
@@ -443,17 +407,15 @@ export function usePrintOrder() {
             iframe.remove();
           }, 2000);
           
-          console.log("[usePrintOrder] Iframe de impressão criado e imagens carregadas");
           return { success: true, isMobile: false };
         }
         
         iframe.remove();
-      } catch (error) {
-        console.error("[usePrintOrder] Erro ao criar iframe:", error);
+      } catch {
+        // Fallback to window.open below
       }
       
       // Fallback: Use window.open if iframe fails
-      console.log("[usePrintOrder] Fallback para window.open");
       const printWindow = window.open("", "_blank", "width=300,height=600");
       if (printWindow) {
         printWindow.document.write(htmlContent);
@@ -466,7 +428,6 @@ export function usePrintOrder() {
       }
     }
     
-    console.error("[usePrintOrder] Falha ao abrir janela de impressão");
     return { success: false, isMobile: mobile };
   }, []);
 
