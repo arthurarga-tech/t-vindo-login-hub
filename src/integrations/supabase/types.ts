@@ -69,6 +69,13 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "addon_groups_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       addons: {
@@ -154,6 +161,13 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "categories_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       customers: {
@@ -204,6 +218,13 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "customers_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       establishment_members: {
@@ -237,6 +258,13 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishment_members_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments_public"
             referencedColumns: ["id"]
           },
         ]
@@ -430,6 +458,13 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "financial_categories_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       financial_transactions: {
@@ -491,6 +526,13 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments_public"
             referencedColumns: ["id"]
           },
           {
@@ -694,6 +736,13 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "orders_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       products: {
@@ -751,6 +800,13 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "products_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profiles: {
@@ -792,11 +848,104 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "profiles_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      establishments_public: {
+        Row: {
+          address: string | null
+          allow_scheduling: boolean | null
+          banner_url: string | null
+          city: string | null
+          created_at: string | null
+          delivery_fee: number | null
+          delivery_info: string | null
+          description: string | null
+          id: string | null
+          logo_url: string | null
+          min_order_value: number | null
+          name: string | null
+          neighborhood: string | null
+          opening_hours: Json | null
+          payment_cash_enabled: boolean | null
+          payment_credit_enabled: boolean | null
+          payment_debit_enabled: boolean | null
+          payment_pix_enabled: boolean | null
+          phone: string | null
+          service_delivery: boolean | null
+          service_dine_in: boolean | null
+          service_pickup: boolean | null
+          slug: string | null
+          theme_primary_color: string | null
+          theme_secondary_color: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          allow_scheduling?: boolean | null
+          banner_url?: string | null
+          city?: string | null
+          created_at?: string | null
+          delivery_fee?: number | null
+          delivery_info?: string | null
+          description?: string | null
+          id?: string | null
+          logo_url?: string | null
+          min_order_value?: number | null
+          name?: string | null
+          neighborhood?: string | null
+          opening_hours?: Json | null
+          payment_cash_enabled?: boolean | null
+          payment_credit_enabled?: boolean | null
+          payment_debit_enabled?: boolean | null
+          payment_pix_enabled?: boolean | null
+          phone?: string | null
+          service_delivery?: boolean | null
+          service_dine_in?: boolean | null
+          service_pickup?: boolean | null
+          slug?: string | null
+          theme_primary_color?: string | null
+          theme_secondary_color?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          allow_scheduling?: boolean | null
+          banner_url?: string | null
+          city?: string | null
+          created_at?: string | null
+          delivery_fee?: number | null
+          delivery_info?: string | null
+          description?: string | null
+          id?: string | null
+          logo_url?: string | null
+          min_order_value?: number | null
+          name?: string | null
+          neighborhood?: string | null
+          opening_hours?: Json | null
+          payment_cash_enabled?: boolean | null
+          payment_credit_enabled?: boolean | null
+          payment_debit_enabled?: boolean | null
+          payment_pix_enabled?: boolean | null
+          phone?: string | null
+          service_delivery?: boolean | null
+          service_dine_in?: boolean | null
+          service_pickup?: boolean | null
+          slug?: string | null
+          theme_primary_color?: string | null
+          theme_secondary_color?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       create_default_financial_categories: {

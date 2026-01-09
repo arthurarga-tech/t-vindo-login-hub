@@ -6,6 +6,7 @@ import { Order, OrderStatus, OrderType, orderTypeLabels } from "@/hooks/useOrder
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toSaoPauloTime } from "@/lib/dateUtils";
+import { formatPrice } from "@/lib/formatters";
 
 interface OrderCardProps {
   order: Order;
@@ -53,13 +54,6 @@ const paymentLabels: Record<string, string> = {
 };
 
 export function OrderCard({ order, onClick, onQuickStatusChange, onPrint, nextStatus, compact = false }: OrderCardProps) {
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(price);
-  };
-
   const status = statusConfig[order.status as OrderStatus] || statusConfig.pending;
   const orderType = (order.order_type || "delivery") as OrderType;
   const typeInfo = orderTypeLabels[orderType];

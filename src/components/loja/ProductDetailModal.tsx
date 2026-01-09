@@ -18,6 +18,7 @@ import {
   validateAddonSelection,
 } from "./ProductAddonSelector";
 import type { PublicProduct } from "@/hooks/usePublicStore";
+import { formatPrice } from "@/lib/formatters";
 
 interface ProductDetailModalProps {
   product: PublicProduct | null;
@@ -48,13 +49,6 @@ export function ProductDetailModal({
   }, [open, product]);
 
   if (!product) return null;
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(price);
-  };
 
   const addonsTotal = selectedAddons.reduce(
     (sum, sa) => sum + sa.addon.price * sa.quantity,

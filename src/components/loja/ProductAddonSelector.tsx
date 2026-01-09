@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Minus } from "lucide-react";
 import type { AddonGroup, Addon } from "@/hooks/useAddons";
+import { formatPrice } from "@/lib/formatters";
 
 export interface SelectedAddon {
   addon: Addon;
@@ -22,13 +23,6 @@ export function ProductAddonSelector({
   selectedAddons,
   onSelectionChange,
 }: ProductAddonSelectorProps) {
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(price);
-  };
-
   const getAddonsForGroup = (groupId: string) => {
     return addons.filter((a) => a.addon_group_id === groupId);
   };

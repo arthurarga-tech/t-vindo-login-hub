@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/useCart";
 import { toast } from "sonner";
+import { formatPrice } from "@/lib/formatters";
 
 interface CartBarProps {
   isStoreOpen?: boolean;
@@ -13,13 +14,6 @@ export function CartBar({ isStoreOpen = true, allowScheduling = false }: CartBar
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { totalItems, totalPrice } = useCart();
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(price);
-  };
 
   const handleClick = () => {
     if (!isStoreOpen && !allowScheduling) {
