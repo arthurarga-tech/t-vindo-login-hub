@@ -70,9 +70,9 @@ export default function Configuracoes() {
       const legacyPrintMode = (establishment as any).print_mode;
       
       let newPrintMode: PrintMode = "none";
-      if (legacyPrintMode === "on_order" || legacyPrintMode === "browser_on_order" || legacyPrintMode === "qz_on_order") {
+      if (legacyPrintMode === "on_order" || legacyPrintMode === "browser_on_order") {
         newPrintMode = "browser_on_order";
-      } else if (legacyPrintMode === "on_confirm" || legacyPrintMode === "browser_on_confirm" || legacyPrintMode === "qz_on_confirm") {
+      } else if (legacyPrintMode === "on_confirm" || legacyPrintMode === "browser_on_confirm") {
         newPrintMode = "browser_on_confirm";
       }
       
@@ -106,9 +106,6 @@ export default function Configuracoes() {
         .from("establishments")
         .update({
           print_mode: printMode,
-          printer_name: null, // Deprecated
-          qz_tray_enabled: false, // Disabled
-          qz_tray_printer: null, // Disabled
           print_font_size: printFontSize,
           print_margin_left: printMarginLeft,
           print_margin_right: printMarginRight,
