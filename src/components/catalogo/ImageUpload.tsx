@@ -5,30 +5,60 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useEstablishment } from "@/hooks/useEstablishment";
 
+// Allowed image types and their extensions
+const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png"];
+const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png"];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 interface ImageUploadProps {
   value?: string;
   onChange: (url: string | undefined) => void;
   folder?: string;
+  maxSize?: number; // in bytes, defaults to 5MB
 }
 
-export function ImageUpload({ value, onChange, folder = "products" }: ImageUploadProps) {
+export function ImageUpload({ 
+  value, 
+  onChange, 
+  folder = "products",
+  maxSize = MAX_FILE_SIZE 
+}: ImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const { data: establishment } = useEstablishment();
+
+  const validateFile = (file: File): string | null => {
+    // Validate file type by MIME type
+    if (!ALLOWED_TYPES.includes(file.type.toLowerCase())) {
+      return "Formato não permitido. Use apenas JPG ou PNG.";
+    }
+
+    // Validate file extension
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    if (!extension || !ALLOWED_EXTENSIONS.includes(extension)) {
+      return "Extensão de arquivo inválida. Use apenas .jpg, .jpeg ou .png";
+    }
+
+    // Validate file size
+    const maxSizeInMB = Math.round(maxSize / (1024 * 1024));
+    if (file.size > maxSize) {
+      return `A imagem deve ter no máximo ${maxSizeInMB}MB`;
+    }
+
+    return null;
+  };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      toast.error("Por favor, selecione uma imagem válida");
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("A imagem deve ter no máximo 5MB");
+    // Validate file
+    const validationError = validateFile(file);
+    if (validationError) {
+      toast.error(validationError);
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
       return;
     }
 
@@ -77,7 +107,7 @@ export function ImageUpload({ value, onChange, folder = "products" }: ImageUploa
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept=".jpg,.jpeg,.png,image/jpeg,image/png"
         onChange={handleUpload}
         className="hidden"
       />
