@@ -95,20 +95,12 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
     : null;
 
   const handlePrint = async () => {
-    console.log("[OrderDetailModal] handlePrint chamado", {
-      isQzMode,
-      qzTrayPrinter,
-      isPrinterAvailable,
-    });
+    console.log("[OrderDetailModal] handlePrint chamado");
     
     const result = await printOrder({
       order,
       establishmentName,
       logoUrl,
-      useQZTray: isQzMode && !!qzTrayPrinter,
-      qzTrayPrinter,
-      qzPrintFn,
-      isPrinterAvailable,
       printFontSize,
       printMarginLeft,
       printMarginRight,
@@ -119,17 +111,9 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
     
     console.log("[OrderDetailModal] Resultado da impressão:", result);
     
-    if (result.printerUnavailable) {
-      toast.error(`Impressora "${qzTrayPrinter}" não encontrada`, {
-        description: "Verifique se está ligada ou configure outra em Configurações",
-      });
-    } else if (result.isMobile) {
+    if (result.isMobile) {
       toast.info("Toque no botão verde para imprimir", {
         description: "Dispositivo móvel detectado - toque em 'Imprimir Pedido' na nova janela",
-      });
-    } else if (result.usedFallback) {
-      toast.warning("Usando impressão do navegador", {
-        description: "QZ Tray indisponível - confirme a impressão na janela do navegador",
       });
     } else if (result.success) {
       toast.success("Pedido enviado para impressão");
@@ -158,11 +142,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
       });
       
       if (isPrintOnConfirm && newStatus === "confirmed") {
-        console.log("[OrderDetailModal] DISPARANDO impressão automática ao confirmar pedido", {
-          isQzMode,
-          qzTrayPrinter,
-          isPrinterAvailable,
-        });
+        console.log("[OrderDetailModal] DISPARANDO impressão automática ao confirmar pedido");
         
         try {
           await handlePrint();
