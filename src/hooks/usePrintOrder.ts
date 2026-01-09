@@ -365,8 +365,46 @@ export function usePrintOrder() {
     // Always fallback to browser print
     const mobile = isMobileDevice();
     console.log("[usePrintOrder] Usando impressão do navegador, isMobile:", mobile);
+    console.log("[usePrintOrder] Logo URL:", logoUrl || "NÃO DEFINIDA");
     
     const usedFallback = useQZTray && !!qzTrayPrinter;
+
+    // Helper function to wait for all images to load
+    const waitForImages = (doc: Document): Promise<void> => {
+      return new Promise((resolve) => {
+        const images = doc.querySelectorAll('img');
+        if (images.length === 0) {
+          resolve();
+          return;
+        }
+
+        let loadedCount = 0;
+        const checkComplete = () => {
+          loadedCount++;
+          if (loadedCount >= images.length) {
+            resolve();
+          }
+        };
+
+        images.forEach((img) => {
+          if (img.complete) {
+            checkComplete();
+          } else {
+            img.onload = checkComplete;
+            img.onerror = () => {
+              console.warn("[usePrintOrder] Erro ao carregar imagem:", img.src);
+              checkComplete(); // Continue even if image fails
+            };
+          }
+        });
+
+        // Timeout fallback - don't wait more than 3 seconds
+        setTimeout(() => {
+          console.log("[usePrintOrder] Timeout aguardando imagens, prosseguindo com impressão");
+          resolve();
+        }, 3000);
+      });
+    };
 
     if (mobile) {
       // Mobile: Open new window with print button for user to tap
@@ -404,21 +442,25 @@ export function usePrintOrder() {
           doc.write(htmlContent);
           doc.close();
           
-          // Wait for content to load before printing (increased delay for styles)
-          setTimeout(() => {
-            try {
-              iframe.contentWindow?.focus();
-              iframe.contentWindow?.print();
-            } catch (e) {
-              console.error("[usePrintOrder] Erro ao imprimir via iframe:", e);
-            }
-            // Remove iframe after printing (increased delay)
-            setTimeout(() => {
-              iframe.remove();
-            }, 2000);
-          }, 500);
+          // Wait for all images to load before printing
+          await waitForImages(doc);
           
-          console.log("[usePrintOrder] Iframe de impressão criado");
+          // Small additional delay for rendering
+          await new Promise(resolve => setTimeout(resolve, 200));
+          
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } catch (e) {
+            console.error("[usePrintOrder] Erro ao imprimir via iframe:", e);
+          }
+          
+          // Remove iframe after printing
+          setTimeout(() => {
+            iframe.remove();
+          }, 2000);
+          
+          console.log("[usePrintOrder] Iframe de impressão criado e imagens carregadas");
           return { success: true, usedFallback, isMobile: false };
         }
         
