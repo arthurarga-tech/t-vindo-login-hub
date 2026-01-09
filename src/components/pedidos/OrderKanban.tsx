@@ -27,7 +27,11 @@ const columns: KanbanColumn[] = [
   { id: "completed", statuses: ["delivered", "picked_up", "served"], label: "Finalizados", color: "bg-green-500" },
 ];
 
-export function OrderKanban({ orders, onOrderClick, onPrint }: OrderKanbanProps) {
+interface OrderKanbanPropsExtended extends OrderKanbanProps {
+  onQuickConfirmPrint?: (order: Order) => Promise<void>;
+}
+
+export function OrderKanban({ orders, onOrderClick, onPrint, onQuickConfirmPrint }: OrderKanbanPropsExtended) {
   const updateStatus = useUpdateOrderStatus();
 
   const getOrdersByStatuses = (statuses: OrderStatus[]) => {
@@ -38,6 +42,11 @@ export function OrderKanban({ orders, onOrderClick, onPrint }: OrderKanbanProps)
     try {
       await updateStatus.mutateAsync({ orderId: order.id, status: newStatus });
       toast.success(`Pedido #${order.order_number} atualizado`);
+      
+      // Auto print on confirm if callback provided
+      if (newStatus === "confirmed" && onQuickConfirmPrint) {
+        await onQuickConfirmPrint(order);
+      }
     } catch (error) {
       toast.error("Erro ao atualizar status");
     }

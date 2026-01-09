@@ -6,15 +6,21 @@ interface OrderListProps {
   orders: Order[];
   onOrderClick: (order: Order) => void;
   onPrint?: (order: Order) => void;
+  onQuickConfirmPrint?: (order: Order) => Promise<void>;
 }
 
-export function OrderList({ orders, onOrderClick, onPrint }: OrderListProps) {
+export function OrderList({ orders, onOrderClick, onPrint, onQuickConfirmPrint }: OrderListProps) {
   const updateStatus = useUpdateOrderStatus();
 
   const handleQuickStatusChange = async (order: Order, newStatus: OrderStatus) => {
     try {
       await updateStatus.mutateAsync({ orderId: order.id, status: newStatus });
       toast.success(`Pedido #${order.order_number} atualizado`);
+      
+      // Auto print on confirm if callback provided
+      if (newStatus === "confirmed" && onQuickConfirmPrint) {
+        await onQuickConfirmPrint(order);
+      }
     } catch (error) {
       toast.error("Erro ao atualizar status");
     }

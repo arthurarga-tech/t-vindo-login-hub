@@ -130,6 +130,31 @@ export default function Pedidos() {
     }
   };
 
+  // Function to print on quick confirm (from OrderCard button)
+  const handleQuickConfirmPrint = useCallback(async (order: Order) => {
+    if (!isPrintOnConfirm) return;
+    
+    try {
+      const result = await printOrder({
+        order,
+        establishmentName,
+        logoUrl,
+        printFontSize,
+        printMarginLeft,
+        printMarginRight,
+        printFontBold,
+        printLineHeight,
+        printContrastHigh,
+      });
+      
+      if (result.isMobile) {
+        toast.info("Toque no botão verde para imprimir");
+      }
+    } catch (error) {
+      toast.error("Erro ao imprimir automaticamente");
+    }
+  }, [isPrintOnConfirm, printOrder, establishmentName, logoUrl, printFontSize, printMarginLeft, printMarginRight, printFontBold, printLineHeight, printContrastHigh]);
+
   const playNotificationSound = () => {
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -346,12 +371,14 @@ export default function Pedidos() {
           orders={filteredOrders} 
           onOrderClick={setSelectedOrder}
           onPrint={handlePrintOrder}
+          onQuickConfirmPrint={handleQuickConfirmPrint}
         />
       ) : (
         <OrderList 
           orders={filteredOrders} 
           onOrderClick={setSelectedOrder}
           onPrint={handlePrintOrder}
+          onQuickConfirmPrint={handleQuickConfirmPrint}
         />
       )}
 
