@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from "react";
-import { ClipboardList, LayoutGrid, List, Volume2, VolumeX, RefreshCw, Timer, Printer } from "lucide-react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { ClipboardList, LayoutGrid, List, Volume2, VolumeX, RefreshCw, Timer, Printer, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,7 +17,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { toast } from "sonner";
 
 export default function Pedidos() {
-  const { data: orders, isLoading, refetch } = useOrders();
+  const { data: orders, isLoading, refetch, hasNextPage, fetchNextPage, isFetchingNextPage } = useOrders();
   const { data: establishment } = useEstablishment();
   const { data: preparationTime } = usePreparationTime();
   const { printOrder } = usePrintOrder();
@@ -161,6 +161,33 @@ export default function Pedidos() {
       // Audio notification not supported
     }
   };
+
+  // Infinite scroll handler
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    if (!hasNextPage || isFetchingNextPage) return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentRef = loadMoreRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Filter orders
   const filteredOrders = useMemo(() => {
@@ -326,6 +353,22 @@ export default function Pedidos() {
           onOrderClick={setSelectedOrder}
           onPrint={handlePrintOrder}
         />
+      )}
+
+      {/* Infinite scroll trigger */}
+      {hasNextPage && (
+        <div ref={loadMoreRef} className="flex justify-center py-4">
+          {isFetchingNextPage ? (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Carregando mais pedidos...</span>
+            </div>
+          ) : (
+            <Button variant="outline" onClick={() => fetchNextPage()}>
+              Carregar mais pedidos
+            </Button>
+          )}
+        </div>
       )}
 
       <OrderDetailModal
