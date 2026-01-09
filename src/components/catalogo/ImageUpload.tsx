@@ -1,9 +1,10 @@
 import { useState, useRef } from "react";
-import { Upload, X, Loader2 } from "lucide-react";
+import { Upload, X, Loader2, Crop } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useEstablishment } from "@/hooks/useEstablishment";
+import { ImageCropModal } from "./ImageCropModal";
 
 // Allowed image types and their extensions
 const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png"];
@@ -15,15 +16,22 @@ interface ImageUploadProps {
   onChange: (url: string | undefined) => void;
   folder?: string;
   maxSize?: number; // in bytes, defaults to 5MB
+  aspectRatio?: number; // aspect ratio for cropping (e.g., 1 for square, 16/9 for banner)
+  enableCrop?: boolean; // whether to show crop modal
 }
 
 export function ImageUpload({ 
   value, 
   onChange, 
   folder = "products",
-  maxSize = MAX_FILE_SIZE 
+  maxSize = MAX_FILE_SIZE,
+  aspectRatio = 1,
+  enableCrop = true,
 }: ImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { data: establishment } = useEstablishment();
 
@@ -48,7 +56,7 @@ export function ImageUpload({
     return null;
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -67,16 +75,44 @@ export function ImageUpload({
       return;
     }
 
+    // Store the file name for later use
+    setSelectedFileName(file.name);
+
+    if (enableCrop) {
+      // Read file and show crop modal
+      const reader = new FileReader();
+      reader.onload = () => {
+        setSelectedImageSrc(reader.result as string);
+        setCropModalOpen(true);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // Upload directly without cropping
+      uploadFile(file);
+    }
+
+    // Reset input
+    if (inputRef.current) {
+      inputRef.current.value = "";
+    }
+  };
+
+  const uploadFile = async (fileOrBlob: File | Blob) => {
+    if (!establishment?.id) {
+      toast.error("Estabelecimento não encontrado");
+      return;
+    }
+
     setIsUploading(true);
 
     try {
-      const fileExt = file.name.split(".").pop();
+      const fileExt = selectedFileName?.split(".").pop() || "jpg";
       // SECURITY: Use establishment_id as folder prefix for ownership validation via RLS
       const fileName = `${establishment.id}/${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from("product-images")
-        .upload(fileName, file);
+        .upload(fileName, fileOrBlob);
 
       if (uploadError) throw uploadError;
 
@@ -90,10 +126,20 @@ export function ImageUpload({
       toast.error("Erro ao enviar imagem: " + error.message);
     } finally {
       setIsUploading(false);
-      if (inputRef.current) {
-        inputRef.current.value = "";
-      }
+      setSelectedFileName(null);
     }
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    setCropModalOpen(false);
+    setSelectedImageSrc(null);
+    await uploadFile(croppedBlob);
+  };
+
+  const handleCropModalClose = () => {
+    setCropModalOpen(false);
+    setSelectedImageSrc(null);
+    setSelectedFileName(null);
   };
 
   const handleRemove = (e: React.MouseEvent) => {
@@ -108,7 +154,7 @@ export function ImageUpload({
         ref={inputRef}
         type="file"
         accept=".jpg,.jpeg,.png,image/jpeg,image/png"
-        onChange={handleUpload}
+        onChange={handleFileSelect}
         className="hidden"
       />
 
@@ -140,6 +186,8 @@ export function ImageUpload({
           >
             {isUploading ? (
               <Loader2 className="h-4 w-4 animate-spin mr-1" />
+            ) : enableCrop ? (
+              <Crop className="h-4 w-4 mr-1" />
             ) : (
               <Upload className="h-4 w-4 mr-1" />
             )}
@@ -158,11 +206,23 @@ export function ImageUpload({
             <Loader2 className="h-6 w-6 animate-spin" />
           ) : (
             <>
-              <Upload className="h-6 w-6" />
+              {enableCrop ? <Crop className="h-6 w-6" /> : <Upload className="h-6 w-6" />}
               <span className="text-xs">Adicionar foto</span>
             </>
           )}
         </Button>
+      )}
+
+      {/* Crop Modal */}
+      {selectedImageSrc && (
+        <ImageCropModal
+          open={cropModalOpen}
+          onClose={handleCropModalClose}
+          imageSrc={selectedImageSrc}
+          onCropComplete={handleCropComplete}
+          aspectRatio={aspectRatio}
+          title="Recortar Imagem"
+        />
       )}
     </div>
   );
