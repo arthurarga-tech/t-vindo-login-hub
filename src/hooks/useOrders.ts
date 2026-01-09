@@ -1,8 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEstablishment } from "./useEstablishment";
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useMemo } from "react";
 import { getNowInSaoPaulo } from "@/lib/dateUtils";
+
+const ORDERS_PAGE_SIZE = 50;
 
 export type OrderStatus = 
   | "pending" 
@@ -127,13 +129,14 @@ export function useOrders() {
   const { data: establishment } = useEstablishment();
   const queryClient = useQueryClient();
   const playNotificationSound = useOrderNotificationSound();
-  const previousOrderCountRef = useRef<number | null>(null);
-  const isFirstLoadRef = useRef(true);
 
-  const query = useQuery({
+  const infiniteQuery = useInfiniteQuery({
     queryKey: ["orders", establishment?.id],
-    queryFn: async () => {
-      if (!establishment?.id) return [];
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!establishment?.id) return { orders: [], nextOffset: null };
+
+      const from = pageParam;
+      const to = from + ORDERS_PAGE_SIZE - 1;
 
       const { data, error } = await supabase
         .from("orders")
@@ -147,13 +150,24 @@ export function useOrders() {
         `)
         .eq("establishment_id", establishment.id)
         .order("created_at", { ascending: false })
-        .limit(100); // Limit initial load for performance
+        .range(from, to);
 
       if (error) throw error;
-      return data as Order[];
+      
+      const orders = data as Order[];
+      const nextOffset = orders.length === ORDERS_PAGE_SIZE ? from + ORDERS_PAGE_SIZE : null;
+      
+      return { orders, nextOffset };
     },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextOffset,
     enabled: !!establishment?.id,
   });
+
+  // Flatten all pages into a single array
+  const allOrders = useMemo(() => {
+    return infiniteQuery.data?.pages.flatMap(page => page.orders) ?? [];
+  }, [infiniteQuery.data]);
 
   // Set up realtime subscription with notification sound
   useEffect(() => {
@@ -169,7 +183,7 @@ export function useOrders() {
           table: "orders",
           filter: `establishment_id=eq.${establishment.id}`,
         },
-        (payload) => {
+        () => {
           // Check if notification sound is enabled
           const isSoundEnabled = (establishment as any).notification_sound_enabled !== false;
           if (isSoundEnabled) {
@@ -197,7 +211,14 @@ export function useOrders() {
     };
   }, [establishment?.id, queryClient, playNotificationSound, establishment]);
 
-  return query;
+  return {
+    data: allOrders,
+    isLoading: infiniteQuery.isLoading,
+    isFetchingNextPage: infiniteQuery.isFetchingNextPage,
+    hasNextPage: infiniteQuery.hasNextPage,
+    fetchNextPage: infiniteQuery.fetchNextPage,
+    refetch: infiniteQuery.refetch,
+  };
 }
 
 export function useUpdateOrderStatus() {
