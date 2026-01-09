@@ -254,6 +254,7 @@ export type Database = {
           delivery_info: string | null
           description: string | null
           id: string
+          location_sharing_enabled: boolean | null
           logo_url: string | null
           min_order_value: number | null
           name: string
@@ -301,6 +302,7 @@ export type Database = {
           delivery_info?: string | null
           description?: string | null
           id?: string
+          location_sharing_enabled?: boolean | null
           logo_url?: string | null
           min_order_value?: number | null
           name: string
@@ -348,6 +350,7 @@ export type Database = {
           delivery_info?: string | null
           description?: string | null
           id?: string
+          location_sharing_enabled?: boolean | null
           logo_url?: string | null
           min_order_value?: number | null
           name?: string

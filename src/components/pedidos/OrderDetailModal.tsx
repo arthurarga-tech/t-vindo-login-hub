@@ -37,10 +37,6 @@ interface OrderDetailModalProps {
   establishmentName: string;
   logoUrl?: string | null;
   printMode?: string;
-  isQzMode?: boolean;
-  qzTrayPrinter?: string;
-  qzPrintFn?: (html: string, printer: string) => Promise<boolean>;
-  isPrinterAvailable?: boolean;
   printFontSize?: number;
   printMarginLeft?: number;
   printMarginRight?: number;
@@ -70,7 +66,7 @@ const paymentLabels: Record<string, string> = {
   cash: "Dinheiro",
 };
 
-export function OrderDetailModal({ order, open, onClose, establishmentName, logoUrl, printMode = "none", isQzMode = false, qzTrayPrinter, qzPrintFn, isPrinterAvailable = true, printFontSize = 12, printMarginLeft = 0, printMarginRight = 0, printFontBold = true, printLineHeight = 1.4, printContrastHigh = false }: OrderDetailModalProps) {
+export function OrderDetailModal({ order, open, onClose, establishmentName, logoUrl, printMode = "none", printFontSize = 12, printMarginLeft = 0, printMarginRight = 0, printFontBold = true, printLineHeight = 1.4, printContrastHigh = false }: OrderDetailModalProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const updateStatus = useUpdateOrderStatus();
   const { printOrder } = usePrintOrder();

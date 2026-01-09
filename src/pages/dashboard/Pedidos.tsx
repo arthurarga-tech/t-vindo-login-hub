@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { ClipboardList, LayoutGrid, List, Volume2, VolumeX, RefreshCw, Timer, Wifi, WifiOff, Printer } from "lucide-react";
+import { ClipboardList, LayoutGrid, List, Volume2, VolumeX, RefreshCw, Timer, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,7 +13,6 @@ import { startOfDay, startOfWeek, subDays, isAfter } from "date-fns";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { usePrintOrder } from "@/hooks/usePrintOrder";
 import { usePreparationTime } from "@/hooks/usePreparationTime";
-import { useQZTrayContext } from "@/contexts/QZTrayContext";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 
@@ -22,7 +21,6 @@ export default function Pedidos() {
   const { data: establishment } = useEstablishment();
   const { data: preparationTime } = usePreparationTime();
   const { printOrder } = usePrintOrder();
-  const qzTray = useQZTrayContext();
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -39,19 +37,16 @@ export default function Pedidos() {
   const pendingOrders = orders?.filter((o) => o.status === "pending") || [];
   const pendingCount = pendingOrders.length;
   
-  // Unified print mode: none, browser_on_order, browser_on_confirm, qz_on_order, qz_on_confirm
+  // Simplified print mode: browser only
   const printMode = ((establishment as any)?.print_mode || "none") as string;
-  const isQzMode = printMode.startsWith("qz_");
   const isPrintOnOrder = printMode.includes("on_order");
   const isPrintOnConfirm = printMode.includes("on_confirm");
   
   // Debug: verificar valor do printMode carregado
-  console.log("[Pedidos] printMode carregado:", printMode, { isQzMode, isPrintOnOrder, isPrintOnConfirm });
+  console.log("[Pedidos] printMode carregado:", printMode, { isPrintOnOrder, isPrintOnConfirm });
   
   const establishmentName = establishment?.name || "Estabelecimento";
   const logoUrl = establishment?.logo_url;
-  const qzTrayPrinter = qzTray.savedPrinter || (establishment as any)?.qz_tray_printer || "";
-  const printerAvailable = qzTray.isPrinterAvailable(qzTrayPrinter);
   const printFontSize = (establishment as any)?.print_font_size || 12;
   const printMarginLeft = (establishment as any)?.print_margin_left || 0;
   const printMarginRight = (establishment as any)?.print_margin_right || 0;
@@ -63,11 +58,8 @@ export default function Pedidos() {
   const printModeLabels: Record<string, string> = {
     browser_on_order: "🖨️ Ao receber",
     browser_on_confirm: "🖨️ Ao confirmar",
-    qz_on_order: "🖨️ Silencioso ao receber",
-    qz_on_confirm: "🖨️ Silencioso ao confirmar",
   };
   // Play notification sound and auto-print when new pending orders arrive
-  // Note: QZ Tray auto-connection is now handled by the global QZTrayProvider
   useEffect(() => {
     // Skip first load - don't print existing orders
     if (previousPendingCountRef.current === null) {
@@ -86,7 +78,7 @@ export default function Pedidos() {
       playNotificationSound();
     }
     
-    // Auto print on new order if configured (browser_on_order or qz_on_order)
+    // Auto print on new order if configured (browser_on_order)
     if (isPrintOnOrder && orders) {
       const newPendingOrders = orders.filter(
         (o) => o.status === "pending" && !printedOrdersRef.current.has(o.id)
@@ -95,27 +87,16 @@ export default function Pedidos() {
       if (newPendingOrders.length > 0) {
         console.log("[Pedidos] Novos pedidos para impressão automática:", newPendingOrders.map(o => o.order_number));
         
-        // Check if QZ Tray should be used (only for qz_on_order mode)
-        const shouldUseQZ = isQzMode && qzTrayPrinter && qzTray.isConnected;
-        
         newPendingOrders.forEach(async (order) => {
           printedOrdersRef.current.add(order.id);
           
-          console.log("[Pedidos] Imprimindo pedido #" + order.order_number, {
-            useQZTray: shouldUseQZ,
-            printer: qzTrayPrinter,
-            qzConnected: qzTray.isConnected,
-            printerAvailable
-          });
+          console.log("[Pedidos] Imprimindo pedido #" + order.order_number);
           
           const result = await printOrder({
             order,
             establishmentName,
             logoUrl,
-            useQZTray: shouldUseQZ,
-            qzTrayPrinter,
-            qzPrintFn: qzTray.printHtml,
-            isPrinterAvailable: printerAvailable,
+            useQZTray: false,
             printFontSize,
             printMarginLeft,
             printMarginRight,
@@ -125,17 +106,9 @@ export default function Pedidos() {
           });
           
           // Show toast notifications based on result
-          if (result.printerUnavailable) {
-            toast.error(`Impressora "${qzTrayPrinter}" não encontrada`, {
-              description: "Verifique se está ligada ou configure outra em Configurações",
-            });
-          } else if (result.isMobile) {
+          if (result.isMobile) {
             toast.info("Toque no botão verde para imprimir", {
               description: "Dispositivo móvel detectado - toque em 'Imprimir Pedido' na nova janela",
-            });
-          } else if (result.usedFallback) {
-            toast.warning("Usando impressão do navegador", {
-              description: "QZ Tray indisponível - confirme a impressão na janela do navegador",
             });
           }
         });
@@ -143,25 +116,17 @@ export default function Pedidos() {
     }
     
     previousPendingCountRef.current = pendingCount;
-  }, [pendingCount, soundEnabled, orders, printMode, isPrintOnOrder, isQzMode, establishmentName, logoUrl, printOrder, qzTray.isConnected, qzTrayPrinter, qzTray.printHtml, printerAvailable]);
+  }, [pendingCount, soundEnabled, orders, printMode, isPrintOnOrder, establishmentName, logoUrl, printOrder]);
 
   // Function to print an order from the card
   const handlePrintOrder = async (order: Order) => {
-    const shouldUseQZ = isQzMode && qzTrayPrinter && qzTray.isConnected;
-    
-    console.log("[Pedidos] Imprimindo pedido #" + order.order_number + " via botão do card", {
-      useQZTray: shouldUseQZ,
-      printer: qzTrayPrinter,
-    });
+    console.log("[Pedidos] Imprimindo pedido #" + order.order_number + " via botão do card");
     
     const result = await printOrder({
       order,
       establishmentName,
       logoUrl,
-      useQZTray: shouldUseQZ,
-      qzTrayPrinter,
-      qzPrintFn: qzTray.printHtml,
-      isPrinterAvailable: printerAvailable,
+      useQZTray: false,
       printFontSize,
       printMarginLeft,
       printMarginRight,
@@ -170,9 +135,7 @@ export default function Pedidos() {
       printContrastHigh,
     });
     
-    if (result.printerUnavailable) {
-      toast.error(`Impressora "${qzTrayPrinter}" não encontrada`);
-    } else if (result.isMobile) {
+    if (result.isMobile) {
       toast.info("Toque no botão verde para imprimir");
     }
   };
@@ -319,30 +282,6 @@ export default function Pedidos() {
               </TooltipContent>
             </Tooltip>
           )}
-          {/* QZ Tray Status Indicator */}
-          {isQzMode && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Badge 
-                  variant={qzTray.isConnected ? "default" : "secondary"} 
-                  className={`flex items-center gap-1 cursor-help ${qzTray.isConnected ? "bg-green-600 hover:bg-green-700" : ""}`}
-                >
-                  {qzTray.isConnected ? (
-                    <Wifi className="h-3 w-3" />
-                  ) : (
-                    <WifiOff className="h-3 w-3" />
-                  )}
-                  {qzTray.isConnected ? "Impressora" : "Offline"}
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent>
-                {qzTray.isConnected 
-                  ? `QZ Tray conectado - ${qzTrayPrinter || "Sem impressora selecionada"}`
-                  : "QZ Tray desconectado - Vá em Configurações para conectar"
-                }
-              </TooltipContent>
-            </Tooltip>
-          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -406,10 +345,6 @@ export default function Pedidos() {
         establishmentName={establishmentName}
         logoUrl={logoUrl}
         printMode={printMode}
-        isQzMode={isQzMode && qzTray.isConnected}
-        qzTrayPrinter={qzTrayPrinter}
-        qzPrintFn={qzTray.printHtml}
-        isPrinterAvailable={printerAvailable}
         printFontSize={printFontSize}
         printMarginLeft={printMarginLeft}
         printMarginRight={printMarginRight}
