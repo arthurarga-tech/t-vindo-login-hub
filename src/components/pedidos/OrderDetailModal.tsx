@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { usePrintOrder } from "@/hooks/usePrintOrder";
 import { useWhatsAppNotification } from "@/hooks/useWhatsAppNotification";
 import { formatInSaoPaulo } from "@/lib/dateUtils";
+import { formatPrice } from "@/lib/formatters";
 
 // WhatsApp Icon Component
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -73,13 +74,6 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
   const { sendNotification, openWhatsApp, isEnabled: isWhatsAppEnabled } = useWhatsAppNotification();
 
   if (!order) return null;
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(price);
-  };
 
   const status = statusConfig[order.status as OrderStatus] || statusConfig.pending;
   const orderType = order.order_type || "delivery";

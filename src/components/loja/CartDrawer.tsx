@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose 
 import { useCart } from "@/hooks/useCart";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { formatPrice } from "@/lib/formatters";
 
 interface CartDrawerProps {
   isStoreOpen?: boolean;
@@ -15,13 +16,6 @@ export function CartDrawer({ isStoreOpen = true, allowScheduling = false }: Cart
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { items, totalItems, totalPrice, updateQuantity, removeItem, clearCart } = useCart();
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(price);
-  };
 
   return (
     <Sheet>

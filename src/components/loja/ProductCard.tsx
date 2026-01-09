@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ImageIcon, Plus } from "lucide-react";
 import { ProductDetailModal } from "./ProductDetailModal";
+import { formatPrice } from "@/lib/formatters";
 
 interface ProductCardProps {
   product: PublicProduct;
@@ -11,13 +12,6 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const [modalOpen, setModalOpen] = useState(false);
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(price);
-  };
 
   return (
     <>
