@@ -131,7 +131,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
       await updateStatus.mutateAsync({ orderId: order.id, status: newStatus });
       toast.success(`Status atualizado para: ${statusConfig[newStatus].label}`);
       
-      // Auto print on confirm if configured (browser_on_confirm or qz_on_confirm)
+      // Auto print on confirm if configured (browser_on_confirm)
       const isPrintOnConfirm = printMode && printMode.includes("on_confirm");
       
       console.log("[OrderDetailModal] Verificando impressão automática", {
