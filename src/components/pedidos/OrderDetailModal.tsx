@@ -89,8 +89,6 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
     : null;
 
   const handlePrint = async () => {
-    console.log("[OrderDetailModal] handlePrint chamado");
-    
     const result = await printOrder({
       order,
       establishmentName,
@@ -103,8 +101,6 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
       printContrastHigh,
     });
     
-    console.log("[OrderDetailModal] Resultado da impressão:", result);
-    
     if (result.isMobile) {
       toast.info("Toque no botão verde para imprimir", {
         description: "Dispositivo móvel detectado - toque em 'Imprimir Pedido' na nova janela",
@@ -115,7 +111,6 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
   };
 
   const handleStatusChange = async (newStatus: OrderStatus) => {
-    // Block transitions from cancelled orders only
     if (order.status === "cancelled") {
       toast.error("Não é possível alterar o status de pedidos cancelados");
       return;
@@ -125,31 +120,18 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
       await updateStatus.mutateAsync({ orderId: order.id, status: newStatus });
       toast.success(`Status atualizado para: ${statusConfig[newStatus].label}`);
       
-      // Auto print on confirm if configured (browser_on_confirm)
       const isPrintOnConfirm = printMode && printMode.includes("on_confirm");
       
-      console.log("[OrderDetailModal] Verificando impressão automática", {
-        printMode,
-        newStatus,
-        isPrintOnConfirm,
-        isConfirmed: newStatus === "confirmed",
-      });
-      
       if (isPrintOnConfirm && newStatus === "confirmed") {
-        console.log("[OrderDetailModal] DISPARANDO impressão automática ao confirmar pedido");
-        
         try {
           await handlePrint();
-          console.log("[OrderDetailModal] Impressão automática concluída");
         } catch (printError) {
-          console.error("[OrderDetailModal] Erro na impressão automática:", printError);
           toast.error("Erro ao imprimir automaticamente");
         }
       }
       
-      onClose(); // Fecha o modal para mostrar dados atualizados
+      onClose();
     } catch (error) {
-      console.error("[OrderDetailModal] Erro ao atualizar status:", error);
       toast.error("Erro ao atualizar status");
     }
   };
