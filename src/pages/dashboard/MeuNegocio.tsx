@@ -337,7 +337,11 @@ export default function MeuNegocio() {
                 value={logoUrl}
                 onChange={(url) => setLogoUrl(url || "")}
                 folder="logos"
+                aspectRatio={1}
               />
+              <p className="text-sm text-muted-foreground">
+                Recomendado: imagem quadrada (1:1)
+              </p>
             </div>
           </div>
           
@@ -358,9 +362,10 @@ export default function MeuNegocio() {
               value={bannerUrl}
               onChange={(url) => setBannerUrl(url || "")}
               folder="banners"
+              aspectRatio={16 / 9}
             />
             <p className="text-sm text-muted-foreground">
-              Imagem de capa exibida no topo da página da loja.
+              Imagem de capa exibida no topo da loja. Recomendado: formato 16:9
             </p>
           </div>
         </CardContent>
