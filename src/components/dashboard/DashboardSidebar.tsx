@@ -5,8 +5,6 @@ import {
   Building2,
   Users,
   UserCog,
-  Package,
-  Truck,
   Settings,
   LogOut,
   Link2,
@@ -38,8 +36,9 @@ const menuItems = [
   { title: "Catálogo", url: "/dashboard/catalogo", icon: BookOpen },
   { title: "Meu Negócio", url: "/dashboard/meu-negocio", icon: Building2 },
   { title: "Clientes", url: "/dashboard/clientes", icon: Users },
-  { title: "Estoque", url: "/dashboard/estoque", icon: Package },
-  { title: "Delivery", url: "/dashboard/delivery", icon: Truck },
+  // Estoque e Delivery ocultos temporariamente (em desenvolvimento)
+  // { title: "Estoque", url: "/dashboard/estoque", icon: Package },
+  // { title: "Delivery", url: "/dashboard/delivery", icon: Truck },
   { title: "Usuários", url: "/dashboard/usuarios", icon: UserCog },
   { title: "Configurações", url: "/dashboard/configuracoes", icon: Settings },
 ];
