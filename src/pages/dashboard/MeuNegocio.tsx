@@ -88,6 +88,9 @@ export default function MeuNegocio() {
   // Scheduling
   const [allowScheduling, setAllowScheduling] = useState(false);
   
+  // Location sharing
+  const [locationSharingEnabled, setLocationSharingEnabled] = useState(true);
+  
   // Payment methods
   const [paymentPixEnabled, setPaymentPixEnabled] = useState(true);
   const [paymentCreditEnabled, setPaymentCreditEnabled] = useState(true);
@@ -127,6 +130,9 @@ export default function MeuNegocio() {
       
       // Scheduling
       setAllowScheduling((establishment as any).allow_scheduling ?? false);
+      
+      // Location sharing
+      setLocationSharingEnabled((establishment as any).location_sharing_enabled ?? true);
       
       // Payment methods
       setPaymentPixEnabled((establishment as any).payment_pix_enabled ?? true);
@@ -240,6 +246,7 @@ export default function MeuNegocio() {
           service_pickup: servicePickup,
           service_dine_in: serviceDineIn,
           allow_scheduling: allowScheduling,
+          location_sharing_enabled: locationSharingEnabled,
           payment_pix_enabled: paymentPixEnabled,
           payment_credit_enabled: paymentCreditEnabled,
           payment_debit_enabled: paymentDebitEnabled,
@@ -481,7 +488,7 @@ export default function MeuNegocio() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
               <div className="flex items-center gap-3">
                 <Truck className="h-5 w-5 text-primary" />
                 <div>
@@ -494,6 +501,24 @@ export default function MeuNegocio() {
                 onCheckedChange={setServiceDelivery}
               />
             </div>
+            
+            {serviceDelivery && (
+              <div className="flex items-center justify-between p-3 ml-6 rounded-lg bg-muted/30 border-l-2 border-primary/20">
+                <div className="flex items-center gap-3">
+                  <MapPin className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">Entrega por Localização</p>
+                    <p className="text-sm text-muted-foreground">
+                      Permite que clientes compartilhem localização via WhatsApp
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={locationSharingEnabled}
+                  onCheckedChange={setLocationSharingEnabled}
+                />
+              </div>
+            )}
             
             <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
               <div className="flex items-center gap-3">

@@ -130,6 +130,9 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
   const serviceDelivery = (establishment as any)?.service_delivery ?? true;
   const servicePickup = (establishment as any)?.service_pickup ?? false;
   const serviceDineIn = (establishment as any)?.service_dine_in ?? false;
+  
+  // Get location sharing setting
+  const locationSharingEnabled = (establishment as any)?.location_sharing_enabled ?? true;
 
   // Set default order type based on available modalities
   useEffect(() => {
@@ -802,23 +805,25 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
               <CardTitle className="text-lg">Endereço de Entrega</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Share location option */}
-              <div className="flex items-start space-x-3 p-3 border rounded-lg bg-muted/30">
-                <Checkbox
-                  id="shareLocation"
-                  checked={shareLocationViaWhatsApp}
-                  onCheckedChange={(checked) => setShareLocationViaWhatsApp(checked === true)}
-                />
-                <div className="space-y-1">
-                  <Label htmlFor="shareLocation" className="cursor-pointer flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-primary" />
-                    <span className="font-medium">Compartilhar localização via WhatsApp</span>
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Após o pedido, envie sua localização pelo WhatsApp. Informe apenas o número da casa.
-                  </p>
+              {/* Share location option - only show if enabled by establishment */}
+              {locationSharingEnabled && (
+                <div className="flex items-start space-x-3 p-3 border rounded-lg bg-muted/30">
+                  <Checkbox
+                    id="shareLocation"
+                    checked={shareLocationViaWhatsApp}
+                    onCheckedChange={(checked) => setShareLocationViaWhatsApp(checked === true)}
+                  />
+                  <div className="space-y-1">
+                    <Label htmlFor="shareLocation" className="cursor-pointer flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      <span className="font-medium">Compartilhar localização via WhatsApp</span>
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Após o pedido, envie sua localização pelo WhatsApp. Informe apenas o número da casa.
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {!shareLocationViaWhatsApp && (
                 <div className="space-y-2">
