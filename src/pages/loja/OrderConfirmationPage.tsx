@@ -24,12 +24,20 @@ const statusConfig: Record<string, { label: string; icon: React.ComponentType<an
   cancelled: { label: "Cancelado", icon: XCircle, color: "bg-red-500" },
 };
 
+interface OrderItemAddon {
+  id: string;
+  addon_name: string;
+  addon_price: number;
+  quantity: number;
+}
+
 interface OrderItem {
   id: string;
   product_name: string;
   quantity: number;
   total: number;
   product_price: number;
+  addons?: OrderItemAddon[] | null;
 }
 
 interface Customer {
@@ -312,11 +320,23 @@ export default function OrderConfirmationPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {order.items?.map((item) => (
-              <div key={item.id} className="flex justify-between text-sm">
-                <span>
-                  {item.quantity}x {item.product_name}
-                </span>
-                <span className="font-medium">{formatPrice(item.total)}</span>
+              <div key={item.id} className="space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span>
+                    {item.quantity}x {item.product_name}
+                  </span>
+                  <span className="font-medium">{formatPrice(item.total)}</span>
+                </div>
+                {item.addons && item.addons.length > 0 && (
+                  <div className="pl-4 space-y-0.5">
+                    {item.addons.map((addon) => (
+                      <div key={addon.id} className="flex justify-between text-xs text-muted-foreground">
+                        <span>+ {addon.quantity}x {addon.addon_name}</span>
+                        <span>{formatPrice(addon.addon_price * addon.quantity)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
             <Separator />
