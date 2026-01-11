@@ -1019,12 +1019,10 @@ export type Database = {
         }[]
       }
       get_public_order_by_id: { Args: { p_order_id: string }; Returns: Json }
-      get_public_order_by_number:
-        | {
-            Args: { p_establishment_id: string; p_order_number: number }
-            Returns: Json
-          }
-        | { Args: { p_order_number: string }; Returns: Json }
+      get_public_order_by_number: {
+        Args: { p_establishment_id: string; p_order_number: number }
+        Returns: Json
+      }
       get_user_establishment_id: { Args: { _user_id: string }; Returns: string }
       is_establishment_member: {
         Args: { _establishment_id: string; _user_id: string }
