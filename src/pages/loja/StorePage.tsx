@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import { usePublicEstablishment, usePublicCategories, usePublicProducts } from "@/hooks/usePublicStore";
+import { usePublicPreparationTime } from "@/hooks/usePublicPreparationTime";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StoreHeader } from "@/components/loja/StoreHeader";
 import { StoreInfo } from "@/components/loja/StoreInfo";
@@ -18,6 +19,7 @@ export default function StorePage() {
   const { data: establishment, isLoading: loadingEstablishment } = usePublicEstablishment(slug);
   const { data: categories, isLoading: loadingCategories } = usePublicCategories(establishment?.id);
   const { data: products, isLoading: loadingProducts } = usePublicProducts(establishment?.id);
+  const { data: preparationTime } = usePublicPreparationTime(establishment?.id);
   
   const { isOpen, nextOpenTime } = useStoreOpeningHours((establishment as any)?.opening_hours);
 
@@ -110,6 +112,7 @@ export default function StorePage() {
             openingHours={(establishment as any).opening_hours}
             deliveryInfo={(establishment as any).delivery_info}
             minOrderValue={(establishment as any).min_order_value}
+            estimatedTime={preparationTime}
           />
           {isLoading ? (
             <div className="space-y-6 sm:space-y-8">

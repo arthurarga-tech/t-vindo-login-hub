@@ -1,5 +1,6 @@
-import { MapPin, Phone, Clock, Truck, Info } from "lucide-react";
+import { MapPin, Phone, Clock, Truck, Info, Timer } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface DayHours {
   open: string;
@@ -26,6 +27,12 @@ interface StoreInfoProps {
   openingHours?: OpeningHours | null;
   deliveryInfo?: string | null;
   minOrderValue?: number | null;
+  estimatedTime?: {
+    preparationMinutes: number;
+    deliveryMinutes: number;
+    totalMinutes: number;
+    mode: "auto_daily" | "manual";
+  } | null;
 }
 
 const dayLabels: Record<keyof OpeningHours, string> = {
@@ -64,18 +71,39 @@ export function StoreInfo({
   openingHours,
   deliveryInfo,
   minOrderValue,
+  estimatedTime,
 }: StoreInfoProps) {
   const hasAddress = address || neighborhood || city;
   const hasDeliveryInfo = deliveryInfo || (minOrderValue && minOrderValue > 0);
-  const hasAnyInfo = description || phone || hasAddress || openingHours || hasDeliveryInfo;
+  const hasAnyInfo = description || phone || hasAddress || openingHours || hasDeliveryInfo || estimatedTime;
 
   if (!hasAnyInfo) return null;
 
   const fullAddress = [address, neighborhood, city].filter(Boolean).join(", ");
 
+  // Format estimated time display
+  const getEstimatedTimeLabel = () => {
+    if (!estimatedTime) return null;
+    
+    if (estimatedTime.mode === "manual" && estimatedTime.deliveryMinutes > 0) {
+      return `${estimatedTime.preparationMinutes}-${estimatedTime.totalMinutes} min`;
+    }
+    return `~${estimatedTime.totalMinutes} min`;
+  };
+
   return (
     <Card className="mb-6">
       <CardContent className="p-4 space-y-4">
+        {/* Estimated Time Badge */}
+        {estimatedTime && (
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="flex items-center gap-1.5 text-sm py-1 px-3">
+              <Timer className="h-4 w-4" />
+              <span>Tempo estimado: {getEstimatedTimeLabel()}</span>
+            </Badge>
+          </div>
+        )}
+
         {/* Description */}
         {description && (
           <div className="flex gap-3">
