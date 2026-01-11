@@ -15,7 +15,7 @@ import { usePrintOrder } from "@/hooks/usePrintOrder";
 import { usePreparationTime } from "@/hooks/usePreparationTime";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-
+import { supabase } from "@/integrations/supabase/client";
 export default function Pedidos() {
   const { data: orders, isLoading, refetch, hasNextPage, fetchNextPage, isFetchingNextPage } = useOrders();
   const { data: establishment } = useEstablishment();
@@ -86,8 +86,28 @@ export default function Pedidos() {
         newPendingOrders.forEach(async (order) => {
           printedOrdersRef.current.add(order.id);
           
+          // Delay para garantir que items e addons foram inseridos no banco
+          // O realtime dispara antes das inserções de items/addons serem concluídas
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          
+          // Buscar pedido atualizado com items e addons completos
+          const { data: freshOrder, error } = await supabase
+            .from("orders")
+            .select(`
+              *,
+              customer:customers(*),
+              items:order_items(*, addons:order_item_addons(*))
+            `)
+            .eq("id", order.id)
+            .single();
+          
+          if (error || !freshOrder) {
+            console.error("Erro ao buscar pedido para impressão:", error);
+            return;
+          }
+          
           const result = await printOrder({
-            order,
+            order: freshOrder as Order,
             establishmentName,
             logoUrl,
             printFontSize,
