@@ -284,6 +284,8 @@ export type Database = {
           id: string
           location_sharing_enabled: boolean | null
           logo_url: string | null
+          manual_delivery_time: number | null
+          manual_preparation_time: number | null
           min_order_value: number | null
           name: string
           neighborhood: string | null
@@ -298,6 +300,7 @@ export type Database = {
           pix_holder_name: string | null
           pix_key: string | null
           pix_key_type: string | null
+          preparation_time_mode: string | null
           print_contrast_high: boolean | null
           print_font_bold: boolean | null
           print_font_size: number | null
@@ -330,6 +333,8 @@ export type Database = {
           id?: string
           location_sharing_enabled?: boolean | null
           logo_url?: string | null
+          manual_delivery_time?: number | null
+          manual_preparation_time?: number | null
           min_order_value?: number | null
           name: string
           neighborhood?: string | null
@@ -344,6 +349,7 @@ export type Database = {
           pix_holder_name?: string | null
           pix_key?: string | null
           pix_key_type?: string | null
+          preparation_time_mode?: string | null
           print_contrast_high?: boolean | null
           print_font_bold?: boolean | null
           print_font_size?: number | null
@@ -376,6 +382,8 @@ export type Database = {
           id?: string
           location_sharing_enabled?: boolean | null
           logo_url?: string | null
+          manual_delivery_time?: number | null
+          manual_preparation_time?: number | null
           min_order_value?: number | null
           name?: string
           neighborhood?: string | null
@@ -390,6 +398,7 @@ export type Database = {
           pix_holder_name?: string | null
           pix_key?: string | null
           pix_key_type?: string | null
+          preparation_time_mode?: string | null
           print_contrast_high?: boolean | null
           print_font_bold?: boolean | null
           print_font_size?: number | null

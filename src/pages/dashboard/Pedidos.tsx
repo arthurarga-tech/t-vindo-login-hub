@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { ClipboardList, LayoutGrid, List, Volume2, VolumeX, RefreshCw, Timer, Printer, Loader2 } from "lucide-react";
+import { ClipboardList, LayoutGrid, List, Volume2, VolumeX, RefreshCw, Printer, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +13,7 @@ import { startOfDay, startOfWeek, subDays, isAfter } from "date-fns";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { usePrintOrder } from "@/hooks/usePrintOrder";
 import { usePreparationTime } from "@/hooks/usePreparationTime";
+import { PreparationTimeConfig } from "@/components/pedidos/PreparationTimeConfig";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -321,11 +322,15 @@ export default function Pedidos() {
               {pendingCount} novo{pendingCount > 1 ? "s" : ""}
             </Badge>
           )}
-          {preparationTime && (
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <Timer className="h-3 w-3" />
-              Preparo: ~{preparationTime.averageMinutes} min
-            </Badge>
+          {establishment && preparationTime && (
+            <PreparationTimeConfig
+              establishmentId={establishment.id}
+              currentMode={preparationTime.mode}
+              currentPreparationTime={preparationTime.preparationMinutes}
+              currentDeliveryTime={preparationTime.deliveryMinutes}
+              calculatedTime={preparationTime.totalMinutes}
+              sampleSize={preparationTime.sampleSize}
+            />
           )}
           {/* Print Mode Badge */}
           {printMode !== "none" && printModeLabels[printMode] && (
