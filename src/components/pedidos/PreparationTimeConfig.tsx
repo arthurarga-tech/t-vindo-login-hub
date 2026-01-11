@@ -14,31 +14,28 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
+import { usePreparationTime } from "@/hooks/usePreparationTime";
 
 interface PreparationTimeConfigProps {
   establishmentId: string;
-  currentMode: "auto_daily" | "manual";
-  currentPreparationTime: number;
-  currentDeliveryTime: number;
-  calculatedTime: number | null;
-  sampleSize: number;
 }
 
 export function PreparationTimeConfig({
   establishmentId,
-  currentMode,
-  currentPreparationTime,
-  currentDeliveryTime,
-  calculatedTime,
-  sampleSize,
 }: PreparationTimeConfigProps) {
+  const { data: prepTimeData, refetch } = usePreparationTime();
+  
+  const currentMode = prepTimeData?.mode ?? "auto_daily";
+  const currentPreparationTime = prepTimeData?.preparationMinutes ?? 30;
+  const currentDeliveryTime = prepTimeData?.deliveryMinutes ?? 30;
+  const calculatedTime = prepTimeData?.totalMinutes ?? null;
+  const sampleSize = prepTimeData?.sampleSize ?? 0;
+
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"auto_daily" | "manual">(currentMode);
   const [preparationTime, setPreparationTime] = useState(currentPreparationTime);
   const [deliveryTime, setDeliveryTime] = useState(currentDeliveryTime);
   const [saving, setSaving] = useState(false);
-  const queryClient = useQueryClient();
 
   // Reset form when dialog opens
   useEffect(() => {
@@ -64,8 +61,8 @@ export function PreparationTimeConfig({
       if (error) throw error;
 
       toast.success("Configuração de tempo salva!");
-      queryClient.invalidateQueries({ queryKey: ["establishment"] });
-      queryClient.invalidateQueries({ queryKey: ["preparation-time"] });
+      // Refetch immediately to update the UI
+      await refetch();
       setOpen(false);
     } catch (error) {
       console.error("Error saving preparation time config:", error);

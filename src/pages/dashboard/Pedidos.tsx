@@ -12,7 +12,6 @@ import { OrderFilters, OrderFiltersState } from "@/components/pedidos/OrderFilte
 import { startOfDay, startOfWeek, subDays, isAfter } from "date-fns";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { usePrintOrder } from "@/hooks/usePrintOrder";
-import { usePreparationTime } from "@/hooks/usePreparationTime";
 import { PreparationTimeConfig } from "@/components/pedidos/PreparationTimeConfig";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
@@ -20,7 +19,6 @@ import { supabase } from "@/integrations/supabase/client";
 export default function Pedidos() {
   const { data: orders, isLoading, refetch, hasNextPage, fetchNextPage, isFetchingNextPage } = useOrders();
   const { data: establishment } = useEstablishment();
-  const { data: preparationTime } = usePreparationTime();
   const { printOrder } = usePrintOrder();
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -322,15 +320,8 @@ export default function Pedidos() {
               {pendingCount} novo{pendingCount > 1 ? "s" : ""}
             </Badge>
           )}
-          {establishment && preparationTime && (
-            <PreparationTimeConfig
-              establishmentId={establishment.id}
-              currentMode={preparationTime.mode}
-              currentPreparationTime={preparationTime.preparationMinutes}
-              currentDeliveryTime={preparationTime.deliveryMinutes}
-              calculatedTime={preparationTime.totalMinutes}
-              sampleSize={preparationTime.sampleSize}
-            />
+          {establishment && (
+            <PreparationTimeConfig establishmentId={establishment.id} />
           )}
           {/* Print Mode Badge */}
           {printMode !== "none" && printModeLabels[printMode] && (
