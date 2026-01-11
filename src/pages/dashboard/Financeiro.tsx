@@ -19,7 +19,7 @@ import { ExpenseFormModal } from "@/components/financeiro/ExpenseFormModal";
 import { CategoryManagerModal } from "@/components/financeiro/CategoryManagerModal";
 import { toast } from "sonner";
 
-type PeriodType = "today" | "week" | "month" | "quarter" | "custom";
+type PeriodType = "today" | "yesterday" | "week" | "month" | "quarter" | "custom";
 
 export default function Financeiro() {
   const [period, setPeriod] = useState<PeriodType>("month");

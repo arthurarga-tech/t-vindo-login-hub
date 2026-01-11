@@ -3,14 +3,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Calendar as CalendarIcon, Plus } from "lucide-react";
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfDay, endOfDay } from "date-fns";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfDay, endOfDay, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { FinancialCategory } from "@/hooks/useFinancial";
 import { DateRange } from "react-day-picker";
 import { getNowInSaoPaulo } from "@/lib/dateUtils";
 
-type PeriodType = "today" | "week" | "month" | "quarter" | "custom";
+type PeriodType = "today" | "yesterday" | "week" | "month" | "quarter" | "custom";
 
 interface FinancialFiltersProps {
   period: PeriodType;
@@ -49,6 +49,10 @@ export function FinancialFilters({
       case "today":
         onDateRangeChange({ start: startOfDay(today), end: endOfDay(today) });
         break;
+      case "yesterday":
+        const yesterday = subDays(today, 1);
+        onDateRangeChange({ start: startOfDay(yesterday), end: endOfDay(yesterday) });
+        break;
       case "week":
         onDateRangeChange({ start: startOfWeek(today, { locale: ptBR }), end: endOfWeek(today, { locale: ptBR }) });
         break;
@@ -73,6 +77,7 @@ export function FinancialFilters({
 
   const periodButtons: { value: PeriodType; label: string }[] = [
     { value: "today", label: "Hoje" },
+    { value: "yesterday", label: "Ontem" },
     { value: "week", label: "Semana" },
     { value: "month", label: "Mês" },
     { value: "quarter", label: "Trimestre" },
@@ -105,7 +110,9 @@ export function FinancialFilters({
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
               {period === "custom"
-                ? `${format(dateRange.start, "dd/MM")} - ${format(dateRange.end, "dd/MM")}`
+                ? dateRange.start.getTime() === dateRange.end.getTime() || format(dateRange.start, "dd/MM") === format(dateRange.end, "dd/MM")
+                  ? format(dateRange.start, "dd/MM")
+                  : `${format(dateRange.start, "dd/MM")} - ${format(dateRange.end, "dd/MM")}`
                 : "Personalizado"}
             </Button>
           </PopoverTrigger>
