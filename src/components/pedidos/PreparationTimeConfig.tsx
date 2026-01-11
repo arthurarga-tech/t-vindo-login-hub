@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -39,7 +40,7 @@ export function PreparationTimeConfig({
   const [saving, setSaving] = useState(false);
   const queryClient = useQueryClient();
 
-  // Reset form when popover opens
+  // Reset form when dialog opens
   useEffect(() => {
     if (open) {
       setMode(currentMode);
@@ -74,42 +75,32 @@ export function PreparationTimeConfig({
     }
   };
 
-  // Display values
-  const displayTime = mode === "auto_daily" 
-    ? calculatedTime 
-    : preparationTime + deliveryTime;
-
   const badgeLabel = currentMode === "auto_daily"
     ? `Preparo: ~${calculatedTime ?? "--"} min`
     : `Preparo: ${currentPreparationTime} min + Entrega: ${currentDeliveryTime} min`;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <PopoverTrigger asChild>
-            <Badge 
-              variant="secondary" 
-              className="flex items-center gap-1 cursor-pointer hover:bg-secondary/80 transition-colors"
-            >
-              <Timer className="h-3 w-3" />
-              {badgeLabel}
-              <Settings2 className="h-3 w-3 ml-1 opacity-50" />
-            </Badge>
-          </PopoverTrigger>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Clique para configurar o tempo de preparo</p>
-        </TooltipContent>
-      </Tooltip>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Badge 
+          variant="secondary" 
+          className="flex items-center gap-1 cursor-pointer hover:bg-secondary/80 transition-colors"
+        >
+          <Timer className="h-3 w-3" />
+          {badgeLabel}
+          <Settings2 className="h-3 w-3 ml-1 opacity-50" />
+        </Badge>
+      </DialogTrigger>
 
-      <PopoverContent className="w-80" align="start">
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
             <Timer className="h-5 w-5 text-primary" />
-            <h4 className="font-semibold">Tempo de Preparo</h4>
-          </div>
+            Tempo de Preparo
+          </DialogTitle>
+        </DialogHeader>
 
+        <div className="space-y-4 pt-2">
           <RadioGroup
             value={mode}
             onValueChange={(v) => setMode(v as "auto_daily" | "manual")}
@@ -198,7 +189,7 @@ export function PreparationTimeConfig({
             {saving ? "Salvando..." : "Salvar Configuração"}
           </Button>
         </div>
-      </PopoverContent>
-    </Popover>
+      </DialogContent>
+    </Dialog>
   );
 }
