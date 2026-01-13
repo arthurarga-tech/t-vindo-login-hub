@@ -213,7 +213,11 @@ export default function OrderConfirmationPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background p-4">
+      <div 
+        className="min-h-screen bg-background p-4"
+        data-testid="order-confirmation-loading"
+        aria-busy="true"
+      >
         <div className="max-w-2xl mx-auto space-y-4">
           <Skeleton className="h-12 w-full" />
           <Skeleton className="h-48 w-full" />
@@ -224,10 +228,24 @@ export default function OrderConfirmationPage() {
   }
   if (!order) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div 
+        className="min-h-screen bg-background flex items-center justify-center"
+        data-testid="order-confirmation-not-found"
+        role="alert"
+      >
         <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold">Pedido não encontrado</h1>
-          <Button onClick={() => navigate(`/loja/${slug}`)}>Voltar para a loja</Button>
+          <h1 
+            className="text-2xl font-bold"
+            data-testid="order-confirmation-not-found-title"
+          >
+            Pedido não encontrado
+          </h1>
+          <Button 
+            onClick={() => navigate(`/loja/${slug}`)}
+            data-testid="order-confirmation-not-found-back-button"
+          >
+            Voltar para a loja
+          </Button>
         </div>
       </div>
     );
@@ -237,8 +255,14 @@ export default function OrderConfirmationPage() {
   const StatusIcon = status.icon;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-primary text-primary-foreground py-4 shadow-md">
+    <div 
+      className="min-h-screen bg-background"
+      data-testid="order-confirmation-page"
+    >
+      <header 
+        className="bg-primary text-primary-foreground py-4 shadow-md"
+        data-testid="order-confirmation-header"
+      >
         <div className="max-w-2xl mx-auto px-4">
           <div className="flex items-center gap-3">
             <Button
@@ -246,33 +270,56 @@ export default function OrderConfirmationPage() {
               size="icon"
               className="text-primary-foreground hover:bg-primary-foreground/10"
               onClick={() => navigate(`/loja/${slug}`)}
+              data-testid="order-confirmation-back-button"
+              aria-label="Voltar para a loja"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-xl font-bold">Pedido Confirmado</h1>
+            <h1 
+              className="text-xl font-bold"
+              data-testid="order-confirmation-title"
+            >
+              Pedido Confirmado
+            </h1>
           </div>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      <main 
+        className="max-w-2xl mx-auto px-4 py-6 space-y-6"
+        data-testid="order-confirmation-main"
+        role="main"
+      >
         {/* Success Message */}
-        <Card className="border-green-200 bg-green-50 dark:bg-green-950/20">
+        <Card 
+          className="border-green-200 bg-green-50 dark:bg-green-950/20"
+          data-testid="order-confirmation-success-card"
+        >
           <CardContent className="pt-6 text-center space-y-3">
             <CheckCircle className="h-16 w-16 text-green-600 mx-auto" />
-            <h2 className="text-2xl font-bold text-green-800 dark:text-green-400">
+            <h2 
+              className="text-2xl font-bold text-green-800 dark:text-green-400"
+              data-testid="order-confirmation-success-title"
+            >
               Pedido #{order.order_number || order.id.slice(0, 6).toUpperCase()} enviado!
             </h2>
-            <p className="text-green-700 dark:text-green-500">
+            <p 
+              className="text-green-700 dark:text-green-500"
+              data-testid="order-confirmation-success-message"
+            >
               O estabelecimento foi notificado e em breve entrará em contato.
             </p>
-            <p className="text-sm text-muted-foreground mt-2">
+            <p 
+              className="text-sm text-muted-foreground mt-2"
+              data-testid="order-confirmation-track-hint"
+            >
               Use o número <strong>#{order.order_number}</strong> para rastrear seu pedido
             </p>
           </CardContent>
         </Card>
 
         {/* Tracking Link */}
-        <Card>
+        <Card data-testid="order-confirmation-tracking-card">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -284,53 +331,78 @@ export default function OrderConfirmationPage() {
                 size="sm"
                 onClick={copyTrackingLink}
                 className="gap-2"
+                data-testid="order-confirmation-copy-link-button"
+                aria-label="Copiar link de acompanhamento"
               >
                 <Copy className="h-4 w-4" />
                 Copiar Link
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground mt-2 break-all">
+            <p 
+              className="text-xs text-muted-foreground mt-2 break-all"
+              data-testid="order-confirmation-tracking-url"
+            >
               {trackingUrl}
             </p>
           </CardContent>
         </Card>
 
         {/* Order Status */}
-        <Card>
+        <Card data-testid="order-confirmation-status-card">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Status do Pedido</span>
-              <Badge className={`${status.color} text-white`}>
+              <Badge 
+                className={`${status.color} text-white`}
+                data-testid="order-confirmation-status-badge"
+                aria-label={`Status: ${status.label}`}
+              >
                 <StatusIcon className="h-4 w-4 mr-1" />
                 {status.label}
               </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
+            <p 
+              className="text-sm text-muted-foreground"
+              data-testid="order-confirmation-order-number"
+            >
               Pedido #{order.order_number || order.id.slice(0, 8).toUpperCase()}
             </p>
           </CardContent>
         </Card>
 
         {/* Order Items */}
-        <Card>
+        <Card data-testid="order-confirmation-items-card">
           <CardHeader>
             <CardTitle className="text-lg">Itens do Pedido</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {order.items?.map((item) => (
-              <div key={item.id} className="space-y-1">
+              <div 
+                key={item.id} 
+                className="space-y-1"
+                data-testid={`order-confirmation-item-${item.id}`}
+              >
                 <div className="flex justify-between text-sm">
-                  <span>
+                  <span data-testid="order-confirmation-item-name">
                     {item.quantity}x {item.product_name}
                   </span>
-                  <span className="font-medium">{formatPrice(item.total)}</span>
+                  <span 
+                    className="font-medium"
+                    data-testid="order-confirmation-item-total"
+                  >
+                    {formatPrice(item.total)}
+                  </span>
                 </div>
                 {item.addons && item.addons.length > 0 && (
                   <div className="pl-4 space-y-0.5">
                     {item.addons.map((addon) => (
-                      <div key={addon.id} className="flex justify-between text-xs text-muted-foreground">
+                      <div 
+                        key={addon.id} 
+                        className="flex justify-between text-xs text-muted-foreground"
+                        data-testid={`order-confirmation-addon-${addon.id}`}
+                      >
                         <span>+ {addon.quantity}x {addon.addon_name}</span>
                         <span>{formatPrice(addon.addon_price * addon.quantity)}</span>
                       </div>
@@ -340,7 +412,10 @@ export default function OrderConfirmationPage() {
               </div>
             ))}
             <Separator />
-            <div className="flex justify-between font-semibold">
+            <div 
+              className="flex justify-between font-semibold"
+              data-testid="order-confirmation-total"
+            >
               <span>Total</span>
               <span style={{ color: "hsl(var(--store-primary, var(--primary)))" }}>{formatPrice(order.total)}</span>
             </div>
@@ -348,20 +423,28 @@ export default function OrderConfirmationPage() {
         </Card>
 
         {/* Delivery Info */}
-        <Card>
+        <Card data-testid="order-confirmation-delivery-card">
           <CardHeader>
             <CardTitle className="text-lg">Entrega</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
+          <CardContent 
+            className="space-y-2 text-sm"
+            data-testid="order-confirmation-delivery-content"
+          >
             <p>
-              <span className="font-medium">{order.customer?.name}</span>
+              <span 
+                className="font-medium"
+                data-testid="order-confirmation-customer-name"
+              >
+                {order.customer?.name}
+              </span>
             </p>
-            <p>{order.customer?.phone}</p>
-            <p>
+            <p data-testid="order-confirmation-customer-phone">{order.customer?.phone}</p>
+            <p data-testid="order-confirmation-address-street">
               {order.customer?.address}, {order.customer?.address_number}
               {order.customer?.address_complement && ` - ${order.customer.address_complement}`}
             </p>
-            <p>
+            <p data-testid="order-confirmation-address-neighborhood">
               {order.customer?.neighborhood}
               {order.customer?.city && `, ${order.customer.city}`}
             </p>
@@ -369,19 +452,30 @@ export default function OrderConfirmationPage() {
         </Card>
 
         {/* Payment */}
-        <Card>
+        <Card data-testid="order-confirmation-payment-card">
           <CardHeader>
             <CardTitle className="text-lg">Pagamento</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="font-medium">{paymentMethodLabels[order.payment_method]}</p>
+          <CardContent 
+            className="space-y-2"
+            data-testid="order-confirmation-payment-content"
+          >
+            <p 
+              className="font-medium"
+              data-testid="order-confirmation-payment-method"
+            >
+              {paymentMethodLabels[order.payment_method]}
+            </p>
             {order.payment_method === "pix" && establishmentPixKey ? (
               <p className="text-sm text-muted-foreground">Pagamento antecipado via Pix</p>
             ) : (
               <p className="text-sm text-muted-foreground">Pagamento na entrega</p>
             )}
             {order.payment_method === "cash" && order.change_for && order.change_for > 0 && (
-              <div className="pt-2 border-t space-y-1">
+              <div 
+                className="pt-2 border-t space-y-1"
+                data-testid="order-confirmation-change-info"
+              >
                 <p className="text-sm">
                   Troco para: <span className="font-medium">{formatPrice(order.change_for)}</span>
                 </p>
@@ -395,7 +489,10 @@ export default function OrderConfirmationPage() {
 
         {/* PIX Receipt Button */}
         {showPixReceiptButton && (
-          <Card className="border-green-200 bg-green-50 dark:bg-green-950/20">
+          <Card 
+            className="border-green-200 bg-green-50 dark:bg-green-950/20"
+            data-testid="order-confirmation-pix-card"
+          >
             <CardContent className="pt-6 space-y-4">
               <div className="flex items-center gap-2">
                 <QrCode className="h-5 w-5 text-green-600" />
@@ -407,6 +504,8 @@ export default function OrderConfirmationPage() {
               <Button
                 className="w-full bg-green-600 hover:bg-green-700"
                 onClick={sendPixReceipt}
+                data-testid="order-confirmation-pix-whatsapp-button"
+                aria-label="Enviar comprovante via WhatsApp"
               >
                 <MessageCircle className="h-4 w-4 mr-2" />
                 Enviar Comprovante via WhatsApp
@@ -416,12 +515,17 @@ export default function OrderConfirmationPage() {
         )}
 
         {order.notes && (
-          <Card>
+          <Card data-testid="order-confirmation-notes-card">
             <CardHeader>
               <CardTitle className="text-lg">Observações</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm">{order.notes}</p>
+              <p 
+                className="text-sm"
+                data-testid="order-confirmation-notes-content"
+              >
+                {order.notes}
+              </p>
             </CardContent>
           </Card>
         )}
@@ -430,6 +534,7 @@ export default function OrderConfirmationPage() {
           variant="outline"
           className="w-full"
           onClick={() => navigate(`/loja/${slug}`)}
+          data-testid="order-confirmation-new-order-button"
         >
           Fazer novo pedido
         </Button>

@@ -84,16 +84,23 @@ export function FinancialFilters({
   ];
 
   return (
-    <div className="flex flex-col gap-4">
+    <div 
+      className="flex flex-col gap-4"
+      data-testid="financial-filters"
+      role="search"
+      aria-label="Filtros financeiros"
+    >
       <div className="flex flex-wrap items-center gap-2">
         {/* Period buttons */}
-        <div className="flex gap-1">
+        <div className="flex gap-1" data-testid="financial-filters-period-buttons">
           {periodButtons.map((btn) => (
             <Button
               key={btn.value}
               variant={period === btn.value ? "default" : "outline"}
               size="sm"
               onClick={() => handlePeriodChange(btn.value)}
+              data-testid={`financial-filters-period-${btn.value}`}
+              aria-pressed={period === btn.value}
             >
               {btn.label}
             </Button>
@@ -107,6 +114,8 @@ export function FinancialFilters({
               variant={period === "custom" ? "default" : "outline"}
               size="sm"
               className={cn("justify-start text-left font-normal")}
+              data-testid="financial-filters-date-picker-trigger"
+              aria-label="Selecionar período personalizado"
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
               {period === "custom"
@@ -116,7 +125,11 @@ export function FinancialFilters({
                 : "Personalizado"}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
+          <PopoverContent 
+            className="w-auto p-0" 
+            align="start"
+            data-testid="financial-filters-date-picker-content"
+          >
             <Calendar
               initialFocus
               mode="range"
@@ -126,6 +139,7 @@ export function FinancialFilters({
               numberOfMonths={2}
               locale={ptBR}
               className="pointer-events-auto"
+              data-testid="financial-filters-calendar"
             />
           </PopoverContent>
         </Popover>
@@ -134,25 +148,37 @@ export function FinancialFilters({
       <div className="flex flex-wrap items-center gap-2">
         {/* Type filter */}
         <Select value={type} onValueChange={(v) => onTypeChange(v as "all" | "income" | "expense")}>
-          <SelectTrigger className="w-[150px]">
+          <SelectTrigger 
+            className="w-[150px]"
+            data-testid="financial-filters-type-trigger"
+            aria-label="Filtrar por tipo"
+          >
             <SelectValue placeholder="Tipo" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="income">Receitas</SelectItem>
-            <SelectItem value="expense">Despesas</SelectItem>
+          <SelectContent data-testid="financial-filters-type-content">
+            <SelectItem value="all" data-testid="financial-filters-type-all">Todos</SelectItem>
+            <SelectItem value="income" data-testid="financial-filters-type-income">Receitas</SelectItem>
+            <SelectItem value="expense" data-testid="financial-filters-type-expense">Despesas</SelectItem>
           </SelectContent>
         </Select>
 
         {/* Category filter */}
         <Select value={categoryId} onValueChange={onCategoryChange}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger 
+            className="w-[180px]"
+            data-testid="financial-filters-category-trigger"
+            aria-label="Filtrar por categoria"
+          >
             <SelectValue placeholder="Categoria" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas categorias</SelectItem>
+          <SelectContent data-testid="financial-filters-category-content">
+            <SelectItem value="all" data-testid="financial-filters-category-all">Todas categorias</SelectItem>
             {categories.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>
+              <SelectItem 
+                key={cat.id} 
+                value={cat.id}
+                data-testid={`financial-filters-category-${cat.id}`}
+              >
                 {cat.name}
               </SelectItem>
             ))}
@@ -161,22 +187,31 @@ export function FinancialFilters({
 
         {/* Payment method filter */}
         <Select value={paymentMethod} onValueChange={onPaymentMethodChange}>
-          <SelectTrigger className="w-[150px]">
+          <SelectTrigger 
+            className="w-[150px]"
+            data-testid="financial-filters-payment-trigger"
+            aria-label="Filtrar por forma de pagamento"
+          >
             <SelectValue placeholder="Pagamento" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="pix">Pix</SelectItem>
-            <SelectItem value="credit">Crédito</SelectItem>
-            <SelectItem value="debit">Débito</SelectItem>
-            <SelectItem value="cash">Dinheiro</SelectItem>
+          <SelectContent data-testid="financial-filters-payment-content">
+            <SelectItem value="all" data-testid="financial-filters-payment-all">Todos</SelectItem>
+            <SelectItem value="pix" data-testid="financial-filters-payment-pix">Pix</SelectItem>
+            <SelectItem value="credit" data-testid="financial-filters-payment-credit">Crédito</SelectItem>
+            <SelectItem value="debit" data-testid="financial-filters-payment-debit">Débito</SelectItem>
+            <SelectItem value="cash" data-testid="financial-filters-payment-cash">Dinheiro</SelectItem>
           </SelectContent>
         </Select>
 
         <div className="flex-1" />
 
         {/* Add expense button */}
-        <Button onClick={onAddExpense} className="gap-2">
+        <Button 
+          onClick={onAddExpense} 
+          className="gap-2"
+          data-testid="financial-filters-add-expense-button"
+          aria-label="Adicionar nova despesa"
+        >
           <Plus className="h-4 w-4" />
           Nova Despesa
         </Button>

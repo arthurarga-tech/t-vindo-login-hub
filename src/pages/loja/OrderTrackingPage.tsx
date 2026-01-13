@@ -186,8 +186,14 @@ export default function OrderTrackingPage() {
   const StatusIcon = status?.icon;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-primary text-primary-foreground py-4 shadow-md">
+    <div 
+      className="min-h-screen bg-background"
+      data-testid="order-tracking-page"
+    >
+      <header 
+        className="bg-primary text-primary-foreground py-4 shadow-md"
+        data-testid="order-tracking-header"
+      >
         <div className="max-w-2xl mx-auto px-4">
           <div className="flex items-center gap-3">
             <Button
@@ -195,35 +201,55 @@ export default function OrderTrackingPage() {
               size="icon"
               className="text-primary-foreground hover:bg-primary-foreground/10"
               onClick={() => navigate(`/loja/${slug}`)}
+              data-testid="order-tracking-back-button"
+              aria-label="Voltar para a loja"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-xl font-bold">Acompanhar Pedido</h1>
+              <h1 
+                className="text-xl font-bold"
+                data-testid="order-tracking-title"
+              >
+                Acompanhar Pedido
+              </h1>
               {establishment?.name && (
-                <p className="text-sm text-primary-foreground/80">{establishment.name}</p>
+                <p 
+                  className="text-sm text-primary-foreground/80"
+                  data-testid="order-tracking-store-name"
+                >
+                  {establishment.name}
+                </p>
               )}
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      <main 
+        className="max-w-2xl mx-auto px-4 py-6 space-y-6"
+        data-testid="order-tracking-main"
+        role="main"
+      >
         {/* Search Form */}
-        <Card>
+        <Card data-testid="order-tracking-search-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Search className="h-5 w-5" />
               Buscar Pedido
             </CardTitle>
-            <CardDescription>
+            <CardDescription data-testid="order-tracking-search-description">
               {order && !finalizedStatuses.includes(order.status) 
                 ? "Seu último pedido está sendo exibido abaixo"
                 : "Digite o número do seu pedido para acompanhar em tempo real"}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <form onSubmit={handleSearch} className="flex gap-2">
+            <form 
+              onSubmit={handleSearch} 
+              className="flex gap-2"
+              data-testid="order-tracking-search-form"
+            >
               <Input
                 type="number"
                 placeholder="Ex: 123"
@@ -231,8 +257,14 @@ export default function OrderTrackingPage() {
                 onChange={(e) => setOrderNumber(e.target.value)}
                 className="flex-1"
                 min="1"
+                data-testid="order-tracking-search-input"
+                aria-label="Número do pedido"
               />
-              <Button type="submit" disabled={!orderNumber}>
+              <Button 
+                type="submit" 
+                disabled={!orderNumber}
+                data-testid="order-tracking-search-button"
+              >
                 <Search className="h-4 w-4 mr-2" />
                 Buscar
               </Button>
@@ -242,7 +274,11 @@ export default function OrderTrackingPage() {
 
         {/* Loading State */}
         {isLoading && searchedNumber && (
-          <div className="space-y-4">
+          <div 
+            className="space-y-4"
+            data-testid="order-tracking-loading"
+            aria-busy="true"
+          >
             <Skeleton className="h-32 w-full" />
             <Skeleton className="h-48 w-full" />
           </div>
@@ -250,11 +286,23 @@ export default function OrderTrackingPage() {
 
         {/* Not Found State */}
         {(isError || (searchedNumber && !isLoading && !order)) && (
-          <Card className="border-destructive/50 bg-destructive/10">
+          <Card 
+            className="border-destructive/50 bg-destructive/10"
+            data-testid="order-tracking-not-found"
+            role="alert"
+          >
             <CardContent className="pt-6 text-center space-y-3">
               <XCircle className="h-12 w-12 text-destructive mx-auto" />
-              <h2 className="text-xl font-bold">Pedido não encontrado</h2>
-              <p className="text-muted-foreground">
+              <h2 
+                className="text-xl font-bold"
+                data-testid="order-tracking-not-found-title"
+              >
+                Pedido não encontrado
+              </h2>
+              <p 
+                className="text-muted-foreground"
+                data-testid="order-tracking-not-found-message"
+              >
                 Não encontramos nenhum pedido com o número #{searchedNumber}
               </p>
             </CardContent>
@@ -265,46 +313,68 @@ export default function OrderTrackingPage() {
         {order && status && StatusIcon && (
           <>
             {/* Status Card */}
-            <Card>
+            <Card data-testid="order-tracking-status-card">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>Pedido #{order.order_number}</span>
-                  <Badge className={`${status.color} text-white`}>
+                  <span data-testid="order-tracking-order-number">Pedido #{order.order_number}</span>
+                  <Badge 
+                    className={`${status.color} text-white`}
+                    data-testid="order-tracking-status-badge"
+                    aria-label={`Status: ${status.label}`}
+                  >
                     <StatusIcon className="h-4 w-4 mr-1" />
                     {status.label}
                   </Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div 
+                  className="flex items-center gap-2 text-sm text-muted-foreground"
+                  data-testid="order-tracking-order-info"
+                >
                   <Clock className="h-4 w-4" />
-                  <span>
+                  <span data-testid="order-tracking-order-date">
                     {formatInSaoPaulo(order.created_at, "dd/MM/yyyy HH:mm", { locale: ptBR })}
                   </span>
                   <span className="mx-2">•</span>
-                  <span>{orderTypeLabels[order.order_type] || order.order_type}</span>
+                  <span data-testid="order-tracking-order-type">
+                    {orderTypeLabels[order.order_type] || order.order_type}
+                  </span>
                 </div>
               </CardContent>
             </Card>
 
             {/* Order Items */}
-            <Card>
+            <Card data-testid="order-tracking-items-card">
               <CardHeader>
                 <CardTitle className="text-lg">Itens do Pedido</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {order.items?.map((item) => (
-                  <div key={item.id} className="space-y-1">
+                  <div 
+                    key={item.id} 
+                    className="space-y-1"
+                    data-testid={`order-tracking-item-${item.id}`}
+                  >
                     <div className="flex justify-between text-sm">
-                      <span>
+                      <span data-testid="order-tracking-item-name">
                         {item.quantity}x {item.product_name}
                       </span>
-                      <span className="font-medium">{formatPrice(item.total)}</span>
+                      <span 
+                        className="font-medium"
+                        data-testid="order-tracking-item-total"
+                      >
+                        {formatPrice(item.total)}
+                      </span>
                     </div>
                     {item.addons && item.addons.length > 0 && (
                       <div className="pl-4 space-y-0.5">
                         {item.addons.map((addon) => (
-                          <div key={addon.id} className="flex justify-between text-xs text-muted-foreground">
+                          <div 
+                            key={addon.id} 
+                            className="flex justify-between text-xs text-muted-foreground"
+                            data-testid={`order-tracking-addon-${addon.id}`}
+                          >
                             <span>+ {addon.quantity}x {addon.addon_name}</span>
                             <span>{formatPrice(addon.addon_price * addon.quantity)}</span>
                           </div>
@@ -315,12 +385,18 @@ export default function OrderTrackingPage() {
                 ))}
                 <Separator />
                 {order.delivery_fee > 0 && (
-                  <div className="flex justify-between text-sm">
+                  <div 
+                    className="flex justify-between text-sm"
+                    data-testid="order-tracking-delivery-fee"
+                  >
                     <span>Taxa de entrega</span>
                     <span>{formatPrice(order.delivery_fee)}</span>
                   </div>
                 )}
-                <div className="flex justify-between font-semibold text-lg">
+                <div 
+                  className="flex justify-between font-semibold text-lg"
+                  data-testid="order-tracking-total"
+                >
                   <span>Total</span>
                   <span style={{ color: "hsl(var(--store-primary, var(--primary)))" }}>{formatPrice(order.total)}</span>
                 </div>
@@ -329,20 +405,25 @@ export default function OrderTrackingPage() {
 
             {/* Delivery/Pickup Info */}
             {order.order_type === "delivery" && order.customer && (
-              <Card>
+              <Card data-testid="order-tracking-address-card">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <MapPin className="h-5 w-5" />
                     Endereço de Entrega
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-1 text-sm">
-                  <p className="font-medium">{order.customer.name}</p>
-                  <p>
+                <CardContent 
+                  className="space-y-1 text-sm"
+                  data-testid="order-tracking-address-content"
+                >
+                  <p className="font-medium" data-testid="order-tracking-customer-name">
+                    {order.customer.name}
+                  </p>
+                  <p data-testid="order-tracking-address-street">
                     {order.customer.address}, {order.customer.address_number}
                     {order.customer.address_complement && ` - ${order.customer.address_complement}`}
                   </p>
-                  <p>
+                  <p data-testid="order-tracking-address-neighborhood">
                     {order.customer.neighborhood}
                     {order.customer.city && `, ${order.customer.city}`}
                   </p>
@@ -351,17 +432,25 @@ export default function OrderTrackingPage() {
             )}
 
             {/* Payment Info */}
-            <Card>
+            <Card data-testid="order-tracking-payment-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <CreditCard className="h-5 w-5" />
                   Pagamento
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="font-medium">{paymentMethodLabels[order.payment_method] || order.payment_method}</p>
+              <CardContent data-testid="order-tracking-payment-content">
+                <p 
+                  className="font-medium"
+                  data-testid="order-tracking-payment-method"
+                >
+                  {paymentMethodLabels[order.payment_method] || order.payment_method}
+                </p>
                 {order.payment_method === "cash" && order.change_for && order.change_for > 0 && (
-                  <div className="mt-2 pt-2 border-t space-y-1 text-sm">
+                  <div 
+                    className="mt-2 pt-2 border-t space-y-1 text-sm"
+                    data-testid="order-tracking-change-info"
+                  >
                     <p>Troco para: <span className="font-medium">{formatPrice(order.change_for)}</span></p>
                     <p className="text-primary font-medium">
                       Troco: {formatPrice(order.change_for - order.total)}
@@ -373,12 +462,17 @@ export default function OrderTrackingPage() {
 
             {/* Notes */}
             {order.notes && (
-              <Card>
+              <Card data-testid="order-tracking-notes-card">
                 <CardHeader>
                   <CardTitle className="text-lg">Observações</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm">{order.notes}</p>
+                  <p 
+                    className="text-sm"
+                    data-testid="order-tracking-notes-content"
+                  >
+                    {order.notes}
+                  </p>
                 </CardContent>
               </Card>
             )}
@@ -390,6 +484,7 @@ export default function OrderTrackingPage() {
           variant="outline"
           className="w-full"
           onClick={() => navigate(`/loja/${slug}`)}
+          data-testid="order-tracking-back-to-store-button"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Voltar para a loja
