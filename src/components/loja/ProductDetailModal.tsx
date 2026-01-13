@@ -77,9 +77,18 @@ export function ProductDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+      <DialogContent 
+        className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto p-4 sm:p-6"
+        data-testid="product-detail-modal"
+        aria-describedby="product-detail-description"
+      >
         <DialogHeader>
-          <DialogTitle className="text-lg sm:text-xl">{product.name}</DialogTitle>
+          <DialogTitle 
+            className="text-lg sm:text-xl"
+            data-testid="product-detail-title"
+          >
+            {product.name}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-3 sm:space-y-4">
@@ -90,9 +99,13 @@ export function ProductDetailModal({
                 src={product.image_url}
                 alt={product.name}
                 className="w-full h-full object-cover"
+                data-testid="product-detail-image"
               />
             ) : (
-              <div className="w-full h-full bg-muted flex items-center justify-center">
+              <div 
+                className="w-full h-full bg-muted flex items-center justify-center"
+                data-testid="product-detail-placeholder"
+              >
                 <ImageIcon className="h-12 w-12 sm:h-16 sm:w-16 text-muted-foreground" />
               </div>
             )}
@@ -100,20 +113,30 @@ export function ProductDetailModal({
 
           {/* Description */}
           {product.description && (
-            <p className="text-xs sm:text-sm text-muted-foreground">{product.description}</p>
+            <p 
+              className="text-xs sm:text-sm text-muted-foreground"
+              id="product-detail-description"
+              data-testid="product-detail-description"
+            >
+              {product.description}
+            </p>
           )}
 
           {/* Base Price */}
           <div className="flex items-center justify-between">
             <span className="text-xs sm:text-sm text-muted-foreground">Preço base:</span>
-            <span className="text-base sm:text-lg font-semibold" style={{ color: "hsl(var(--store-primary, var(--primary)))" }}>
+            <span 
+              className="text-base sm:text-lg font-semibold" 
+              style={{ color: "hsl(var(--store-primary, var(--primary)))" }}
+              data-testid="product-detail-base-price"
+            >
               {formatPrice(product.price)}
             </span>
           </div>
 
           {/* Addons */}
           {groups.length > 0 && (
-            <div className="border-t pt-4">
+            <div className="border-t pt-4" data-testid="product-detail-addons-section">
               <ProductAddonSelector
                 groups={groups}
                 addons={addons}
@@ -125,7 +148,10 @@ export function ProductDetailModal({
 
           {/* Observation */}
           <div className="border-t pt-3 sm:pt-4 space-y-2">
-            <Label htmlFor="observation" className="text-xs sm:text-sm font-medium">
+            <Label 
+              htmlFor="observation" 
+              className="text-xs sm:text-sm font-medium"
+            >
               Observações (opcional)
             </Label>
             <Textarea
@@ -136,8 +162,13 @@ export function ProductDetailModal({
               className="resize-none text-sm"
               maxLength={200}
               rows={2}
+              data-testid="product-detail-observation"
+              aria-label="Observações do produto"
             />
-            <p className="text-xs text-muted-foreground text-right">
+            <p 
+              className="text-xs text-muted-foreground text-right"
+              data-testid="product-detail-observation-count"
+            >
               {observation.length}/200
             </p>
           </div>
@@ -145,21 +176,35 @@ export function ProductDetailModal({
           {/* Quantity */}
           <div className="flex items-center justify-between border-t pt-3 sm:pt-4">
             <span className="text-xs sm:text-sm font-medium">Quantidade:</span>
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div 
+              className="flex items-center gap-2 sm:gap-3"
+              data-testid="product-detail-quantity-selector"
+              role="group"
+              aria-label="Seletor de quantidade"
+            >
               <Button
                 size="icon"
                 variant="outline"
                 className="h-7 w-7 sm:h-8 sm:w-8"
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                data-testid="product-detail-quantity-decrease"
+                aria-label="Diminuir quantidade"
               >
                 <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
-              <span className="w-6 sm:w-8 text-center font-medium text-sm sm:text-base">{quantity}</span>
+              <span 
+                className="w-6 sm:w-8 text-center font-medium text-sm sm:text-base"
+                data-testid="product-detail-quantity-value"
+              >
+                {quantity}
+              </span>
               <Button
                 size="icon"
                 variant="outline"
                 className="h-7 w-7 sm:h-8 sm:w-8"
                 onClick={() => setQuantity(quantity + 1)}
+                data-testid="product-detail-quantity-increase"
+                aria-label="Aumentar quantidade"
               >
                 <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
@@ -172,6 +217,8 @@ export function ProductDetailModal({
             size="lg" 
             style={{ backgroundColor: "hsl(var(--store-primary, var(--primary)))" }}
             onClick={handleAddToCart}
+            data-testid="product-detail-add-button"
+            aria-label={`Adicionar ao carrinho por ${formatPrice(itemTotal)}`}
           >
             Adicionar {formatPrice(itemTotal)}
           </Button>

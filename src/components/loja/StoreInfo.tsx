@@ -92,12 +92,21 @@ export function StoreInfo({
   };
 
   return (
-    <Card className="mb-6">
+    <Card 
+      className="mb-6"
+      data-testid="store-info"
+      role="region"
+      aria-label="Informações da loja"
+    >
       <CardContent className="p-4 space-y-4">
         {/* Estimated Time Badge */}
         {estimatedTime && (
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="flex items-center gap-1.5 text-sm py-1 px-3">
+            <Badge 
+              variant="secondary" 
+              className="flex items-center gap-1.5 text-sm py-1 px-3"
+              data-testid="store-info-estimated-time"
+            >
               <Timer className="h-4 w-4" />
               <span>Tempo estimado: {getEstimatedTimeLabel()}</span>
             </Badge>
@@ -106,7 +115,10 @@ export function StoreInfo({
 
         {/* Description */}
         {description && (
-          <div className="flex gap-3">
+          <div 
+            className="flex gap-3"
+            data-testid="store-info-description"
+          >
             <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
             <p className="text-sm text-muted-foreground">{description}</p>
           </div>
@@ -118,6 +130,8 @@ export function StoreInfo({
             <a
               href={`tel:${phone.replace(/\D/g, "")}`}
               className="flex items-center gap-2 text-sm hover:text-primary transition-colors"
+              data-testid="store-info-phone"
+              aria-label={`Telefone: ${phone}`}
             >
               <Phone className="h-4 w-4 text-primary" />
               <span>{phone}</span>
@@ -125,7 +139,10 @@ export function StoreInfo({
           )}
 
           {hasAddress && (
-            <div className="flex items-center gap-2 text-sm">
+            <div 
+              className="flex items-center gap-2 text-sm"
+              data-testid="store-info-address"
+            >
               <MapPin className="h-4 w-4 text-primary" />
               <span>{fullAddress}</span>
             </div>
@@ -134,12 +151,20 @@ export function StoreInfo({
 
         {/* Opening Hours */}
         {openingHours && (
-          <div className="space-y-2">
+          <div 
+            className="space-y-2"
+            data-testid="store-info-hours"
+            role="region"
+            aria-label="Horários de funcionamento"
+          >
             <div className="flex items-center gap-2 text-sm font-medium">
               <Clock className="h-4 w-4 text-primary" />
               <span>Horários de Funcionamento</span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 text-xs">
+            <div 
+              className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 text-xs"
+              role="list"
+            >
               {dayOrder.map((day) => {
                 const hours = openingHours[day];
                 return (
@@ -150,6 +175,8 @@ export function StoreInfo({
                         ? "bg-muted text-muted-foreground"
                         : "bg-primary/10 text-foreground"
                     }`}
+                    data-testid={`store-info-hours-${day}`}
+                    role="listitem"
                   >
                     <div className="font-medium">{dayLabels[day]}</div>
                     <div className="mt-1">
@@ -172,16 +199,25 @@ export function StoreInfo({
 
         {/* Delivery Info */}
         {hasDeliveryInfo && (
-          <div className="space-y-2">
+          <div 
+            className="space-y-2"
+            data-testid="store-info-delivery"
+            role="region"
+            aria-label="Informações de entrega"
+          >
             <div className="flex items-center gap-2 text-sm font-medium">
               <Truck className="h-4 w-4 text-primary" />
               <span>Entrega</span>
             </div>
             <div className="text-sm text-muted-foreground space-y-1">
               {minOrderValue && minOrderValue > 0 && (
-                <p>Pedido mínimo: {formatPrice(minOrderValue)}</p>
+                <p data-testid="store-info-min-order">
+                  Pedido mínimo: {formatPrice(minOrderValue)}
+                </p>
               )}
-              {deliveryInfo && <p>{deliveryInfo}</p>}
+              {deliveryInfo && (
+                <p data-testid="store-info-delivery-text">{deliveryInfo}</p>
+              )}
             </div>
           </div>
         )}

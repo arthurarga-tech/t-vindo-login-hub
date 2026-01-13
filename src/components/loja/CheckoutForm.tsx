@@ -473,7 +473,10 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div 
+        className="min-h-screen bg-background flex items-center justify-center p-4"
+        data-testid="checkout-empty"
+      >
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center space-y-4">
             <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto" />
@@ -481,7 +484,10 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
             <p className="text-muted-foreground">
               Adicione produtos ao carrinho antes de finalizar o pedido.
             </p>
-            <Button onClick={() => navigate(`/loja/${slug}`)}>
+            <Button 
+              onClick={() => navigate(`/loja/${slug}`)}
+              data-testid="checkout-empty-back-button"
+            >
               Voltar para a loja
             </Button>
           </CardContent>
@@ -491,8 +497,8 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-primary text-primary-foreground py-3 sm:py-4 shadow-md sticky top-0 z-50">
+    <div className="min-h-screen bg-background" data-testid="checkout-form">
+      <header className="bg-primary text-primary-foreground py-3 sm:py-4 shadow-md sticky top-0 z-50" data-testid="checkout-header">
         <div className="max-w-2xl mx-auto px-3 sm:px-4">
           <div className="flex items-center gap-2 sm:gap-3">
             <Button
@@ -500,6 +506,8 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
               size="icon"
               className="h-8 w-8 sm:h-10 sm:w-10 text-primary-foreground hover:bg-primary-foreground/10"
               onClick={() => navigate(`/loja/${slug}`)}
+              data-testid="checkout-back-button"
+              aria-label="Voltar para a loja"
             >
               <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
@@ -765,7 +773,7 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
         )}
 
         {/* Customer Info */}
-        <Card>
+        <Card data-testid="checkout-customer-section">
           <CardHeader>
             <CardTitle className="text-lg">Seus Dados</CardTitle>
           </CardHeader>
@@ -778,6 +786,8 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
                 value={customer.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
                 maxLength={100}
+                data-testid="checkout-name-input"
+                aria-label="Nome completo"
               />
             </div>
 
@@ -790,6 +800,8 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
                 onChange={(e) => handleInputChange("phone", extractPhoneNumbers(e.target.value))}
                 maxLength={15}
                 inputMode="numeric"
+                data-testid="checkout-phone-input"
+                aria-label="Telefone ou WhatsApp"
               />
               <p className="text-xs text-muted-foreground">
                 Apenas números, ex: 35988887777
@@ -1039,6 +1051,8 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
           style={{ backgroundColor: "hsl(var(--store-primary, var(--primary)))" }}
           onClick={handleSubmit}
           disabled={submitting}
+          data-testid="checkout-submit-button"
+          aria-label={submitting ? "Enviando pedido" : `Enviar pedido por ${formatPrice(orderTotal)}`}
         >
           {submitting ? "Enviando..." : `Enviar Pedido • ${formatPrice(orderTotal)}`}
         </Button>

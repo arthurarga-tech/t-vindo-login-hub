@@ -80,10 +80,17 @@ export function StoreHeader({ establishmentName, logoUrl, bannerUrl, phone, open
   const headerStyle = primaryColor ? { backgroundColor: primaryColor } : undefined;
 
   return (
-    <header className="sticky top-0 z-50">
+    <header 
+      className="sticky top-0 z-50"
+      data-testid="store-header"
+      role="banner"
+    >
       {/* Banner */}
       {bannerUrl && (
-        <div className="relative h-32 sm:h-40 md:h-52 w-full overflow-hidden">
+        <div 
+          className="relative h-32 sm:h-40 md:h-52 w-full overflow-hidden"
+          data-testid="store-header-banner"
+        >
           <img
             src={bannerUrl}
             alt={`Banner de ${establishmentName}`}
@@ -97,6 +104,7 @@ export function StoreHeader({ establishmentName, logoUrl, bannerUrl, phone, open
       <div 
         className={`bg-primary text-primary-foreground py-3 sm:py-4 shadow-md ${bannerUrl ? '-mt-12 sm:-mt-16 relative' : ''}`}
         style={headerStyle}
+        data-testid="store-header-bar"
       >
         <div className="max-w-4xl mx-auto px-3 sm:px-4">
           <div className="flex items-center justify-between gap-2">
@@ -106,15 +114,24 @@ export function StoreHeader({ establishmentName, logoUrl, bannerUrl, phone, open
                   src={logoUrl}
                   alt={establishmentName}
                   className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover bg-primary-foreground/10 border-2 border-primary-foreground/20 flex-shrink-0"
+                  data-testid="store-header-logo"
                 />
               ) : (
-                <Store className="h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0" />
+                <Store className="h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0" data-testid="store-header-icon" />
               )}
               <div className="min-w-0">
-                <h1 className="text-base sm:text-xl font-bold truncate">{establishmentName}</h1>
+                <h1 
+                  className="text-base sm:text-xl font-bold truncate"
+                  data-testid="store-header-name"
+                >
+                  {establishmentName}
+                </h1>
                 <div className="hidden sm:flex items-center gap-3 text-xs">
                   {phone && (
-                    <div className="flex items-center gap-1 opacity-90">
+                    <div 
+                      className="flex items-center gap-1 opacity-90"
+                      data-testid="store-header-phone"
+                    >
                       <Phone className="h-3 w-3" />
                       <span>{phone}</span>
                     </div>
@@ -130,6 +147,8 @@ export function StoreHeader({ establishmentName, logoUrl, bannerUrl, phone, open
                 size="sm"
                 className="h-8 sm:h-9 px-2 sm:px-3 bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30"
                 onClick={() => navigate(`/loja/${slug}/rastrear`)}
+                data-testid="store-header-track-button"
+                aria-label="Acompanhar pedido"
               >
                 <Package className="h-4 w-4 sm:mr-1.5" />
                 <span className="hidden sm:inline text-xs sm:text-sm">Acompanhar Pedido</span>
@@ -140,6 +159,8 @@ export function StoreHeader({ establishmentName, logoUrl, bannerUrl, phone, open
                 <Badge 
                   variant={status.isOpen ? "default" : "destructive"}
                   className={`text-xs px-2 sm:px-3 py-1 ${status.isOpen ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                  data-testid="store-header-status-badge"
+                  aria-label={status.isOpen ? "Loja aberta" : "Loja fechada"}
                 >
                   <Clock className="h-3 w-3 mr-1" />
                   <span className="hidden sm:inline">{status.isOpen ? "Aberto" : "Fechado"}</span>
@@ -152,7 +173,10 @@ export function StoreHeader({ establishmentName, logoUrl, bannerUrl, phone, open
           
           {/* Status text below header on mobile */}
           {openingHours && status.text && (
-            <div className="mt-1 sm:mt-2 text-xs opacity-80 text-center sm:text-left">
+            <div 
+              className="mt-1 sm:mt-2 text-xs opacity-80 text-center sm:text-left"
+              data-testid="store-header-status-text"
+            >
               {status.text}
             </div>
           )}
