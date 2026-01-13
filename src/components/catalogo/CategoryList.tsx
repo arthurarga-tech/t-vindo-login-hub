@@ -83,12 +83,18 @@ function SortableCategoryItem({
         isDragging && "opacity-50 shadow-lg z-50"
       )}
       onClick={() => onSelect(category)}
+      data-testid={`category-item-${category.id}`}
+      role="listitem"
+      aria-selected={isSelected}
+      aria-label={`Categoria ${category.name}`}
     >
       <button
         {...attributes}
         {...listeners}
         className="cursor-grab active:cursor-grabbing touch-none"
         onClick={(e) => e.stopPropagation()}
+        data-testid={`category-item-${category.id}-drag-handle`}
+        aria-label="Arrastar para reordenar"
       >
         <GripVertical className="h-4 w-4 text-muted-foreground" />
       </button>
@@ -98,24 +104,35 @@ function SortableCategoryItem({
           src={category.image_url}
           alt={category.name}
           className="w-8 h-8 rounded object-cover"
+          data-testid={`category-item-${category.id}-image`}
         />
       ) : (
-        <div className="w-8 h-8 rounded bg-muted flex items-center justify-center text-xs font-medium">
+        <div 
+          className="w-8 h-8 rounded bg-muted flex items-center justify-center text-xs font-medium"
+          data-testid={`category-item-${category.id}-placeholder`}
+        >
           {category.name.charAt(0).toUpperCase()}
         </div>
       )}
 
       <div className="flex-1 min-w-0">
-        <p className={cn(
-          "text-sm font-medium truncate",
-          !category.active && "text-muted-foreground"
-        )}>
+        <p 
+          className={cn(
+            "text-sm font-medium truncate",
+            !category.active && "text-muted-foreground"
+          )}
+          data-testid={`category-item-${category.id}-name`}
+        >
           {category.name}
         </p>
       </div>
 
       {!category.active && (
-        <Badge variant="secondary" className="text-xs">
+        <Badge 
+          variant="secondary" 
+          className="text-xs"
+          data-testid={`category-item-${category.id}-inactive-badge`}
+        >
           Inativa
         </Badge>
       )}
@@ -129,6 +146,8 @@ function SortableCategoryItem({
             e.stopPropagation();
             onToggleActive(category);
           }}
+          data-testid={`category-item-${category.id}-toggle-active-button`}
+          aria-label={category.active ? "Ocultar categoria" : "Mostrar categoria"}
         >
           {category.active ? (
             <Eye className="h-4 w-4" />
@@ -144,6 +163,8 @@ function SortableCategoryItem({
             e.stopPropagation();
             onEdit(category);
           }}
+          data-testid={`category-item-${category.id}-edit-button`}
+          aria-label="Editar categoria"
         >
           <Edit2 className="h-4 w-4" />
         </Button>
@@ -155,6 +176,8 @@ function SortableCategoryItem({
             e.stopPropagation();
             onDelete(category.id);
           }}
+          data-testid={`category-item-${category.id}-delete-button`}
+          aria-label="Excluir categoria"
         >
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -224,7 +247,12 @@ export function CategoryList({
           items={categories.map((c) => c.id)}
           strategy={verticalListSortingStrategy}
         >
-          <div className="space-y-1">
+          <div 
+            className="space-y-1"
+            data-testid="category-list"
+            role="list"
+            aria-label="Lista de categorias"
+          >
             {categories.map((category) => (
               <SortableCategoryItem
                 key={category.id}
@@ -238,7 +266,11 @@ export function CategoryList({
             ))}
 
             {categories.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-8">
+              <p 
+                className="text-sm text-muted-foreground text-center py-8"
+                data-testid="category-list-empty"
+                role="status"
+              >
                 Nenhuma categoria cadastrada
               </p>
             )}
@@ -247,19 +279,24 @@ export function CategoryList({
       </DndContext>
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent data-testid="category-delete-dialog">
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir categoria?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle data-testid="category-delete-dialog-title">
+              Excluir categoria?
+            </AlertDialogTitle>
+            <AlertDialogDescription data-testid="category-delete-dialog-description">
               A categoria "{categoryToDelete?.name}" será excluída permanentemente.
               Os produtos desta categoria ficarão sem categoria.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel data-testid="category-delete-dialog-cancel">
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="category-delete-dialog-confirm"
             >
               Excluir
             </AlertDialogAction>

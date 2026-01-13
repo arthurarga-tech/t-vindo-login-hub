@@ -184,7 +184,10 @@ const LoginCard = () => {
 
   if (showForgotPassword) {
     return (
-      <Card className="w-full max-w-md shadow-lg border-border/50 bg-card/95 backdrop-blur-sm">
+      <Card 
+        className="w-full max-w-md shadow-lg border-border/50 bg-card/95 backdrop-blur-sm"
+        data-testid="forgot-password-card"
+      >
         <CardHeader className="space-y-3 text-center pt-6 pb-2">
           <CardTitle className="text-xl md:text-2xl font-semibold text-foreground">
             Recuperar Senha
@@ -195,7 +198,11 @@ const LoginCard = () => {
         </CardHeader>
         
         <CardContent className="space-y-6 px-6 pb-6">
-          <form onSubmit={handleForgotPassword} className="space-y-4">
+          <form 
+            onSubmit={handleForgotPassword} 
+            className="space-y-4"
+            data-testid="forgot-password-form"
+          >
             <div className="space-y-2">
               <Label htmlFor="reset-email" className="text-foreground font-medium">
                 Email
@@ -210,11 +217,19 @@ const LoginCard = () => {
                   onChange={(e) => setResetEmail(e.target.value)}
                   className="pl-10 bg-background border-input focus:ring-2 focus:ring-primary/20"
                   required
+                  data-testid="forgot-password-email-input"
+                  aria-label="Email para recuperação"
                 />
               </div>
             </div>
 
-            <Button type="submit" className="w-full font-medium" size="lg" disabled={isLoading}>
+            <Button 
+              type="submit" 
+              className="w-full font-medium" 
+              size="lg" 
+              disabled={isLoading}
+              data-testid="forgot-password-submit-button"
+            >
               {isLoading ? "Enviando..." : "Enviar Link de Recuperação"}
             </Button>
 
@@ -226,6 +241,7 @@ const LoginCard = () => {
                 setShowForgotPassword(false);
                 setResetEmail("");
               }}
+              data-testid="forgot-password-back-button"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar ao Login
@@ -237,7 +253,10 @@ const LoginCard = () => {
   }
 
   return (
-    <Card className="w-full max-w-md shadow-lg border-border/50 bg-card/95 backdrop-blur-sm">
+    <Card 
+      className="w-full max-w-md shadow-lg border-border/50 bg-card/95 backdrop-blur-sm"
+      data-testid="login-card"
+    >
       <CardHeader className="space-y-3 text-center pt-6 pb-2">
         <CardTitle className="text-xl md:text-2xl font-semibold text-foreground">
           Bem-vindo ao TáVindo – Painel do Estabelecimento
@@ -248,14 +267,22 @@ const LoginCard = () => {
       </CardHeader>
       
       <CardContent className="space-y-6 px-6 pb-6">
-        <Tabs value={activeTab} onValueChange={(value) => { setActiveTab(value); resetForm(); }}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Entrar</TabsTrigger>
-            <TabsTrigger value="signup">Cadastrar</TabsTrigger>
+        <Tabs 
+          value={activeTab} 
+          onValueChange={(value) => { setActiveTab(value); resetForm(); }}
+          data-testid="auth-tabs"
+        >
+          <TabsList className="grid w-full grid-cols-2" data-testid="auth-tabs-list">
+            <TabsTrigger value="login" data-testid="auth-tab-login">Entrar</TabsTrigger>
+            <TabsTrigger value="signup" data-testid="auth-tab-signup">Cadastrar</TabsTrigger>
           </TabsList>
 
           <TabsContent value="login" className="space-y-4 mt-4">
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form 
+              onSubmit={handleLogin} 
+              className="space-y-4"
+              data-testid="login-form"
+            >
               <div className="space-y-2">
                 <Label htmlFor="login-email" className="text-foreground font-medium">
                   Email
@@ -270,6 +297,8 @@ const LoginCard = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10 bg-background border-input focus:ring-2 focus:ring-primary/20"
                     required
+                    data-testid="login-email-input"
+                    aria-label="Email"
                   />
                 </div>
               </div>
@@ -288,12 +317,15 @@ const LoginCard = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-10 bg-background border-input focus:ring-2 focus:ring-primary/20"
                     required
+                    data-testid="login-password-input"
+                    aria-label="Senha"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    data-testid="login-password-toggle"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -305,19 +337,30 @@ const LoginCard = () => {
                   type="button"
                   onClick={() => setShowForgotPassword(true)}
                   className="text-sm text-primary hover:text-primary/80 transition-colors hover:underline"
+                  data-testid="forgot-password-link"
                 >
                   Esqueci minha senha
                 </button>
               </div>
 
-              <Button type="submit" className="w-full font-medium" size="lg" disabled={isLoading}>
+              <Button 
+                type="submit" 
+                className="w-full font-medium" 
+                size="lg" 
+                disabled={isLoading}
+                data-testid="login-submit-button"
+              >
                 {isLoading ? "Carregando..." : "Entrar"}
               </Button>
             </form>
           </TabsContent>
 
           <TabsContent value="signup" className="space-y-4 mt-4">
-            <form onSubmit={handleSignup} className="space-y-4">
+            <form 
+              onSubmit={handleSignup} 
+              className="space-y-4"
+              data-testid="signup-form"
+            >
               <div className="space-y-2">
                 <Label htmlFor="establishment-name" className="text-foreground font-medium">
                   Nome do Estabelecimento
@@ -332,6 +375,8 @@ const LoginCard = () => {
                     onChange={(e) => setEstablishmentName(e.target.value)}
                     className="pl-10 bg-background border-input focus:ring-2 focus:ring-primary/20"
                     required
+                    data-testid="signup-establishment-input"
+                    aria-label="Nome do estabelecimento"
                   />
                 </div>
               </div>
@@ -350,6 +395,8 @@ const LoginCard = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10 bg-background border-input focus:ring-2 focus:ring-primary/20"
                     required
+                    data-testid="signup-email-input"
+                    aria-label="Email"
                   />
                 </div>
               </div>
@@ -368,12 +415,15 @@ const LoginCard = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-10 bg-background border-input focus:ring-2 focus:ring-primary/20"
                     required
+                    data-testid="signup-password-input"
+                    aria-label="Senha"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    data-testid="signup-password-toggle"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -394,19 +444,28 @@ const LoginCard = () => {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="pl-10 pr-10 bg-background border-input focus:ring-2 focus:ring-primary/20"
                     required
+                    data-testid="signup-confirm-password-input"
+                    aria-label="Confirmar senha"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     aria-label={showConfirmPassword ? "Ocultar senha" : "Mostrar senha"}
+                    data-testid="signup-confirm-password-toggle"
                   >
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
 
-              <Button type="submit" className="w-full font-medium" size="lg" disabled={isLoading}>
+              <Button 
+                type="submit" 
+                className="w-full font-medium" 
+                size="lg" 
+                disabled={isLoading}
+                data-testid="signup-submit-button"
+              >
                 {isLoading ? "Carregando..." : "Criar Conta"}
               </Button>
             </form>
