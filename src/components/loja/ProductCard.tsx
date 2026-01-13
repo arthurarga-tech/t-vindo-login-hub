@@ -18,6 +18,9 @@ export function ProductCard({ product }: ProductCardProps) {
       <Card 
         className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
         onClick={() => setModalOpen(true)}
+        data-testid={`product-card-${product.id}`}
+        role="article"
+        aria-label={`Produto ${product.name}`}
       >
         <CardContent className="p-0">
           <div className="flex flex-col sm:flex-row">
@@ -28,25 +31,39 @@ export function ProductCard({ product }: ProductCardProps) {
                   src={product.image_url}
                   alt={product.name}
                   className="w-full h-full object-cover"
+                  data-testid="product-card-image"
                 />
               ) : (
-                <div className="w-full h-full bg-muted flex items-center justify-center">
+                <div 
+                  className="w-full h-full bg-muted flex items-center justify-center"
+                  data-testid="product-card-placeholder"
+                >
                   <ImageIcon className="h-8 w-8 text-muted-foreground" />
                 </div>
               )}
             </div>
             
             <div className="flex-1 p-3 sm:p-4 sm:order-1">
-              <h3 className="font-medium text-foreground line-clamp-2 text-sm sm:text-base">
+              <h3 
+                className="font-medium text-foreground line-clamp-2 text-sm sm:text-base"
+                data-testid="product-card-name"
+              >
                 {product.name}
               </h3>
               {product.description && (
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
+                <p 
+                  className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2"
+                  data-testid="product-card-description"
+                >
                   {product.description}
                 </p>
               )}
               <div className="flex items-center justify-between mt-2 gap-2">
-                <p className="font-semibold text-sm sm:text-base" style={{ color: "hsl(var(--store-primary, var(--primary)))" }}>
+                <p 
+                  className="font-semibold text-sm sm:text-base" 
+                  style={{ color: "hsl(var(--store-primary, var(--primary)))" }}
+                  data-testid="product-card-price"
+                >
                   {formatPrice(product.price)}
                 </p>
                 <Button 
@@ -54,6 +71,8 @@ export function ProductCard({ product }: ProductCardProps) {
                   className="text-xs sm:text-sm h-8 sm:h-9" 
                   style={{ backgroundColor: "hsl(var(--store-primary, var(--primary)))" }}
                   onClick={(e) => { e.stopPropagation(); setModalOpen(true); }}
+                  data-testid="product-card-add-button"
+                  aria-label={`Adicionar ${product.name} ao carrinho`}
                 >
                   <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                   Adicionar

@@ -37,6 +37,9 @@ export function CartBar({ isStoreOpen = true, allowScheduling = false }: CartBar
           ? "translate-y-full opacity-0 pointer-events-none" 
           : "translate-y-0 opacity-100"
       }`}
+      data-testid="cart-bar"
+      role="region"
+      aria-label="Barra do carrinho"
     >
       <div className="max-w-4xl mx-auto">
         <Button 
@@ -46,22 +49,26 @@ export function CartBar({ isStoreOpen = true, allowScheduling = false }: CartBar
           style={{ 
             backgroundColor: `hsl(var(--store-primary, var(--primary)))`,
           }}
+          data-testid="cart-bar-checkout-button"
+          aria-label={`${getButtonText()} - ${totalItems} itens - ${formatPrice(totalPrice)}`}
         >
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2">
               {!isStoreOpen && !allowScheduling ? (
                 <>
                   <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span className="text-xs sm:text-base">Fechado</span>
+                  <span className="text-xs sm:text-base" data-testid="cart-bar-status">Fechado</span>
                 </>
               ) : (
                 <>
                   <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span className="text-xs sm:text-base">{totalItems} {totalItems === 1 ? 'item' : 'itens'}</span>
+                  <span className="text-xs sm:text-base" data-testid="cart-bar-items-count">
+                    {totalItems} {totalItems === 1 ? 'item' : 'itens'}
+                  </span>
                 </>
               )}
             </div>
-            <span className="text-xs sm:text-base">
+            <span className="text-xs sm:text-base" data-testid="cart-bar-total">
               {isStoreOpen || allowScheduling ? (
                 <>
                   <span className="hidden sm:inline">{getButtonText()} • </span>

@@ -63,7 +63,10 @@ export function ScheduleSelector({ openingHours, onScheduleSelect, selectedDate 
 
   if (availableDays.length === 0) {
     return (
-      <Card className="border-muted">
+      <Card 
+        className="border-muted"
+        data-testid="schedule-selector-empty"
+      >
         <CardContent className="pt-6 text-center">
           <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
           <p className="text-muted-foreground">
@@ -75,7 +78,12 @@ export function ScheduleSelector({ openingHours, onScheduleSelect, selectedDate 
   }
 
   return (
-    <Card className="border-primary/20">
+    <Card 
+      className="border-primary/20"
+      data-testid="schedule-selector"
+      role="region"
+      aria-label="Seletor de agendamento"
+    >
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <Calendar className="h-5 w-5 text-primary" />
@@ -85,16 +93,29 @@ export function ScheduleSelector({ openingHours, onScheduleSelect, selectedDate 
       <CardContent className="space-y-4">
         {/* Day Selection */}
         <div className="space-y-2">
-          <label className="text-sm font-medium">Escolha o dia</label>
+          <label 
+            className="text-sm font-medium"
+            id="schedule-day-label"
+          >
+            Escolha o dia
+          </label>
           <ScrollArea className="w-full">
-            <div className="flex gap-2 pb-2">
-              {availableDays.map((day) => (
+            <div 
+              className="flex gap-2 pb-2"
+              role="listbox"
+              aria-labelledby="schedule-day-label"
+              data-testid="schedule-selector-days"
+            >
+              {availableDays.map((day, index) => (
                 <Button
                   key={day.date.toISOString()}
                   variant={selectedDay?.date.toISOString() === day.date.toISOString() ? "default" : "outline"}
                   size="sm"
                   className="flex-shrink-0 flex-col h-auto py-2 px-3"
                   onClick={() => handleDaySelect(day)}
+                  data-testid={`schedule-day-${index}`}
+                  role="option"
+                  aria-selected={selectedDay?.date.toISOString() === day.date.toISOString()}
                 >
                   <span className="text-xs font-normal">{day.label}</span>
                   {day.label !== "Hoje" && day.label !== "Amanhã" && (
@@ -109,26 +130,40 @@ export function ScheduleSelector({ openingHours, onScheduleSelect, selectedDate 
         {/* Time Selection */}
         {selectedDay && (
           <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-2">
+            <label 
+              className="text-sm font-medium flex items-center gap-2"
+              id="schedule-time-label"
+            >
               <Clock className="h-4 w-4" />
               Escolha o horário
             </label>
             {availableSlots.length > 0 ? (
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                {availableSlots.map((slot) => (
+              <div 
+                className="grid grid-cols-4 sm:grid-cols-6 gap-2"
+                role="listbox"
+                aria-labelledby="schedule-time-label"
+                data-testid="schedule-selector-times"
+              >
+                {availableSlots.map((slot, index) => (
                   <Button
                     key={slot.time}
                     variant={selectedTime === slot.time ? "default" : "outline"}
                     size="sm"
                     className="text-sm"
                     onClick={() => handleTimeSelect(slot.time)}
+                    data-testid={`schedule-time-${index}`}
+                    role="option"
+                    aria-selected={selectedTime === slot.time}
                   >
                     {slot.label}
                   </Button>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">
+              <p 
+                className="text-sm text-muted-foreground text-center py-4"
+                data-testid="schedule-selector-no-slots"
+              >
                 Não há mais horários disponíveis para este dia.
               </p>
             )}
@@ -137,7 +172,12 @@ export function ScheduleSelector({ openingHours, onScheduleSelect, selectedDate 
 
         {/* Selected Schedule Display */}
         {selectedDate && (
-          <div className="flex items-center justify-center gap-2 p-3 bg-primary/10 rounded-lg">
+          <div 
+            className="flex items-center justify-center gap-2 p-3 bg-primary/10 rounded-lg"
+            data-testid="schedule-selector-confirmation"
+            role="status"
+            aria-live="polite"
+          >
             <Calendar className="h-4 w-4 text-primary" />
             <span className="font-medium">
               Agendado para {formatInSaoPaulo(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })} às {formatInSaoPaulo(selectedDate, "HH:mm", { locale: ptBR })}
