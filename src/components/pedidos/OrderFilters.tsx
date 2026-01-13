@@ -55,7 +55,12 @@ export function OrderFilters({ filters, onChange }: OrderFiltersProps) {
   };
 
   return (
-    <div className="flex flex-wrap gap-3 items-center">
+    <div 
+      className="flex flex-wrap gap-3 items-center"
+      data-testid="order-filters"
+      role="search"
+      aria-label="Filtros de pedidos"
+    >
       <div className="relative flex-1 min-w-[200px]">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
@@ -63,6 +68,8 @@ export function OrderFilters({ filters, onChange }: OrderFiltersProps) {
           value={filters.search}
           onChange={(e) => onChange({ ...filters, search: e.target.value })}
           className="pl-9"
+          data-testid="order-filters-search-input"
+          aria-label="Buscar por nome ou telefone"
         />
       </div>
 
@@ -70,13 +77,21 @@ export function OrderFilters({ filters, onChange }: OrderFiltersProps) {
         value={filters.status}
         onValueChange={(value) => onChange({ ...filters, status: value as OrderStatus | "all" })}
       >
-        <SelectTrigger className="w-[180px]">
+        <SelectTrigger 
+          className="w-[180px]"
+          data-testid="order-filters-status-select"
+          aria-label="Filtrar por status"
+        >
           <Filter className="h-4 w-4 mr-2" />
           <SelectValue placeholder="Status" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent data-testid="order-filters-status-options">
           {statusOptions.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
+            <SelectItem 
+              key={option.value} 
+              value={option.value}
+              data-testid={`order-filters-status-option-${option.value}`}
+            >
               {option.label}
             </SelectItem>
           ))}
@@ -87,12 +102,20 @@ export function OrderFilters({ filters, onChange }: OrderFiltersProps) {
         value={filters.dateRange}
         onValueChange={(value) => onChange({ ...filters, dateRange: value as typeof filters.dateRange })}
       >
-        <SelectTrigger className="w-[150px]">
+        <SelectTrigger 
+          className="w-[150px]"
+          data-testid="order-filters-date-select"
+          aria-label="Filtrar por data"
+        >
           <SelectValue placeholder="Data" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent data-testid="order-filters-date-options">
           {dateOptions.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
+            <SelectItem 
+              key={option.value} 
+              value={option.value}
+              data-testid={`order-filters-date-option-${option.value}`}
+            >
               {option.label}
             </SelectItem>
           ))}
@@ -104,6 +127,9 @@ export function OrderFilters({ filters, onChange }: OrderFiltersProps) {
         size="sm"
         onClick={() => onChange({ ...filters, showScheduledOnly: !filters.showScheduledOnly })}
         className={filters.showScheduledOnly ? "bg-purple-600 hover:bg-purple-700" : ""}
+        data-testid="order-filters-scheduled-toggle"
+        aria-label={filters.showScheduledOnly ? "Mostrando apenas agendados" : "Mostrar apenas agendados"}
+        aria-pressed={filters.showScheduledOnly}
       >
         <Calendar className="h-4 w-4 mr-1" />
         Agendados
@@ -113,12 +139,21 @@ export function OrderFilters({ filters, onChange }: OrderFiltersProps) {
         variant={filters.showFinished ? "outline" : "secondary"}
         size="sm"
         onClick={() => onChange({ ...filters, showFinished: !filters.showFinished })}
+        data-testid="order-filters-finished-toggle"
+        aria-label={filters.showFinished ? "Ocultar finalizados" : "Mostrar finalizados"}
+        aria-pressed={!filters.showFinished}
       >
         {filters.showFinished ? "Ocultar finalizados" : "Mostrar finalizados"}
       </Button>
 
       {hasActiveFilters && (
-        <Button variant="ghost" size="sm" onClick={clearFilters}>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={clearFilters}
+          data-testid="order-filters-clear-button"
+          aria-label="Limpar filtros"
+        >
           <X className="h-4 w-4 mr-1" />
           Limpar
         </Button>

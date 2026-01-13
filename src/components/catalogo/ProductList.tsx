@@ -78,6 +78,9 @@ function SortableProductCard({
         !product.active && "opacity-60",
         isDragging && "opacity-50 shadow-lg z-50"
       )}
+      data-testid={`product-card-${product.id}`}
+      role="article"
+      aria-label={`Produto ${product.name}`}
     >
       <CardContent className="p-0">
         <div className="absolute top-2 left-2 z-10">
@@ -85,6 +88,8 @@ function SortableProductCard({
             {...attributes}
             {...listeners}
             className="cursor-grab active:cursor-grabbing touch-none bg-background/80 rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            data-testid={`product-card-${product.id}-drag-handle`}
+            aria-label="Arrastar para reordenar"
           >
             <GripVertical className="h-4 w-4 text-muted-foreground" />
           </button>
@@ -96,15 +101,21 @@ function SortableProductCard({
               src={product.image_url}
               alt={product.name}
               className="w-full h-full object-cover"
+              data-testid={`product-card-${product.id}-image`}
             />
             {!product.active && (
               <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
-                <Badge variant="secondary">Inativo</Badge>
+                <Badge variant="secondary" data-testid={`product-card-${product.id}-inactive-badge`}>
+                  Inativo
+                </Badge>
               </div>
             )}
           </div>
         ) : (
-          <div className="aspect-video bg-muted flex items-center justify-center">
+          <div 
+            className="aspect-video bg-muted flex items-center justify-center"
+            data-testid={`product-card-${product.id}-placeholder`}
+          >
             <Package className="h-8 w-8 text-muted-foreground" />
           </div>
         )}
@@ -112,16 +123,25 @@ function SortableProductCard({
         <div className="p-4">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-foreground truncate">
+              <h3 
+                className="font-medium text-foreground truncate"
+                data-testid={`product-card-${product.id}-name`}
+              >
                 {product.name}
               </h3>
               {product.description && (
-                <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                <p 
+                  className="text-sm text-muted-foreground line-clamp-2 mt-1"
+                  data-testid={`product-card-${product.id}-description`}
+                >
                   {product.description}
                 </p>
               )}
             </div>
-            <span className="text-lg font-semibold text-primary whitespace-nowrap">
+            <span 
+              className="text-lg font-semibold text-primary whitespace-nowrap"
+              data-testid={`product-card-${product.id}-price`}
+            >
               {formatPrice(product.price)}
             </span>
           </div>
@@ -132,6 +152,8 @@ function SortableProductCard({
               size="sm"
               className="flex-1"
               onClick={() => onToggleActive(product)}
+              data-testid={`product-card-${product.id}-toggle-active-button`}
+              aria-label={product.active ? "Ocultar produto" : "Mostrar produto"}
             >
               {product.active ? (
                 <>
@@ -150,6 +172,8 @@ function SortableProductCard({
               size="sm"
               className="flex-1"
               onClick={() => onEdit(product)}
+              data-testid={`product-card-${product.id}-edit-button`}
+              aria-label="Editar produto"
             >
               <Edit2 className="h-4 w-4 mr-1" />
               Editar
@@ -159,6 +183,8 @@ function SortableProductCard({
               size="icon"
               className="text-destructive hover:text-destructive"
               onClick={() => onDelete(product.id)}
+              data-testid={`product-card-${product.id}-delete-button`}
+              aria-label="Excluir produto"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -227,7 +253,12 @@ export function ProductList({
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div 
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+        data-testid="product-list-loading"
+        aria-busy="true"
+        aria-label="Carregando produtos"
+      >
         {[1, 2, 3].map((i) => (
           <Card key={i} className="animate-pulse">
             <CardContent className="p-4">
@@ -243,7 +274,12 @@ export function ProductList({
 
   if (products.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div 
+        className="flex flex-col items-center justify-center py-12 text-center"
+        data-testid="product-list-empty"
+        role="status"
+        aria-label="Nenhum produto cadastrado"
+      >
         <Package className="h-12 w-12 text-muted-foreground mb-4" />
         <h3 className="text-lg font-medium text-foreground mb-1">
           Nenhum produto cadastrado
@@ -266,7 +302,12 @@ export function ProductList({
           items={products.map((p) => p.id)}
           strategy={rectSortingStrategy}
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            data-testid="product-list"
+            role="list"
+            aria-label="Lista de produtos"
+          >
             {products.map((product) => (
               <SortableProductCard
                 key={product.id}
@@ -282,19 +323,24 @@ export function ProductList({
       </DndContext>
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent data-testid="product-delete-dialog">
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir produto?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle data-testid="product-delete-dialog-title">
+              Excluir produto?
+            </AlertDialogTitle>
+            <AlertDialogDescription data-testid="product-delete-dialog-description">
               O produto "{productToDelete?.name}" será excluído permanentemente.
               Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel data-testid="product-delete-dialog-cancel">
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="product-delete-dialog-confirm"
             >
               Excluir
             </AlertDialogAction>

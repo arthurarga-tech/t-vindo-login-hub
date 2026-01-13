@@ -37,14 +37,24 @@ export function OrderList({ orders, onOrderClick, onPrint, onQuickConfirmPrint }
 
   if (orders.length === 0) {
     return (
-      <div className="text-center py-12">
+      <div 
+        className="text-center py-12"
+        data-testid="order-list-empty"
+        role="status"
+        aria-label="Nenhum pedido encontrado"
+      >
         <p className="text-muted-foreground">Nenhum pedido encontrado</p>
       </div>
     );
   }
 
   return (
-    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div 
+      className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      data-testid="order-list"
+      role="list"
+      aria-label="Lista de pedidos"
+    >
       {orders.map((order) => (
         <OrderCard 
           key={order.id} 

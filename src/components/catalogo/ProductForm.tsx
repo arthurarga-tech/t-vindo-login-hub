@@ -98,12 +98,19 @@ export function ProductForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent 
+        className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto"
+        data-testid="product-form-modal"
+        aria-labelledby="product-form-title"
+      >
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle 
+            id="product-form-title"
+            data-testid="product-form-title"
+          >
             {product ? "Editar Produto" : "Novo Produto"}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription data-testid="product-form-description">
             {product
               ? "Atualize as informações do produto."
               : "Preencha os dados para criar um novo produto."}
@@ -111,7 +118,11 @@ export function ProductForm({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form 
+            onSubmit={form.handleSubmit(handleSubmit)} 
+            className="space-y-4"
+            data-testid="product-form"
+          >
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -120,7 +131,12 @@ export function ProductForm({
                   <FormItem className="col-span-2">
                     <FormLabel>Nome</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: Pizza Margherita" {...field} />
+                      <Input 
+                        placeholder="Ex: Pizza Margherita" 
+                        {...field}
+                        data-testid="product-form-name-input"
+                        aria-label="Nome do produto"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -140,6 +156,8 @@ export function ProductForm({
                         min="0"
                         placeholder="0,00"
                         {...field}
+                        data-testid="product-form-price-input"
+                        aria-label="Preço do produto"
                       />
                     </FormControl>
                     <FormMessage />
@@ -158,13 +176,17 @@ export function ProductForm({
                       defaultValue={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger data-testid="product-form-category-select">
                           <SelectValue placeholder="Selecione..." />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent data-testid="product-form-category-options">
                         {categories.map((category) => (
-                          <SelectItem key={category.id} value={category.id}>
+                          <SelectItem 
+                            key={category.id} 
+                            value={category.id}
+                            data-testid={`product-form-category-option-${category.id}`}
+                          >
                             {category.name}
                           </SelectItem>
                         ))}
@@ -187,6 +209,8 @@ export function ProductForm({
                       placeholder="Descreva o produto..."
                       className="resize-none"
                       {...field}
+                      data-testid="product-form-description-input"
+                      aria-label="Descrição do produto"
                     />
                   </FormControl>
                   <FormMessage />
@@ -205,6 +229,7 @@ export function ProductForm({
                       value={field.value}
                       onChange={field.onChange}
                       folder="products"
+                      data-testid="product-form-image-upload"
                     />
                   </FormControl>
                   <FormMessage />
@@ -216,7 +241,10 @@ export function ProductForm({
               control={form.control}
               name="active"
               render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                <FormItem 
+                  className="flex items-center justify-between rounded-lg border p-3"
+                  data-testid="product-form-active-field"
+                >
                   <div className="space-y-0.5">
                     <FormLabel>Ativo</FormLabel>
                     <p className="text-sm text-muted-foreground">
@@ -227,6 +255,8 @@ export function ProductForm({
                     <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
+                      data-testid="product-form-active-switch"
+                      aria-label="Produto ativo"
                     />
                   </FormControl>
                 </FormItem>
@@ -238,10 +268,15 @@ export function ProductForm({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                data-testid="product-form-cancel-button"
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button 
+                type="submit" 
+                disabled={isLoading}
+                data-testid="product-form-submit-button"
+              >
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {product ? "Salvar" : "Criar"}
               </Button>
