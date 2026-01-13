@@ -104,12 +104,25 @@ export function ExpenseFormModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent 
+        className="sm:max-w-[425px]"
+        data-testid="expense-form-modal"
+        aria-labelledby="expense-form-title"
+      >
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Editar Lançamento" : "Nova Despesa"}</DialogTitle>
+          <DialogTitle 
+            id="expense-form-title"
+            data-testid="expense-form-title"
+          >
+            {isEditing ? "Editar Lançamento" : "Nova Despesa"}
+          </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form 
+          onSubmit={handleSubmit} 
+          className="space-y-4"
+          data-testid="expense-form"
+        >
           <div className="space-y-2">
             <Label htmlFor="date">Data</Label>
             <Popover>
@@ -117,18 +130,25 @@ export function ExpenseFormModal({
                 <Button
                   variant="outline"
                   className={cn("w-full justify-start text-left font-normal")}
+                  data-testid="expense-form-date-trigger"
+                  aria-label="Selecionar data"
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {format(date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent 
+                className="w-auto p-0" 
+                align="start"
+                data-testid="expense-form-date-content"
+              >
                 <Calendar
                   mode="single"
                   selected={date}
                   onSelect={(d) => d && setDate(d)}
                   locale={ptBR}
                   className="pointer-events-auto"
+                  data-testid="expense-form-calendar"
                 />
               </PopoverContent>
             </Popover>
@@ -143,18 +163,24 @@ export function ExpenseFormModal({
                 size="sm"
                 className="h-auto p-0 text-xs text-muted-foreground"
                 onClick={onManageCategories}
+                data-testid="expense-form-manage-categories-button"
+                aria-label="Gerenciar categorias"
               >
                 <Settings className="h-3 w-3 mr-1" />
                 Gerenciar
               </Button>
             </div>
             <Select value={categoryId} onValueChange={setCategoryId}>
-              <SelectTrigger>
+              <SelectTrigger data-testid="expense-form-category-trigger">
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent data-testid="expense-form-category-content">
                 {expenseCategories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
+                  <SelectItem 
+                    key={cat.id} 
+                    value={cat.id}
+                    data-testid={`expense-form-category-${cat.id}`}
+                  >
                     {cat.name}
                   </SelectItem>
                 ))}
@@ -170,6 +196,8 @@ export function ExpenseFormModal({
               placeholder="0,00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
+              data-testid="expense-form-amount-input"
+              aria-label="Valor da despesa"
             />
           </div>
 
@@ -180,14 +208,25 @@ export function ExpenseFormModal({
               placeholder="Ex: Compra de botijão de gás"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              data-testid="expense-form-description-input"
+              aria-label="Descrição da despesa"
             />
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              data-testid="expense-form-cancel-button"
+            >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isPending}>
+            <Button 
+              type="submit" 
+              disabled={isPending}
+              data-testid="expense-form-submit-button"
+            >
               {isPending ? "Salvando..." : isEditing ? "Atualizar" : "Salvar"}
             </Button>
           </div>

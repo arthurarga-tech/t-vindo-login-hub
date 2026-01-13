@@ -38,7 +38,12 @@ export default function StorePage() {
 
   if (loadingEstablishment) {
     return (
-      <div className="min-h-screen bg-background">
+      <div 
+        className="min-h-screen bg-background"
+        data-testid="store-page-loading"
+        aria-busy="true"
+        aria-label="Carregando loja"
+      >
         <div className="max-w-4xl mx-auto px-4 py-8">
           <Skeleton className="h-16 w-64 mx-auto mb-8" />
           <div className="space-y-8">
@@ -60,11 +65,17 @@ export default function StorePage() {
 
   if (!establishment) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div 
+        className="min-h-screen bg-background flex items-center justify-center"
+        data-testid="store-page-not-found"
+        role="alert"
+      >
         <div className="text-center space-y-4">
           <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto" />
-          <h1 className="text-2xl font-bold text-foreground">Loja não encontrada</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold text-foreground" data-testid="store-page-not-found-title">
+            Loja não encontrada
+          </h1>
+          <p className="text-muted-foreground" data-testid="store-page-not-found-message">
             Verifique o endereço e tente novamente.
           </p>
         </div>
@@ -79,7 +90,11 @@ export default function StorePage() {
 
   return (
     <CartProvider establishmentSlug={slug || ""}>
-      <div className="min-h-screen bg-background" style={customStyles}>
+      <div 
+        className="min-h-screen bg-background" 
+        style={customStyles}
+        data-testid="store-page"
+      >
         <StoreHeader 
           establishmentName={establishment.name}
           logoUrl={(establishment as any).logo_url}
@@ -91,9 +106,18 @@ export default function StorePage() {
           allowScheduling={(establishment as any).allow_scheduling}
         />
         
-        <main className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-24">
+        <main 
+          className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-24"
+          data-testid="store-page-main"
+          role="main"
+        >
           {!isOpen && (
-            <Alert variant="destructive" className="mb-4 sm:mb-6">
+            <Alert 
+              variant="destructive" 
+              className="mb-4 sm:mb-6"
+              data-testid="store-page-closed-alert"
+              role="alert"
+            >
               <Clock className="h-4 w-4" />
               <AlertTitle className="text-sm sm:text-base">Estabelecimento Fechado</AlertTitle>
               <AlertDescription className="text-xs sm:text-sm">
@@ -115,7 +139,11 @@ export default function StorePage() {
             estimatedTime={preparationTime}
           />
           {isLoading ? (
-            <div className="space-y-6 sm:space-y-8">
+            <div 
+              className="space-y-6 sm:space-y-8"
+              data-testid="store-page-products-loading"
+              aria-busy="true"
+            >
               {[1, 2].map((i) => (
                 <div key={i}>
                   <Skeleton className="h-6 sm:h-8 w-36 sm:w-48 mb-3 sm:mb-4" />
@@ -128,7 +156,12 @@ export default function StorePage() {
               ))}
             </div>
           ) : (
-            <div className="space-y-6 sm:space-y-8">
+            <div 
+              className="space-y-6 sm:space-y-8"
+              data-testid="store-page-categories"
+              role="region"
+              aria-label="Categorias e produtos"
+            >
               {categories?.map((category) => {
                 const categoryProducts = productsByCategory?.[category.id] || [];
                 if (categoryProducts.length === 0) return null;
@@ -144,7 +177,11 @@ export default function StorePage() {
 
 
               {(!products || products.length === 0) && (
-                <div className="text-center py-12">
+                <div 
+                  className="text-center py-12"
+                  data-testid="store-page-no-products"
+                  role="status"
+                >
                   <p className="text-muted-foreground">
                     Nenhum produto disponível no momento.
                   </p>
