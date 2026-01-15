@@ -78,42 +78,71 @@ export function AddonList({ addonGroupId }: AddonListProps) {
   };
 
   if (isLoading) {
-    return <div className="text-sm text-muted-foreground">Carregando...</div>;
+    return (
+      <div 
+        className="text-sm text-muted-foreground"
+        data-testid="addon-list-loading"
+        role="status"
+        aria-label="Carregando adicionais"
+      >
+        Carregando...
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" data-testid="addon-list">
       <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">
+        <span className="text-xs text-muted-foreground" data-testid="addon-list-count">
           {addons.length} {addons.length === 1 ? "adicional" : "adicionais"}
         </span>
-        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={handleCreate}>
-          <Plus className="h-3 w-3 mr-1" />
+        <Button 
+          size="sm" 
+          variant="ghost" 
+          className="h-7 text-xs" 
+          onClick={handleCreate}
+          data-testid="addon-create-button"
+          aria-label="Adicionar novo adicional"
+        >
+          <Plus className="h-3 w-3 mr-1" aria-hidden="true" />
           Adicionar
         </Button>
       </div>
 
       {addons.length === 0 ? (
-        <p className="text-xs text-muted-foreground text-center py-2">
+        <p 
+          className="text-xs text-muted-foreground text-center py-2"
+          data-testid="addon-list-empty"
+          role="status"
+        >
           Nenhum adicional cadastrado
         </p>
       ) : (
-        <div className="space-y-1">
+        <div className="space-y-1" role="list" aria-label="Lista de adicionais">
           {addons.map((addon) => (
             <div
               key={addon.id}
               className="flex items-center justify-between py-2 px-3 rounded-md bg-muted/50"
+              data-testid={`addon-item-${addon.id}`}
+              role="listitem"
             >
               <div className="flex items-center gap-2">
-                <span className="text-sm">{addon.name}</span>
+                <span className="text-sm" data-testid={`addon-name-${addon.id}`}>{addon.name}</span>
                 {!addon.active && (
-                  <Badge variant="outline" className="text-xs">
+                  <Badge 
+                    variant="outline" 
+                    className="text-xs"
+                    data-testid={`addon-inactive-badge-${addon.id}`}
+                  >
                     Inativo
                   </Badge>
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-primary">
+                <span 
+                  className="text-sm font-medium text-primary"
+                  data-testid={`addon-price-${addon.id}`}
+                >
                   +{formatPrice(addon.price)}
                 </span>
                 <Button
@@ -121,16 +150,20 @@ export function AddonList({ addonGroupId }: AddonListProps) {
                   variant="ghost"
                   className="h-6 w-6"
                   onClick={() => handleEdit(addon)}
+                  data-testid={`addon-edit-button-${addon.id}`}
+                  aria-label={`Editar adicional ${addon.name}`}
                 >
-                  <Pencil className="h-3 w-3" />
+                  <Pencil className="h-3 w-3" aria-hidden="true" />
                 </Button>
                 <Button
                   size="icon"
                   variant="ghost"
                   className="h-6 w-6 text-destructive"
                   onClick={() => handleDeleteClick(addon)}
+                  data-testid={`addon-delete-button-${addon.id}`}
+                  aria-label={`Excluir adicional ${addon.name}`}
                 >
-                  <Trash2 className="h-3 w-3" />
+                  <Trash2 className="h-3 w-3" aria-hidden="true" />
                 </Button>
               </div>
             </div>
@@ -147,17 +180,22 @@ export function AddonList({ addonGroupId }: AddonListProps) {
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent data-testid="addon-delete-dialog" role="alertdialog">
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir adicional?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle data-testid="addon-delete-dialog-title">Excluir adicional?</AlertDialogTitle>
+            <AlertDialogDescription data-testid="addon-delete-dialog-description">
               Esta ação irá excluir o adicional "{addonToDelete?.name}".
               Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm}>Excluir</AlertDialogAction>
+            <AlertDialogCancel data-testid="addon-delete-cancel-button">Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              data-testid="addon-delete-confirm-button"
+            >
+              Excluir
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

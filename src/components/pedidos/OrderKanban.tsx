@@ -62,7 +62,12 @@ export function OrderKanban({ orders, onOrderClick, onPrint, onQuickConfirmPrint
   };
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+    <div 
+      className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2"
+      data-testid="order-kanban"
+      role="region"
+      aria-label="Quadro Kanban de pedidos"
+    >
       {columns.map((column) => {
         const columnOrders = getOrdersByStatuses(column.statuses);
         
@@ -70,18 +75,41 @@ export function OrderKanban({ orders, onOrderClick, onPrint, onQuickConfirmPrint
           <div 
             key={column.id}
             className="bg-muted/30 rounded-lg min-h-[200px]"
+            data-testid={`kanban-column-${column.id}`}
+            role="region"
+            aria-label={`Coluna ${column.label}`}
           >
             <div className="p-1.5 border-b flex items-center justify-between">
               <div className="flex items-center gap-1">
-                <div className={`w-2 h-2 rounded-full ${column.color}`} />
-                <h3 className="font-semibold text-xs">{column.label}</h3>
+                <div 
+                  className={`w-2 h-2 rounded-full ${column.color}`} 
+                  aria-hidden="true" 
+                  data-testid={`kanban-column-indicator-${column.id}`}
+                />
+                <h3 
+                  className="font-semibold text-xs"
+                  data-testid={`kanban-column-title-${column.id}`}
+                >
+                  {column.label}
+                </h3>
               </div>
-              <Badge variant="secondary" className="text-[10px] px-1 py-0">{columnOrders.length}</Badge>
+              <Badge 
+                variant="secondary" 
+                className="text-[10px] px-1 py-0"
+                data-testid={`kanban-column-count-${column.id}`}
+                aria-label={`${columnOrders.length} pedidos`}
+              >
+                {columnOrders.length}
+              </Badge>
             </div>
             <ScrollArea className="h-[calc(100vh-280px)]">
-              <div className="p-1.5 space-y-1.5">
+              <div className="p-1.5 space-y-1.5" role="list" aria-label={`Pedidos ${column.label}`}>
                 {columnOrders.length === 0 ? (
-                  <p className="text-center text-muted-foreground text-[10px] py-4">
+                  <p 
+                    className="text-center text-muted-foreground text-[10px] py-4"
+                    data-testid={`kanban-column-empty-${column.id}`}
+                    role="status"
+                  >
                     Vazio
                   </p>
                 ) : (

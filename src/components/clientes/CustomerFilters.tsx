@@ -39,14 +39,21 @@ export function CustomerFilters({ filters, neighborhoods, onChange }: CustomerFi
   };
 
   return (
-    <div className="flex flex-wrap gap-3 items-center">
+    <div 
+      className="flex flex-wrap gap-3 items-center"
+      data-testid="customer-filters"
+      role="search"
+      aria-label="Filtros de clientes"
+    >
       <div className="relative flex-1 min-w-[200px]">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
         <Input
           placeholder="Buscar por nome ou telefone..."
           value={filters.search}
           onChange={(e) => onChange({ ...filters, search: e.target.value })}
           className="pl-9"
+          data-testid="customer-filters-search-input"
+          aria-label="Buscar clientes"
         />
       </div>
 
@@ -55,10 +62,14 @@ export function CustomerFilters({ filters, neighborhoods, onChange }: CustomerFi
           value={filters.neighborhood}
           onValueChange={(value) => onChange({ ...filters, neighborhood: value === "all" ? "" : value })}
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger 
+            className="w-[180px]"
+            data-testid="customer-filters-neighborhood-select"
+            aria-label="Filtrar por bairro"
+          >
             <SelectValue placeholder="Bairro" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent data-testid="customer-filters-neighborhood-options">
             <SelectItem value="all">Todos os bairros</SelectItem>
             {neighborhoods.map((neighborhood) => (
               <SelectItem key={neighborhood} value={neighborhood}>
@@ -73,11 +84,15 @@ export function CustomerFilters({ filters, neighborhoods, onChange }: CustomerFi
         value={filters.sortBy}
         onValueChange={(value) => onChange({ ...filters, sortBy: value as SortOption })}
       >
-        <SelectTrigger className="w-[180px]">
-          <ArrowUpDown className="h-4 w-4 mr-2" />
+        <SelectTrigger 
+          className="w-[180px]"
+          data-testid="customer-filters-sort-select"
+          aria-label="Ordenar clientes"
+        >
+          <ArrowUpDown className="h-4 w-4 mr-2" aria-hidden="true" />
           <SelectValue placeholder="Ordenar" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent data-testid="customer-filters-sort-options">
           {sortOptions.map((option) => (
             <SelectItem key={option.value} value={option.value}>
               {option.label}
@@ -87,8 +102,14 @@ export function CustomerFilters({ filters, neighborhoods, onChange }: CustomerFi
       </Select>
 
       {hasActiveFilters && (
-        <Button variant="ghost" size="sm" onClick={clearFilters}>
-          <X className="h-4 w-4 mr-1" />
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={clearFilters}
+          data-testid="customer-filters-clear-button"
+          aria-label="Limpar filtros"
+        >
+          <X className="h-4 w-4 mr-1" aria-hidden="true" />
           Limpar
         </Button>
       )}

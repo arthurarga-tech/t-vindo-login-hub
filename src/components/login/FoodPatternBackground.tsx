@@ -21,7 +21,11 @@ const FoodPatternBackground = () => {
   ];
 
   return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none">
+    <div 
+      className="fixed inset-0 overflow-hidden pointer-events-none"
+      data-testid="login-background"
+      aria-hidden="true"
+    >
       {icons.map((item, index) => (
         <div
           key={index}

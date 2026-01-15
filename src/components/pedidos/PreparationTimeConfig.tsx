@@ -82,17 +82,29 @@ export function PreparationTimeConfig({
         <Badge 
           variant="secondary" 
           className="flex items-center gap-1 cursor-pointer hover:bg-secondary/80 transition-colors"
+          data-testid="preparation-time-badge"
+          role="button"
+          aria-label="Configurar tempo de preparo"
         >
-          <Timer className="h-3 w-3" />
+          <Timer className="h-3 w-3" aria-hidden="true" />
           {badgeLabel}
-          <Settings2 className="h-3 w-3 ml-1 opacity-50" />
+          <Settings2 className="h-3 w-3 ml-1 opacity-50" aria-hidden="true" />
         </Badge>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent 
+        className="sm:max-w-md"
+        data-testid="preparation-time-modal"
+        role="dialog"
+        aria-labelledby="preparation-time-title"
+      >
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Timer className="h-5 w-5 text-primary" />
+          <DialogTitle 
+            className="flex items-center gap-2"
+            id="preparation-time-title"
+            data-testid="preparation-time-modal-title"
+          >
+            <Timer className="h-5 w-5 text-primary" aria-hidden="true" />
             Tempo de Preparo
           </DialogTitle>
         </DialogHeader>
@@ -102,9 +114,16 @@ export function PreparationTimeConfig({
             value={mode}
             onValueChange={(v) => setMode(v as "auto_daily" | "manual")}
             className="space-y-3"
+            data-testid="preparation-time-mode-selector"
+            aria-label="Modo de cálculo do tempo"
           >
             <div className="flex items-start space-x-3">
-              <RadioGroupItem value="auto_daily" id="auto_daily" className="mt-1" />
+              <RadioGroupItem 
+                value="auto_daily" 
+                id="auto_daily" 
+                className="mt-1"
+                data-testid="preparation-time-mode-auto"
+              />
               <div className="space-y-1">
                 <Label htmlFor="auto_daily" className="cursor-pointer font-medium">
                   Calculado automaticamente
@@ -114,7 +133,10 @@ export function PreparationTimeConfig({
                   {sampleSize > 0 && ` (${sampleSize} pedidos)`}
                 </p>
                 {mode === "auto_daily" && calculatedTime && (
-                  <p className="text-sm text-primary font-medium">
+                  <p 
+                    className="text-sm text-primary font-medium"
+                    data-testid="preparation-time-calculated-value"
+                  >
                     Tempo atual: ~{calculatedTime} min
                   </p>
                 )}
@@ -122,7 +144,12 @@ export function PreparationTimeConfig({
             </div>
 
             <div className="flex items-start space-x-3">
-              <RadioGroupItem value="manual" id="manual" className="mt-1" />
+              <RadioGroupItem 
+                value="manual" 
+                id="manual" 
+                className="mt-1"
+                data-testid="preparation-time-mode-manual"
+              />
               <div className="space-y-1 flex-1">
                 <Label htmlFor="manual" className="cursor-pointer font-medium">
                   Tempo fixo configurado
@@ -135,7 +162,10 @@ export function PreparationTimeConfig({
           </RadioGroup>
 
           {mode === "manual" && (
-            <div className="space-y-3 pl-6 pt-2 border-l-2 border-primary/20">
+            <div 
+              className="space-y-3 pl-6 pt-2 border-l-2 border-primary/20"
+              data-testid="preparation-time-manual-fields"
+            >
               <div className="space-y-2">
                 <Label htmlFor="prep-time" className="text-sm">
                   Tempo de preparo
@@ -149,6 +179,8 @@ export function PreparationTimeConfig({
                     value={preparationTime}
                     onChange={(e) => setPreparationTime(Number(e.target.value))}
                     className="w-20"
+                    data-testid="preparation-time-prep-input"
+                    aria-label="Tempo de preparo em minutos"
                   />
                   <span className="text-sm text-muted-foreground">minutos</span>
                 </div>
@@ -167,12 +199,17 @@ export function PreparationTimeConfig({
                     value={deliveryTime}
                     onChange={(e) => setDeliveryTime(Number(e.target.value))}
                     className="w-20"
+                    data-testid="preparation-time-delivery-input"
+                    aria-label="Tempo de entrega em minutos"
                   />
                   <span className="text-sm text-muted-foreground">minutos</span>
                 </div>
               </div>
 
-              <p className="text-sm text-muted-foreground">
+              <p 
+                className="text-sm text-muted-foreground"
+                data-testid="preparation-time-total"
+              >
                 Tempo total: <span className="font-medium text-foreground">{preparationTime + deliveryTime} min</span>
               </p>
             </div>
@@ -182,6 +219,7 @@ export function PreparationTimeConfig({
             onClick={handleSave} 
             className="w-full" 
             disabled={saving}
+            data-testid="preparation-time-save-button"
           >
             {saving ? "Salvando..." : "Salvar Configuração"}
           </Button>

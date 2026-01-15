@@ -91,14 +91,26 @@ export function AddonGroupForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent 
+        className="sm:max-w-[425px]"
+        data-testid="addon-group-form-modal"
+        role="dialog"
+        aria-labelledby="addon-group-form-title"
+      >
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle 
+            id="addon-group-form-title"
+            data-testid="addon-group-form-title"
+          >
             {group ? "Editar Grupo de Adicionais" : "Novo Grupo de Adicionais"}
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form 
+            onSubmit={form.handleSubmit(handleSubmit)} 
+            className="space-y-4"
+            data-testid="addon-group-form"
+          >
             <FormField
               control={form.control}
               name="name"
@@ -106,7 +118,11 @@ export function AddonGroupForm({
                 <FormItem>
                   <FormLabel>Nome do Grupo</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Adicionais, Extras, Molhos" {...field} />
+                    <Input 
+                      placeholder="Ex: Adicionais, Extras, Molhos" 
+                      {...field} 
+                      data-testid="addon-group-form-name-input"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -121,7 +137,12 @@ export function AddonGroupForm({
                   <FormItem>
                     <FormLabel>Mínimo</FormLabel>
                     <FormControl>
-                      <Input type="number" min={0} {...field} />
+                      <Input 
+                        type="number" 
+                        min={0} 
+                        {...field} 
+                        data-testid="addon-group-form-min-input"
+                      />
                     </FormControl>
                     <FormDescription className="text-xs">
                       Seleções mínimas
@@ -138,7 +159,12 @@ export function AddonGroupForm({
                   <FormItem>
                     <FormLabel>Máximo</FormLabel>
                     <FormControl>
-                      <Input type="number" min={1} {...field} />
+                      <Input 
+                        type="number" 
+                        min={1} 
+                        {...field} 
+                        data-testid="addon-group-form-max-input"
+                      />
                     </FormControl>
                     <FormDescription className="text-xs">
                       Seleções máximas
@@ -161,7 +187,12 @@ export function AddonGroupForm({
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    <Switch 
+                      checked={field.value} 
+                      onCheckedChange={field.onChange} 
+                      data-testid="addon-group-form-required-switch"
+                      aria-label="Grupo obrigatório"
+                    />
                   </FormControl>
                 </FormItem>
               )}
@@ -179,18 +210,32 @@ export function AddonGroupForm({
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    <Switch 
+                      checked={field.value} 
+                      onCheckedChange={field.onChange} 
+                      data-testid="addon-group-form-active-switch"
+                      aria-label="Grupo ativo"
+                    />
                   </FormControl>
                 </FormItem>
               )}
             />
 
             <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => onOpenChange(false)}
+                data-testid="addon-group-form-cancel-button"
+              >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button 
+                type="submit" 
+                disabled={isLoading}
+                data-testid="addon-group-form-submit-button"
+              >
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
                 {group ? "Salvar" : "Criar"}
               </Button>
             </div>
