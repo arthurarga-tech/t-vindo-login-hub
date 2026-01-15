@@ -5,7 +5,12 @@ import LoginFooter from "@/components/login/LoginFooter";
 
 const Index = () => {
   return (
-    <div className="h-screen flex flex-col bg-background relative overflow-hidden">
+    <div 
+      className="h-screen flex flex-col bg-background relative overflow-hidden"
+      data-testid="login-page"
+      role="main"
+      aria-label="Página de login"
+    >
       <FoodPatternBackground />
       
       <main className="flex-1 flex flex-col md:flex-row items-center justify-center px-6 md:px-12 lg:px-24 py-4 relative z-10 gap-8 md:gap-16 lg:gap-24">
@@ -15,6 +20,7 @@ const Index = () => {
             src={tavindoLogo}
             alt="TáVindo - Sistema de Delivery"
             className="h-28 md:h-40 lg:h-48 w-auto object-contain"
+            data-testid="login-logo"
           />
         </div>
 

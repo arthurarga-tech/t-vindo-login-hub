@@ -77,12 +77,20 @@ export function CategoryForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent 
+        className="sm:max-w-[425px]"
+        data-testid="category-form-modal"
+        role="dialog"
+        aria-labelledby="category-form-title"
+      >
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle 
+            id="category-form-title"
+            data-testid="category-form-title"
+          >
             {category ? "Editar Categoria" : "Nova Categoria"}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription data-testid="category-form-description">
             {category
               ? "Atualize as informações da categoria."
               : "Preencha os dados para criar uma nova categoria."}
@@ -90,7 +98,11 @@ export function CategoryForm({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form 
+            onSubmit={form.handleSubmit(handleSubmit)} 
+            className="space-y-4"
+            data-testid="category-form"
+          >
             <FormField
               control={form.control}
               name="name"
@@ -98,7 +110,11 @@ export function CategoryForm({
                 <FormItem>
                   <FormLabel>Nome</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Pizzas, Lanches, Bebidas" {...field} />
+                    <Input 
+                      placeholder="Ex: Pizzas, Lanches, Bebidas" 
+                      {...field} 
+                      data-testid="category-form-name-input"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -116,6 +132,7 @@ export function CategoryForm({
                       placeholder="Descreva a categoria..."
                       className="resize-none"
                       {...field}
+                      data-testid="category-form-description-input"
                     />
                   </FormControl>
                   <FormMessage />
@@ -156,6 +173,8 @@ export function CategoryForm({
                     <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
+                      data-testid="category-form-active-switch"
+                      aria-label="Categoria ativa"
                     />
                   </FormControl>
                 </FormItem>
@@ -167,11 +186,16 @@ export function CategoryForm({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                data-testid="category-form-cancel-button"
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button 
+                type="submit" 
+                disabled={isLoading}
+                data-testid="category-form-submit-button"
+              >
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
                 {category ? "Salvar" : "Criar"}
               </Button>
             </DialogFooter>

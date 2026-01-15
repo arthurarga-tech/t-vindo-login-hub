@@ -80,12 +80,26 @@ export function AddonForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[350px]">
+      <DialogContent 
+        className="sm:max-w-[350px]"
+        data-testid="addon-form-modal"
+        role="dialog"
+        aria-labelledby="addon-form-title"
+      >
         <DialogHeader>
-          <DialogTitle>{addon ? "Editar Adicional" : "Novo Adicional"}</DialogTitle>
+          <DialogTitle 
+            id="addon-form-title"
+            data-testid="addon-form-title"
+          >
+            {addon ? "Editar Adicional" : "Novo Adicional"}
+          </DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form 
+            onSubmit={form.handleSubmit(handleSubmit)} 
+            className="space-y-4"
+            data-testid="addon-form"
+          >
             <FormField
               control={form.control}
               name="name"
@@ -93,7 +107,11 @@ export function AddonForm({
                 <FormItem>
                   <FormLabel>Nome</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Bacon, Queijo Extra" {...field} />
+                    <Input 
+                      placeholder="Ex: Bacon, Queijo Extra" 
+                      {...field} 
+                      data-testid="addon-form-name-input"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -107,7 +125,13 @@ export function AddonForm({
                 <FormItem>
                   <FormLabel>Preço (R$)</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.01" min="0" {...field} />
+                    <Input 
+                      type="number" 
+                      step="0.01" 
+                      min="0" 
+                      {...field} 
+                      data-testid="addon-form-price-input"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -121,18 +145,32 @@ export function AddonForm({
                 <FormItem className="flex items-center justify-between rounded-lg border p-3">
                   <FormLabel>Ativo</FormLabel>
                   <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    <Switch 
+                      checked={field.value} 
+                      onCheckedChange={field.onChange} 
+                      data-testid="addon-form-active-switch"
+                      aria-label="Adicional ativo"
+                    />
                   </FormControl>
                 </FormItem>
               )}
             />
 
             <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => onOpenChange(false)}
+                data-testid="addon-form-cancel-button"
+              >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button 
+                type="submit" 
+                disabled={isLoading}
+                data-testid="addon-form-submit-button"
+              >
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
                 {addon ? "Salvar" : "Criar"}
               </Button>
             </div>

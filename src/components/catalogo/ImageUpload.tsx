@@ -149,22 +149,28 @@ export function ImageUpload({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" data-testid="image-upload">
       <input
         ref={inputRef}
         type="file"
         accept=".jpg,.jpeg,.png,image/jpeg,image/png"
         onChange={handleFileSelect}
         className="hidden"
+        data-testid="image-upload-input"
+        aria-label="Selecionar imagem"
       />
 
       {value ? (
         <div className="space-y-2">
-          <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-border">
+          <div 
+            className="relative w-32 h-32 rounded-lg overflow-hidden border border-border"
+            data-testid="image-upload-preview"
+          >
             <img
               src={value}
               alt="Preview"
               className="w-full h-full object-cover"
+              data-testid="image-upload-preview-image"
             />
             <Button
               type="button"
@@ -172,8 +178,10 @@ export function ImageUpload({
               size="icon"
               className="absolute top-1 right-1 h-6 w-6"
               onClick={handleRemove}
+              data-testid="image-upload-remove-button"
+              aria-label="Remover imagem"
             >
-              <X className="h-3 w-3" />
+              <X className="h-3 w-3" aria-hidden="true" />
             </Button>
           </div>
           <Button
@@ -183,13 +191,15 @@ export function ImageUpload({
             className="w-32"
             onClick={() => inputRef.current?.click()}
             disabled={isUploading}
+            data-testid="image-upload-change-button"
+            aria-label="Trocar imagem"
           >
             {isUploading ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+              <Loader2 className="h-4 w-4 animate-spin mr-1" aria-hidden="true" />
             ) : enableCrop ? (
-              <Crop className="h-4 w-4 mr-1" />
+              <Crop className="h-4 w-4 mr-1" aria-hidden="true" />
             ) : (
-              <Upload className="h-4 w-4 mr-1" />
+              <Upload className="h-4 w-4 mr-1" aria-hidden="true" />
             )}
             Trocar
           </Button>
@@ -201,12 +211,14 @@ export function ImageUpload({
           className="w-32 h-32 flex flex-col items-center justify-center gap-2"
           onClick={() => inputRef.current?.click()}
           disabled={isUploading}
+          data-testid="image-upload-add-button"
+          aria-label="Adicionar imagem"
         >
           {isUploading ? (
-            <Loader2 className="h-6 w-6 animate-spin" />
+            <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
           ) : (
             <>
-              {enableCrop ? <Crop className="h-6 w-6" /> : <Upload className="h-6 w-6" />}
+              {enableCrop ? <Crop className="h-6 w-6" aria-hidden="true" /> : <Upload className="h-6 w-6" aria-hidden="true" />}
               <span className="text-xs">Adicionar foto</span>
             </>
           )}
