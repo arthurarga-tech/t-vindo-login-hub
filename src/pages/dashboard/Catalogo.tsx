@@ -108,7 +108,7 @@ export default function Catalogo() {
 
   if (isLoadingEstablishment) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-64" data-testid="catalogo-page-loading">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -116,7 +116,7 @@ export default function Catalogo() {
 
   if (!establishment) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" data-testid="catalogo-page-no-establishment">
         <div className="flex items-center gap-3">
           <BookOpen className="h-8 w-8 text-primary" />
           <h1 className="text-2xl font-bold text-foreground">Catálogo</h1>
@@ -133,13 +133,17 @@ export default function Catalogo() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6" data-testid="catalogo-page">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Catálogo</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground" data-testid="catalogo-page-title">Catálogo</h1>
         </div>
-        <Button onClick={handleCreateCategory} className="w-full sm:w-auto">
+        <Button 
+          onClick={handleCreateCategory} 
+          className="w-full sm:w-auto"
+          data-testid="catalogo-new-category-button"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Nova Categoria
         </Button>
@@ -147,16 +151,16 @@ export default function Catalogo() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
         {/* Categories Sidebar */}
-        <Card className="lg:col-span-1">
+        <Card className="lg:col-span-1" data-testid="catalogo-categories-card">
           <CardHeader className="pb-2 sm:pb-3">
             <CardTitle className="text-base sm:text-lg">Categorias</CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
+            <CardDescription className="text-xs sm:text-sm" data-testid="catalogo-categories-count">
               {categories.length} {categories.length === 1 ? "categoria" : "categorias"}
             </CardDescription>
           </CardHeader>
           <CardContent className="px-3 sm:px-6">
             {isLoadingCategories ? (
-              <div className="flex justify-center py-8">
+              <div className="flex justify-center py-8" data-testid="catalogo-categories-loading">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : (
@@ -172,19 +176,24 @@ export default function Catalogo() {
         </Card>
 
         {/* Products Grid */}
-        <Card className="lg:col-span-3">
+        <Card className="lg:col-span-3" data-testid="catalogo-products-card">
           <CardHeader className="pb-2 sm:pb-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <CardTitle className="text-base sm:text-lg">
+                <CardTitle className="text-base sm:text-lg" data-testid="catalogo-products-title">
                   {selectedCategory ? selectedCategory.name : "Produtos"}
                 </CardTitle>
-                <CardDescription className="text-xs sm:text-sm">
+                <CardDescription className="text-xs sm:text-sm" data-testid="catalogo-products-count">
                   {products.length} {products.length === 1 ? "produto" : "produtos"}
                   {selectedCategory && !selectedCategory.active && " (categoria inativa)"}
                 </CardDescription>
               </div>
-              <Button onClick={handleCreateProduct} disabled={!selectedCategory} className="w-full sm:w-auto">
+              <Button 
+                onClick={handleCreateProduct} 
+                disabled={!selectedCategory} 
+                className="w-full sm:w-auto"
+                data-testid="catalogo-new-product-button"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Produto
               </Button>
@@ -192,16 +201,19 @@ export default function Catalogo() {
           </CardHeader>
           <CardContent className="px-3 sm:px-6">
             {!selectedCategory ? (
-              <div className="text-center py-8 sm:py-12 text-muted-foreground text-sm sm:text-base">
+              <div 
+                className="text-center py-8 sm:py-12 text-muted-foreground text-sm sm:text-base"
+                data-testid="catalogo-no-category-selected"
+              >
                 Selecione uma categoria para ver os produtos
               </div>
             ) : (
-              <Tabs defaultValue="products">
+              <Tabs defaultValue="products" data-testid="catalogo-tabs">
                 <TabsList className="mb-4">
-                  <TabsTrigger value="products">Produtos</TabsTrigger>
-                  <TabsTrigger value="addons">Adicionais</TabsTrigger>
+                  <TabsTrigger value="products" data-testid="catalogo-tab-products">Produtos</TabsTrigger>
+                  <TabsTrigger value="addons" data-testid="catalogo-tab-addons">Adicionais</TabsTrigger>
                 </TabsList>
-                <TabsContent value="products">
+                <TabsContent value="products" data-testid="catalogo-tab-products-content">
                   <ProductList
                     products={products}
                     onEdit={handleEditProduct}
@@ -209,7 +221,7 @@ export default function Catalogo() {
                     isLoading={isLoadingProducts}
                   />
                 </TabsContent>
-                <TabsContent value="addons">
+                <TabsContent value="addons" data-testid="catalogo-tab-addons-content">
                   <AddonGroupManager
                     categoryId={selectedCategory.id}
                     establishmentId={establishmentId!}

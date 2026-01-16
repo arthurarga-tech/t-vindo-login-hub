@@ -77,7 +77,7 @@ export default function Clientes() {
     if (startPage > 1) {
       items.push(
         <PaginationItem key={1}>
-          <PaginationLink onClick={() => setPage(1)}>1</PaginationLink>
+          <PaginationLink onClick={() => setPage(1)} data-testid="clientes-pagination-page-1">1</PaginationLink>
         </PaginationItem>
       );
       if (startPage > 2) {
@@ -95,6 +95,8 @@ export default function Clientes() {
           <PaginationLink
             isActive={i === pagination.page}
             onClick={() => setPage(i)}
+            data-testid={`clientes-pagination-page-${i}`}
+            aria-current={i === pagination.page ? "page" : undefined}
           >
             {i}
           </PaginationLink>
@@ -112,7 +114,7 @@ export default function Clientes() {
       }
       items.push(
         <PaginationItem key={totalPages}>
-          <PaginationLink onClick={() => setPage(totalPages)}>
+          <PaginationLink onClick={() => setPage(totalPages)} data-testid={`clientes-pagination-page-${totalPages}`}>
             {totalPages}
           </PaginationLink>
         </PaginationItem>
@@ -124,7 +126,7 @@ export default function Clientes() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" data-testid="clientes-page-loading">
         <Skeleton className="h-10 w-64" />
         <div className="grid gap-4 md:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
@@ -144,64 +146,64 @@ export default function Clientes() {
   const endItem = Math.min(pagination.page * pagination.pageSize, pagination.totalCount);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="clientes-page">
       <div className="flex items-center gap-3">
         <Users className="h-8 w-8 text-primary" />
-        <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
+        <h1 className="text-2xl font-bold text-foreground" data-testid="clientes-page-title">Clientes</h1>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-4" data-testid="clientes-stats">
+        <Card data-testid="clientes-stat-total">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-primary/10 rounded-full">
                 <Users className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{displayStats.total}</p>
+                <p className="text-2xl font-bold" data-testid="clientes-stat-total-value">{displayStats.total}</p>
                 <p className="text-sm text-muted-foreground">Total de Clientes</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card data-testid="clientes-stat-with-orders">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-green-500/10 rounded-full">
                 <UserCheck className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{displayStats.withOrders}</p>
+                <p className="text-2xl font-bold" data-testid="clientes-stat-with-orders-value">{displayStats.withOrders}</p>
                 <p className="text-sm text-muted-foreground">Com Pedidos</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card data-testid="clientes-stat-revenue">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-blue-500/10 rounded-full">
                 <TrendingUp className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{formatPrice(displayStats.totalRevenue)}</p>
+                <p className="text-2xl font-bold" data-testid="clientes-stat-revenue-value">{formatPrice(displayStats.totalRevenue)}</p>
                 <p className="text-sm text-muted-foreground">Receita Total</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card data-testid="clientes-stat-ticket">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-amber-500/10 rounded-full">
                 <ShoppingBag className="h-6 w-6 text-amber-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{formatPrice(displayStats.avgTicket)}</p>
+                <p className="text-2xl font-bold" data-testid="clientes-stat-ticket-value">{formatPrice(displayStats.avgTicket)}</p>
                 <p className="text-sm text-muted-foreground">Ticket Médio</p>
               </div>
             </div>
@@ -227,9 +229,12 @@ export default function Clientes() {
 
       {/* Pagination */}
       {pagination.totalCount > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div 
+          className="flex flex-col sm:flex-row items-center justify-between gap-4"
+          data-testid="clientes-pagination"
+        >
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span>
+            <span data-testid="clientes-pagination-info">
               Mostrando {startItem}-{endItem} de {pagination.totalCount} clientes
             </span>
             <div className="flex items-center gap-2">
@@ -238,25 +243,30 @@ export default function Clientes() {
                 value={String(pagination.pageSize)}
                 onValueChange={(value) => setPageSize(Number(value))}
               >
-                <SelectTrigger className="w-[70px] h-8">
+                <SelectTrigger 
+                  className="w-[70px] h-8"
+                  data-testid="clientes-pagination-page-size"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="25">25</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
+                  <SelectItem value="25" data-testid="clientes-pagination-page-size-25">25</SelectItem>
+                  <SelectItem value="50" data-testid="clientes-pagination-page-size-50">50</SelectItem>
+                  <SelectItem value="100" data-testid="clientes-pagination-page-size-100">100</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           {totalPages > 1 && (
-            <Pagination>
+            <Pagination data-testid="clientes-pagination-nav" aria-label="Paginação de clientes">
               <PaginationContent>
                 <PaginationItem>
                   <PaginationPrevious
                     onClick={() => hasPrevPage && setPage(pagination.page - 1)}
                     className={!hasPrevPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    data-testid="clientes-pagination-prev"
+                    aria-disabled={!hasPrevPage}
                   />
                 </PaginationItem>
                 {renderPaginationItems()}
@@ -264,6 +274,8 @@ export default function Clientes() {
                   <PaginationNext
                     onClick={() => hasNextPage && setPage(pagination.page + 1)}
                     className={!hasNextPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    data-testid="clientes-pagination-next"
+                    aria-disabled={!hasNextPage}
                   />
                 </PaginationItem>
               </PaginationContent>

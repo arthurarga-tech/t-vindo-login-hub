@@ -170,23 +170,35 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent 
+        className="max-w-lg max-h-[90vh] overflow-y-auto"
+        data-testid="order-detail-modal"
+        role="dialog"
+        aria-labelledby="order-detail-title"
+      >
         <DialogHeader>
-        <DialogTitle className="flex items-center justify-between">
+        <DialogTitle 
+          id="order-detail-title"
+          className="flex items-center justify-between"
+          data-testid="order-detail-title"
+        >
             <div className="flex items-center gap-2">
-              <span>Pedido #{order.order_number}</span>
-              <Badge variant={status.variant}>{status.label}</Badge>
-              <Badge variant="outline" className="ml-1">
+              <span data-testid="order-detail-number">Pedido #{order.order_number}</span>
+              <Badge variant={status.variant} data-testid="order-detail-status">{status.label}</Badge>
+              <Badge variant="outline" className="ml-1" data-testid="order-detail-type">
                 {typeInfo.icon} {typeInfo.label}
               </Badge>
             </div>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4" data-testid="order-detail-content">
           {/* Scheduled Order */}
           {(order as any).scheduled_for && (
-            <div className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg">
+            <div 
+              className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg"
+              data-testid="order-detail-scheduled"
+            >
               <Clock className="h-4 w-4 text-primary" />
               <div>
                 <p className="text-sm font-medium text-primary">Pedido Agendado</p>
@@ -198,7 +210,10 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
           )}
 
           {/* Time */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div 
+            className="flex items-center gap-2 text-sm text-muted-foreground"
+            data-testid="order-detail-time"
+          >
             <Clock className="h-4 w-4" />
             <span>
               {formatInSaoPaulo(order.created_at, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
@@ -208,19 +223,19 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
           <Separator />
 
           {/* Customer */}
-          <div className="space-y-2">
+          <div className="space-y-2" data-testid="order-detail-customer">
             <h4 className="font-semibold">Cliente</h4>
             <div className="space-y-1 text-sm">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" data-testid="order-detail-customer-name">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <span>{order.customer?.name}</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" data-testid="order-detail-customer-phone">
                 <Phone className="h-4 w-4 text-muted-foreground" />
                 <span>{order.customer?.phone}</span>
               </div>
               {order.customer?.address && (
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-2" data-testid="order-detail-customer-address">
                   <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div>
                     {order.customer.address === "Localização via WhatsApp" ? (
@@ -246,17 +261,17 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
           <Separator />
 
           {/* Items */}
-          <div className="space-y-2">
+          <div className="space-y-2" data-testid="order-detail-items">
             <h4 className="font-semibold">Itens</h4>
             <div className="space-y-3">
               {order.items?.map((item) => (
-                <div key={item.id} className="space-y-1">
+                <div key={item.id} className="space-y-1" data-testid={`order-detail-item-${item.id}`}>
                   <div className="flex justify-between text-sm">
-                    <span>{item.quantity}x {item.product_name}</span>
-                    <span className="font-medium">{formatPrice(item.total)}</span>
+                    <span data-testid={`order-detail-item-${item.id}-name`}>{item.quantity}x {item.product_name}</span>
+                    <span className="font-medium" data-testid={`order-detail-item-${item.id}-total`}>{formatPrice(item.total)}</span>
                   </div>
                   {item.addons && item.addons.length > 0 && (
-                    <div className="pl-4 space-y-0.5">
+                    <div className="pl-4 space-y-0.5" data-testid={`order-detail-item-${item.id}-addons`}>
                       {item.addons.map((addon) => (
                         <p key={addon.id} className="text-xs text-muted-foreground">
                           + {addon.quantity}x {addon.addon_name} ({formatPrice(addon.addon_price * addon.quantity)})
@@ -272,18 +287,18 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
           <Separator />
 
           {/* Total */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
+          <div className="space-y-2" data-testid="order-detail-totals">
+            <div className="flex justify-between text-sm" data-testid="order-detail-subtotal">
               <span>Subtotal</span>
               <span>{formatPrice(order.subtotal)}</span>
             </div>
             {order.delivery_fee > 0 && (
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-sm" data-testid="order-detail-delivery-fee">
                 <span>Taxa de Entrega</span>
                 <span>{formatPrice(order.delivery_fee)}</span>
               </div>
             )}
-            <div className="flex justify-between font-bold">
+            <div className="flex justify-between font-bold" data-testid="order-detail-total">
               <span>Total</span>
               <span className="text-primary">{formatPrice(order.total)}</span>
             </div>
@@ -292,14 +307,14 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
           <Separator />
 
           {/* Payment */}
-          <div className="space-y-1">
+          <div className="space-y-1" data-testid="order-detail-payment">
             <div className="flex items-center gap-2">
               <CreditCard className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{paymentLabels[order.payment_method] || order.payment_method}</span>
+              <span className="font-medium" data-testid="order-detail-payment-method">{paymentLabels[order.payment_method] || order.payment_method}</span>
               <span className="text-muted-foreground">• Pagamento na entrega</span>
             </div>
             {order.payment_method === "cash" && (order as any).change_for && (order as any).change_for > 0 && (
-              <div className="pl-6 text-sm space-y-0.5">
+              <div className="pl-6 text-sm space-y-0.5" data-testid="order-detail-change">
                 <p className="text-muted-foreground">
                   Troco para: <span className="font-medium text-foreground">{formatPrice((order as any).change_for)}</span>
                 </p>
@@ -314,7 +329,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
           {order.notes && (
             <>
               <Separator />
-              <div className="space-y-2">
+              <div className="space-y-2" data-testid="order-detail-notes">
                 <h4 className="font-semibold">Observações</h4>
                 <div className="flex items-start gap-2 text-sm bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg">
                   <MessageSquare className="h-4 w-4 text-amber-600 mt-0.5" />
@@ -327,11 +342,13 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
           <Separator />
 
           {/* Actions */}
-          <div className="flex gap-2">
+          <div className="flex gap-2" data-testid="order-detail-actions">
             <Button
               variant="outline"
               onClick={handlePrint}
               title="Imprimir pedido"
+              data-testid="order-detail-print-button"
+              aria-label="Imprimir pedido"
             >
               <Printer className="h-4 w-4" />
             </Button>
@@ -340,6 +357,8 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
               onClick={handleWhatsAppClick}
               title="Conversar com cliente"
               className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30"
+              data-testid="order-detail-whatsapp-button"
+              aria-label="Conversar com cliente via WhatsApp"
             >
               <WhatsAppIcon className="h-4 w-4" />
             </Button>
@@ -350,6 +369,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
                     variant="outline"
                     onClick={() => handleStatusChange(previousStatus)}
                     disabled={updateStatus.isPending}
+                    data-testid="order-detail-previous-status-button"
                   >
                     {previousStatusLabels[previousStatus]}
                   </Button>
@@ -359,6 +379,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
                     className="flex-1"
                     onClick={() => handleStatusChange(nextStatus)}
                     disabled={updateStatus.isPending}
+                    data-testid="order-detail-next-status-button"
                   >
                     {nextStatusLabels[nextStatus]}
                   </Button>
@@ -367,6 +388,8 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
                   variant="destructive" 
                   onClick={() => setShowCancelConfirm(true)}
                   disabled={updateStatus.isPending}
+                  data-testid="order-detail-cancel-button"
+                  aria-label="Cancelar pedido"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -377,21 +400,22 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
       </DialogContent>
 
       <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
-        <AlertDialogContent>
+        <AlertDialogContent data-testid="order-cancel-dialog" role="alertdialog">
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancelar pedido #{order.order_number}?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle data-testid="order-cancel-dialog-title">Cancelar pedido #{order.order_number}?</AlertDialogTitle>
+            <AlertDialogDescription data-testid="order-cancel-dialog-description">
               Esta ação não pode ser desfeita. O pedido será marcado como cancelado.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogCancel data-testid="order-cancel-dialog-back">Voltar</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
                 handleStatusChange("cancelled");
                 setShowCancelConfirm(false);
               }}
+              data-testid="order-cancel-dialog-confirm"
             >
               Cancelar Pedido
             </AlertDialogAction>

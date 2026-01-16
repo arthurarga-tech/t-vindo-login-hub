@@ -98,14 +98,17 @@ const ResetPassword = () => {
 
   if (checkingSession) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div 
+        className="min-h-screen flex items-center justify-center bg-background"
+        data-testid="reset-password-page-loading"
+      >
         <div className="text-muted-foreground">Verificando...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
+    <div className="min-h-screen flex flex-col bg-background relative overflow-hidden" data-testid="reset-password-page">
       <FoodPatternBackground />
       
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 relative z-10">
@@ -114,15 +117,25 @@ const ResetPassword = () => {
             src={tavindoLogo} 
             alt="TáVindo Logo" 
             className="h-16 md:h-20 w-auto"
+            data-testid="reset-password-logo"
           />
         </div>
         
-        <Card className="w-full max-w-md shadow-lg border-border/50 bg-card/95 backdrop-blur-sm">
+        <Card 
+          className="w-full max-w-md shadow-lg border-border/50 bg-card/95 backdrop-blur-sm"
+          data-testid="reset-password-card"
+        >
           <CardHeader className="space-y-3 text-center pt-6 pb-2">
-            <CardTitle className="text-xl md:text-2xl font-semibold text-foreground">
+            <CardTitle 
+              className="text-xl md:text-2xl font-semibold text-foreground"
+              data-testid="reset-password-title"
+            >
               {isSuccess ? "Senha Redefinida!" : "Redefinir Senha"}
             </CardTitle>
-            <CardDescription className="text-muted-foreground text-sm md:text-base">
+            <CardDescription 
+              className="text-muted-foreground text-sm md:text-base"
+              data-testid="reset-password-description"
+            >
               {isSuccess 
                 ? "Sua senha foi atualizada com sucesso."
                 : "Digite sua nova senha abaixo."}
@@ -131,18 +144,19 @@ const ResetPassword = () => {
           
           <CardContent className="space-y-6 px-6 pb-6">
             {isSuccess ? (
-              <div className="space-y-4 text-center">
+              <div className="space-y-4 text-center" data-testid="reset-password-success">
                 <CheckCircle className="h-16 w-16 text-primary mx-auto" />
                 <Button 
                   onClick={() => navigate("/")} 
                   className="w-full font-medium" 
                   size="lg"
+                  data-testid="reset-password-go-to-login-button"
                 >
                   Ir para o Login
                 </Button>
               </div>
             ) : !isValidSession ? (
-              <div className="space-y-4 text-center">
+              <div className="space-y-4 text-center" data-testid="reset-password-invalid-session">
                 <p className="text-muted-foreground">
                   O link de recuperação é inválido ou expirou.
                 </p>
@@ -150,12 +164,17 @@ const ResetPassword = () => {
                   onClick={() => navigate("/")} 
                   className="w-full font-medium" 
                   size="lg"
+                  data-testid="reset-password-back-to-login-button"
                 >
                   Voltar ao Login
                 </Button>
               </div>
             ) : (
-              <form onSubmit={handleResetPassword} className="space-y-4">
+              <form 
+                onSubmit={handleResetPassword} 
+                className="space-y-4"
+                data-testid="reset-password-form"
+              >
                 <div className="space-y-2">
                   <Label htmlFor="new-password" className="text-foreground font-medium">
                     Nova Senha
@@ -170,12 +189,14 @@ const ResetPassword = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       className="pl-10 pr-10 bg-background border-input focus:ring-2 focus:ring-primary/20"
                       required
+                      data-testid="reset-password-password-input"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                       aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                      data-testid="reset-password-toggle-password"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -196,19 +217,27 @@ const ResetPassword = () => {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className="pl-10 pr-10 bg-background border-input focus:ring-2 focus:ring-primary/20"
                       required
+                      data-testid="reset-password-confirm-input"
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                       aria-label={showConfirmPassword ? "Ocultar senha" : "Mostrar senha"}
+                      data-testid="reset-password-toggle-confirm"
                     >
                       {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full font-medium" size="lg" disabled={isLoading}>
+                <Button 
+                  type="submit" 
+                  className="w-full font-medium" 
+                  size="lg" 
+                  disabled={isLoading}
+                  data-testid="reset-password-submit-button"
+                >
                   {isLoading ? "Atualizando..." : "Atualizar Senha"}
                 </Button>
               </form>
