@@ -131,16 +131,31 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent 
+          className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+          data-testid="customer-detail-modal"
+          role="dialog"
+          aria-labelledby="customer-detail-title"
+        >
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
+            <DialogTitle 
+              id="customer-detail-title"
+              className="flex items-center justify-between"
+              data-testid="customer-detail-title"
+            >
               <div className="flex items-center gap-2">
                 <User className="h-5 w-5" />
                 {isEditing ? "Editar Cliente" : customer.name}
               </div>
               {!isEditing && (
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" onClick={startEditing}>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={startEditing}
+                    data-testid="customer-detail-edit-button"
+                    aria-label="Editar cliente"
+                  >
                     <Pencil className="h-4 w-4" />
                   </Button>
                   <Button 
@@ -148,6 +163,8 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
                     size="icon" 
                     className="text-destructive hover:text-destructive"
                     onClick={() => setShowDeleteDialog(true)}
+                    data-testid="customer-detail-delete-button"
+                    aria-label="Excluir cliente"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -156,9 +173,9 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 overflow-hidden flex flex-col space-y-4">
+          <div className="flex-1 overflow-hidden flex flex-col space-y-4" data-testid="customer-detail-content">
             {isEditing ? (
-              <div className="space-y-4">
+              <div className="space-y-4" data-testid="customer-detail-edit-form">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Nome</Label>
@@ -166,6 +183,7 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
                       id="name"
                       value={editForm.name}
                       onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                      data-testid="customer-detail-name-input"
                     />
                   </div>
                   <div className="space-y-2">
@@ -174,6 +192,7 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
                       id="phone"
                       value={editForm.phone}
                       onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                      data-testid="customer-detail-phone-input"
                     />
                   </div>
                 </div>
@@ -188,6 +207,7 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
                       id="address"
                       value={editForm.address}
                       onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                      data-testid="customer-detail-address-input"
                     />
                   </div>
                   <div className="space-y-2">
@@ -196,6 +216,7 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
                       id="address_number"
                       value={editForm.address_number}
                       onChange={(e) => setEditForm({ ...editForm, address_number: e.target.value })}
+                      data-testid="customer-detail-address-number-input"
                     />
                   </div>
                 </div>
@@ -207,6 +228,7 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
                       id="address_complement"
                       value={editForm.address_complement}
                       onChange={(e) => setEditForm({ ...editForm, address_complement: e.target.value })}
+                      data-testid="customer-detail-complement-input"
                     />
                   </div>
                   <div className="space-y-2">
@@ -215,6 +237,7 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
                       id="neighborhood"
                       value={editForm.neighborhood}
                       onChange={(e) => setEditForm({ ...editForm, neighborhood: e.target.value })}
+                      data-testid="customer-detail-neighborhood-input"
                     />
                   </div>
                   <div className="space-y-2">
@@ -223,6 +246,7 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
                       id="city"
                       value={editForm.city}
                       onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                      data-testid="customer-detail-city-input"
                     />
                   </div>
                 </div>
@@ -230,18 +254,24 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
             ) : (
               <>
                 {/* Customer Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="customer-detail-info">
                   <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm">
+                    <div className="flex items-center gap-2 text-sm" data-testid="customer-detail-phone">
                       <Phone className="h-4 w-4 text-muted-foreground" />
                       <span>{customer.phone}</span>
-                      <Button variant="ghost" size="sm" onClick={openWhatsApp}>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={openWhatsApp}
+                        data-testid="customer-detail-whatsapp-button"
+                        aria-label="Abrir WhatsApp"
+                      >
                         <MessageCircle className="h-4 w-4 text-green-600" />
                       </Button>
                     </div>
                     
                     {customer.address && (
-                      <div className="flex items-start gap-2 text-sm">
+                      <div className="flex items-start gap-2 text-sm" data-testid="customer-detail-address">
                         <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                         <div>
                           {customer.address === "Localização via WhatsApp" ? (
@@ -262,25 +292,25 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
                       </div>
                     )}
                     
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="customer-detail-since">
                       <Clock className="h-4 w-4" />
                       <span>Cliente desde {formatInSaoPaulo(customer.created_at, "dd/MM/yyyy")}</span>
                     </div>
                   </div>
 
                   {/* Stats */}
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <div className="grid grid-cols-3 gap-2" data-testid="customer-detail-stats">
+                    <div className="bg-muted/50 rounded-lg p-3 text-center" data-testid="customer-detail-stat-orders">
                       <ShoppingBag className="h-5 w-5 mx-auto mb-1 text-primary" />
                       <p className="text-2xl font-bold">{customer.total_orders}</p>
                       <p className="text-xs text-muted-foreground">Pedidos</p>
                     </div>
-                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                    <div className="bg-muted/50 rounded-lg p-3 text-center" data-testid="customer-detail-stat-spent">
                       <TrendingUp className="h-5 w-5 mx-auto mb-1 text-green-600" />
                       <p className="text-lg font-bold">{formatPrice(customer.total_spent)}</p>
                       <p className="text-xs text-muted-foreground">Total Gasto</p>
                     </div>
-                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                    <div className="bg-muted/50 rounded-lg p-3 text-center" data-testid="customer-detail-stat-ticket">
                       <ShoppingBag className="h-5 w-5 mx-auto mb-1 text-blue-600" />
                       <p className="text-lg font-bold">{formatPrice(ticketMedio)}</p>
                       <p className="text-xs text-muted-foreground">Ticket Médio</p>
@@ -291,20 +321,20 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
                 <Separator />
 
                 {/* Order History */}
-                <div className="flex-1 overflow-hidden">
-                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                <div className="flex-1 overflow-hidden" data-testid="customer-order-history">
+                  <h4 className="font-semibold mb-3 flex items-center gap-2" data-testid="customer-order-history-title">
                     <ShoppingBag className="h-4 w-4" />
                     Histórico de Pedidos
                   </h4>
 
                   {isLoading ? (
-                    <div className="space-y-3">
+                    <div className="space-y-3" data-testid="customer-order-history-loading">
                       {[1, 2, 3].map((i) => (
                         <Skeleton key={i} className="h-20 w-full" />
                       ))}
                     </div>
                   ) : orders && orders.length > 0 ? (
-                    <ScrollArea className="h-[300px] pr-4">
+                    <ScrollArea className="h-[300px] pr-4" data-testid="customer-order-history-list">
                       <div className="space-y-3">
                         {orders.map((order) => {
                           const status = statusConfig[order.status] || statusConfig.pending;
@@ -312,22 +342,23 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
                             <div 
                               key={order.id} 
                               className="border rounded-lg p-3 hover:bg-muted/30 transition-colors"
+                              data-testid={`customer-order-${order.id}`}
                             >
                               <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
-                                  <span className="font-semibold">#{order.order_number}</span>
-                                  <Badge variant={status.variant}>{status.label}</Badge>
+                                  <span className="font-semibold" data-testid={`customer-order-${order.id}-number`}>#{order.order_number}</span>
+                                  <Badge variant={status.variant} data-testid={`customer-order-${order.id}-status`}>{status.label}</Badge>
                                 </div>
-                                <span className="font-bold text-primary">{formatPrice(order.total)}</span>
+                                <span className="font-bold text-primary" data-testid={`customer-order-${order.id}-total`}>{formatPrice(order.total)}</span>
                               </div>
                               
-                              <div className="text-sm text-muted-foreground mb-2">
+                              <div className="text-sm text-muted-foreground mb-2" data-testid={`customer-order-${order.id}-date`}>
                                 {formatInSaoPaulo(order.created_at, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                                 {" • "}
                                 {paymentLabels[order.payment_method] || order.payment_method}
                               </div>
                               
-                              <div className="text-sm">
+                              <div className="text-sm" data-testid={`customer-order-${order.id}-items`}>
                                 {order.items.slice(0, 3).map((item, index) => (
                                   <span key={item.id}>
                                     {item.quantity}x {item.product_name}
@@ -344,7 +375,10 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
                       </div>
                     </ScrollArea>
                   ) : (
-                    <p className="text-center text-muted-foreground py-8">
+                    <p 
+                      className="text-center text-muted-foreground py-8"
+                      data-testid="customer-order-history-empty"
+                    >
                       Nenhum pedido encontrado
                     </p>
                   )}
@@ -354,12 +388,20 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
           </div>
 
           {isEditing && (
-            <DialogFooter className="gap-2 sm:gap-0">
-              <Button variant="outline" onClick={cancelEditing}>
+            <DialogFooter className="gap-2 sm:gap-0" data-testid="customer-detail-edit-footer">
+              <Button 
+                variant="outline" 
+                onClick={cancelEditing}
+                data-testid="customer-detail-cancel-button"
+              >
                 <X className="h-4 w-4 mr-2" />
                 Cancelar
               </Button>
-              <Button onClick={saveChanges} disabled={updateCustomer.isPending}>
+              <Button 
+                onClick={saveChanges} 
+                disabled={updateCustomer.isPending}
+                data-testid="customer-detail-save-button"
+              >
                 <Save className="h-4 w-4 mr-2" />
                 Salvar
               </Button>
@@ -369,10 +411,10 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
       </Dialog>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent data-testid="customer-delete-dialog" role="alertdialog">
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
+            <AlertDialogTitle data-testid="customer-delete-dialog-title">Excluir cliente?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2" data-testid="customer-delete-dialog-description">
               <p>
                 Tem certeza que deseja excluir <strong>{customer.name}</strong>?
               </p>
@@ -385,11 +427,12 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel data-testid="customer-delete-dialog-cancel">Cancelar</AlertDialogCancel>
             <AlertDialogAction 
               onClick={confirmDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={deleteCustomer.isPending}
+              data-testid="customer-delete-dialog-confirm"
             >
               Excluir
             </AlertDialogAction>

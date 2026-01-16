@@ -296,32 +296,32 @@ export default function Usuarios() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-64" data-testid="usuarios-page-loading">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="usuarios-page">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Usuários</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold tracking-tight" data-testid="usuarios-page-title">Usuários</h1>
+          <p className="text-muted-foreground" data-testid="usuarios-page-description">
             Gerencie os usuários do seu estabelecimento
           </p>
         </div>
 
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button data-testid="usuarios-add-button">
               <UserPlus className="h-4 w-4 mr-2" />
               Adicionar Usuário
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent data-testid="usuarios-add-dialog">
             <DialogHeader>
-              <DialogTitle>Adicionar Usuário</DialogTitle>
+              <DialogTitle data-testid="usuarios-add-dialog-title">Adicionar Usuário</DialogTitle>
               <DialogDescription>
                 Convide um novo usuário para o seu estabelecimento.
               </DialogDescription>
@@ -335,26 +335,35 @@ export default function Usuarios() {
                   placeholder="usuario@email.com"
                   value={newUserEmail}
                   onChange={(e) => setNewUserEmail(e.target.value)}
+                  data-testid="usuarios-add-email-input"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="role">Função</Label>
                 <Select value={newUserRole} onValueChange={(v) => setNewUserRole(v as EstablishmentRole)}>
-                  <SelectTrigger>
+                  <SelectTrigger data-testid="usuarios-add-role-select">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="manager">Gerente</SelectItem>
-                    <SelectItem value="employee">Funcionário</SelectItem>
+                    <SelectItem value="manager" data-testid="usuarios-add-role-manager">Gerente</SelectItem>
+                    <SelectItem value="employee" data-testid="usuarios-add-role-employee">Funcionário</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsAddDialogOpen(false)}
+                data-testid="usuarios-add-cancel-button"
+              >
                 Cancelar
               </Button>
-              <Button onClick={handleAddMember} disabled={isSubmitting || !newUserEmail.trim()}>
+              <Button 
+                onClick={handleAddMember} 
+                disabled={isSubmitting || !newUserEmail.trim()}
+                data-testid="usuarios-add-submit-button"
+              >
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 Convidar
               </Button>
@@ -363,25 +372,25 @@ export default function Usuarios() {
         </Dialog>
       </div>
 
-      <Card>
+      <Card data-testid="usuarios-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
             Equipe
           </CardTitle>
-          <CardDescription>
+          <CardDescription data-testid="usuarios-card-description">
             {establishment?.name} • {members.length} {members.length === 1 ? "membro" : "membros"}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {members.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-muted-foreground" data-testid="usuarios-empty">
               <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>Nenhum usuário encontrado.</p>
               <p className="text-sm">Adicione usuários para gerenciar sua equipe.</p>
             </div>
           ) : (
-            <Table>
+            <Table data-testid="usuarios-table">
               <TableHeader>
                 <TableRow>
                   <TableHead>Usuário</TableHead>
@@ -392,23 +401,29 @@ export default function Usuarios() {
               </TableHeader>
               <TableBody>
                 {members.map((member) => (
-                  <TableRow key={member.id}>
+                  <TableRow key={member.id} data-testid={`usuarios-row-${member.id}`}>
                     <TableCell>
                       <div>
-                        <p className="font-medium">
+                        <p className="font-medium" data-testid={`usuarios-row-${member.id}-name`}>
                           {member.profile?.establishment_name || "Usuário"}
                         </p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-muted-foreground" data-testid={`usuarios-row-${member.id}-phone`}>
                           {member.profile?.phone || "Sem telefone"}
                         </p>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={roleBadgeVariants[member.role]}>
+                      <Badge 
+                        variant={roleBadgeVariants[member.role]}
+                        data-testid={`usuarios-row-${member.id}-role`}
+                      >
                         {roleLabels[member.role]}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell 
+                      className="text-muted-foreground"
+                      data-testid={`usuarios-row-${member.id}-since`}
+                    >
                       {new Date(member.created_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                     </TableCell>
                     <TableCell className="text-right">
@@ -418,16 +433,23 @@ export default function Usuarios() {
                             variant="ghost"
                             size="icon"
                             onClick={() => openEditDialog(member)}
+                            data-testid={`usuarios-row-${member.id}-edit-button`}
+                            aria-label="Editar função"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon">
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                data-testid={`usuarios-row-${member.id}-delete-button`}
+                                aria-label="Remover usuário"
+                              >
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
+                            <AlertDialogContent data-testid={`usuarios-delete-dialog-${member.id}`}>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Remover usuário?</AlertDialogTitle>
                                 <AlertDialogDescription>
@@ -435,10 +457,11 @@ export default function Usuarios() {
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogCancel data-testid={`usuarios-delete-dialog-${member.id}-cancel`}>Cancelar</AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => handleDeleteMember(member.id)}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  data-testid={`usuarios-delete-dialog-${member.id}-confirm`}
                                 >
                                   Remover
                                 </AlertDialogAction>
@@ -458,9 +481,9 @@ export default function Usuarios() {
 
       {/* Edit Role Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent data-testid="usuarios-edit-dialog">
           <DialogHeader>
-            <DialogTitle>Editar Função</DialogTitle>
+            <DialogTitle data-testid="usuarios-edit-dialog-title">Editar Função</DialogTitle>
             <DialogDescription>
               Altere a função do usuário no estabelecimento.
             </DialogDescription>
@@ -469,21 +492,29 @@ export default function Usuarios() {
             <div className="space-y-2">
               <Label>Função</Label>
               <Select value={editRole} onValueChange={(v) => setEditRole(v as EstablishmentRole)}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="usuarios-edit-role-select">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="manager">Gerente</SelectItem>
-                  <SelectItem value="employee">Funcionário</SelectItem>
+                  <SelectItem value="manager" data-testid="usuarios-edit-role-manager">Gerente</SelectItem>
+                  <SelectItem value="employee" data-testid="usuarios-edit-role-employee">Funcionário</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsEditDialogOpen(false)}
+              data-testid="usuarios-edit-cancel-button"
+            >
               Cancelar
             </Button>
-            <Button onClick={handleEditMember} disabled={isSubmitting}>
+            <Button 
+              onClick={handleEditMember} 
+              disabled={isSubmitting}
+              data-testid="usuarios-edit-save-button"
+            >
               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Salvar
             </Button>
