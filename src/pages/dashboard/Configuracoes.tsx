@@ -143,7 +143,12 @@ export default function Configuracoes() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div 
+        className="space-y-6"
+        data-testid="configuracoes-page-loading"
+        aria-busy="true"
+        aria-label="Carregando configurações"
+      >
         <div className="flex items-center gap-3">
           <Settings className="h-8 w-8 text-primary" />
           <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
@@ -242,14 +247,21 @@ export default function Configuracoes() {
   }
 
   return (
-    <div className="space-y-6">
+    <div 
+      className="space-y-6"
+      data-testid="configuracoes-page"
+      role="main"
+      aria-label="Página de configurações"
+    >
       <div className="flex items-center gap-3">
         <Settings className="h-8 w-8 text-primary" />
-        <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
+        <h1 className="text-2xl font-bold text-foreground" data-testid="configuracoes-title">
+          Configurações
+        </h1>
       </div>
       
       {/* Card - Notificações */}
-      <Card>
+      <Card data-testid="configuracoes-notifications-card">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Bell className="h-5 w-5 text-primary" />
@@ -273,13 +285,14 @@ export default function Configuracoes() {
               id="notification-sound"
               checked={notificationSoundEnabled}
               onCheckedChange={setNotificationSoundEnabled}
+              data-testid="configuracoes-notification-sound-switch"
             />
           </div>
         </CardContent>
       </Card>
 
       {/* Card - Impressão de Pedidos (Unificado) */}
-      <Card>
+      <Card data-testid="configuracoes-print-card">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Printer className="h-5 w-5 text-primary" />
@@ -290,10 +303,14 @@ export default function Configuracoes() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <RadioGroup value={printMode} onValueChange={(value) => setPrintMode(value as PrintMode)}>
+          <RadioGroup 
+            value={printMode} 
+            onValueChange={(value) => setPrintMode(value as PrintMode)}
+            data-testid="configuracoes-print-mode-group"
+          >
             {/* Desativado */}
             <div className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50">
-              <RadioGroupItem value="none" id="print-none" className="mt-0.5" />
+              <RadioGroupItem value="none" id="print-none" className="mt-0.5" data-testid="configuracoes-print-mode-none" />
               <div>
                 <Label htmlFor="print-none" className="font-medium cursor-pointer">
                   Não imprimir automaticamente
@@ -306,7 +323,7 @@ export default function Configuracoes() {
             
             {/* Navegador - Ao pedir */}
             <div className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50">
-              <RadioGroupItem value="browser_on_order" id="print-browser-on-order" className="mt-0.5" />
+              <RadioGroupItem value="browser_on_order" id="print-browser-on-order" className="mt-0.5" data-testid="configuracoes-print-mode-on-order" />
               <div>
                 <Label htmlFor="print-browser-on-order" className="font-medium cursor-pointer">
                   Navegador - Ao receber pedido
@@ -319,7 +336,7 @@ export default function Configuracoes() {
             
             {/* Navegador - Ao confirmar */}
             <div className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50">
-              <RadioGroupItem value="browser_on_confirm" id="print-browser-on-confirm" className="mt-0.5" />
+              <RadioGroupItem value="browser_on_confirm" id="print-browser-on-confirm" className="mt-0.5" data-testid="configuracoes-print-mode-on-confirm" />
               <div>
                 <Label htmlFor="print-browser-on-confirm" className="font-medium cursor-pointer">
                   Navegador - Ao confirmar pedido
@@ -334,7 +351,7 @@ export default function Configuracoes() {
       </Card>
 
       {/* Card - Personalização da Impressão */}
-      <Card>
+      <Card data-testid="configuracoes-print-customization-card">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Type className="h-5 w-5 text-primary" />
@@ -621,7 +638,7 @@ export default function Configuracoes() {
       </Card>
 
       {/* Card - Taxas de Pagamento */}
-      <Card>
+      <Card data-testid="configuracoes-payment-fees-card">
         <CardHeader>
           <div className="flex items-center gap-2">
             <CreditCard className="h-5 w-5 text-primary" />
@@ -641,6 +658,7 @@ export default function Configuracoes() {
                 placeholder="3.5"
                 value={cardCreditFee}
                 onChange={(e) => setCardCreditFee(e.target.value)}
+                data-testid="configuracoes-credit-fee-input"
               />
               <p className="text-xs text-muted-foreground">
                 Ex: 3.5 para uma taxa de 3,5%
@@ -654,6 +672,7 @@ export default function Configuracoes() {
                 placeholder="1.5"
                 value={cardDebitFee}
                 onChange={(e) => setCardDebitFee(e.target.value)}
+                data-testid="configuracoes-debit-fee-input"
               />
               <p className="text-xs text-muted-foreground">
                 Ex: 1.5 para uma taxa de 1,5%
@@ -670,7 +689,7 @@ export default function Configuracoes() {
       </Card>
 
       {/* Card - Personalização */}
-      <Card>
+      <Card data-testid="configuracoes-theme-card">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Palette className="h-5 w-5 text-primary" />
@@ -689,12 +708,14 @@ export default function Configuracoes() {
                   value={themePrimaryColor}
                   onChange={(e) => setThemePrimaryColor(e.target.value)}
                   className="h-10 w-16 rounded border border-input cursor-pointer"
+                  data-testid="configuracoes-primary-color-picker"
                 />
                 <Input
                   value={themePrimaryColor}
                   onChange={(e) => setThemePrimaryColor(e.target.value)}
                   placeholder="#ea580c"
                   className="flex-1 font-mono"
+                  data-testid="configuracoes-primary-color-input"
                 />
               </div>
               <p className="text-xs text-muted-foreground">
@@ -711,12 +732,14 @@ export default function Configuracoes() {
                   value={themeSecondaryColor}
                   onChange={(e) => setThemeSecondaryColor(e.target.value)}
                   className="h-10 w-16 rounded border border-input cursor-pointer"
+                  data-testid="configuracoes-secondary-color-picker"
                 />
                 <Input
                   value={themeSecondaryColor}
                   onChange={(e) => setThemeSecondaryColor(e.target.value)}
                   placeholder="#1e293b"
                   className="flex-1 font-mono"
+                  data-testid="configuracoes-secondary-color-input"
                 />
               </div>
               <p className="text-xs text-muted-foreground">
@@ -726,7 +749,7 @@ export default function Configuracoes() {
           </div>
           
           {/* Preview */}
-          <div className="mt-4 p-4 rounded-lg border">
+          <div className="mt-4 p-4 rounded-lg border" data-testid="configuracoes-theme-preview">
             <p className="text-sm font-medium mb-3">Pré-visualização</p>
             <div className="flex items-center gap-3">
               <div 
@@ -748,7 +771,12 @@ export default function Configuracoes() {
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={saving} size="lg">
+        <Button 
+          onClick={handleSave} 
+          disabled={saving} 
+          size="lg"
+          data-testid="configuracoes-save-button"
+        >
           {saving ? "Salvando..." : "Salvar Configurações"}
         </Button>
       </div>
