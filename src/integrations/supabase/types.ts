@@ -313,6 +313,7 @@ export type Database = {
           service_dine_in: boolean
           service_pickup: boolean
           slug: string | null
+          temporary_closed: boolean | null
           theme_primary_color: string | null
           theme_secondary_color: string | null
           updated_at: string
@@ -362,6 +363,7 @@ export type Database = {
           service_dine_in?: boolean
           service_pickup?: boolean
           slug?: string | null
+          temporary_closed?: boolean | null
           theme_primary_color?: string | null
           theme_secondary_color?: string | null
           updated_at?: string
@@ -411,6 +413,7 @@ export type Database = {
           service_dine_in?: boolean
           service_pickup?: boolean
           slug?: string | null
+          temporary_closed?: boolean | null
           theme_primary_color?: string | null
           theme_secondary_color?: string | null
           updated_at?: string
@@ -887,6 +890,7 @@ export type Database = {
           service_dine_in: boolean | null
           service_pickup: boolean | null
           slug: string | null
+          temporary_closed: boolean | null
           theme_primary_color: string | null
           theme_secondary_color: string | null
           updated_at: string | null
@@ -915,6 +919,7 @@ export type Database = {
           service_dine_in?: boolean | null
           service_pickup?: boolean | null
           slug?: string | null
+          temporary_closed?: boolean | null
           theme_primary_color?: string | null
           theme_secondary_color?: string | null
           updated_at?: string | null
@@ -943,6 +948,7 @@ export type Database = {
           service_dine_in?: boolean | null
           service_pickup?: boolean | null
           slug?: string | null
+          temporary_closed?: boolean | null
           theme_primary_color?: string | null
           theme_secondary_color?: string | null
           updated_at?: string | null

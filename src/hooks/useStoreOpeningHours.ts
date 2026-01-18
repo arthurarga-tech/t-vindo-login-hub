@@ -84,11 +84,16 @@ export interface AvailableDay {
   dayLabel: string;
 }
 
-export function useStoreOpeningHours(openingHours: OpeningHours | null | undefined) {
+export function useStoreOpeningHours(
+  openingHours: OpeningHours | null | undefined,
+  isTemporaryClosed?: boolean
+) {
   return useMemo(() => {
     const checkIsOpen = (): boolean => {
+      // If temporarily closed, always return false
+      if (isTemporaryClosed) return false;
+      
       if (!openingHours) return true; // If no opening hours configured, assume open
-
       const currentDay = dayMapping[getCurrentDayInSaoPaulo()];
       const todayHours = openingHours[currentDay];
 
@@ -236,5 +241,5 @@ export function useStoreOpeningHours(openingHours: OpeningHours | null | undefin
       getAvailableScheduleSlots,
       getNextAvailableDays,
     };
-  }, [openingHours]);
+  }, [openingHours, isTemporaryClosed]);
 }
