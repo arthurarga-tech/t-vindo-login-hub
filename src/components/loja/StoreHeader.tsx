@@ -30,6 +30,7 @@ interface StoreHeaderProps {
   primaryColor?: string | null;
   isStoreOpen?: boolean;
   allowScheduling?: boolean;
+  isTemporaryClosed?: boolean;
 }
 
 const dayKeys: Array<keyof OpeningHours> = [
@@ -71,10 +72,12 @@ function getCurrentDayStatus(openingHours?: OpeningHours | null): {
   }
 }
 
-export function StoreHeader({ establishmentName, logoUrl, bannerUrl, phone, openingHours, primaryColor, isStoreOpen, allowScheduling = false }: StoreHeaderProps) {
+export function StoreHeader({ establishmentName, logoUrl, bannerUrl, phone, openingHours, primaryColor, isStoreOpen, allowScheduling = false, isTemporaryClosed = false }: StoreHeaderProps) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const status = getCurrentDayStatus(openingHours);
+  const status = isTemporaryClosed 
+    ? { isOpen: false, text: "Fechado temporariamente" } 
+    : getCurrentDayStatus(openingHours);
   
   // Use custom primary color or fallback
   const headerStyle = primaryColor ? { backgroundColor: primaryColor } : undefined;

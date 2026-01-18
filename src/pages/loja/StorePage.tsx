@@ -21,7 +21,11 @@ export default function StorePage() {
   const { data: products, isLoading: loadingProducts } = usePublicProducts(establishment?.id);
   const { data: preparationTime } = usePublicPreparationTime(establishment?.id);
   
-  const { isOpen, nextOpenTime } = useStoreOpeningHours((establishment as any)?.opening_hours);
+  const isTemporaryClosed = (establishment as any)?.temporary_closed ?? false;
+  const { isOpen, nextOpenTime } = useStoreOpeningHours(
+    (establishment as any)?.opening_hours,
+    isTemporaryClosed
+  );
 
   const isLoading = loadingEstablishment || loadingCategories || loadingProducts;
 
@@ -102,6 +106,7 @@ export default function StorePage() {
           phone={(establishment as any).phone}
           openingHours={(establishment as any).opening_hours}
           primaryColor={(establishment as any).theme_primary_color}
+          isTemporaryClosed={isTemporaryClosed}
           isStoreOpen={isOpen}
           allowScheduling={(establishment as any).allow_scheduling}
         />

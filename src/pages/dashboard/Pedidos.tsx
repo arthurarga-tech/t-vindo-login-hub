@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { ClipboardList, LayoutGrid, List, Volume2, VolumeX, RefreshCw, Printer, Loader2 } from "lucide-react";
+import { ClipboardList, LayoutGrid, List, Volume2, VolumeX, RefreshCw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,7 +13,7 @@ import { startOfDay, startOfWeek, subDays, isAfter } from "date-fns";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { usePrintOrder } from "@/hooks/usePrintOrder";
 import { PreparationTimeConfig } from "@/components/pedidos/PreparationTimeConfig";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { StoreQuickClose } from "@/components/pedidos/StoreQuickClose";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 export default function Pedidos() {
@@ -51,11 +51,8 @@ export default function Pedidos() {
   const printLineHeight = (establishment as any)?.print_line_height || 1.4;
   const printContrastHigh = (establishment as any)?.print_contrast_high === true;
   
-  // Print mode labels for badge
-  const printModeLabels: Record<string, string> = {
-    browser_on_order: "🖨️ Ao receber",
-    browser_on_confirm: "🖨️ Ao confirmar",
-  };
+  // Temporary closed state
+  const isTemporaryClosed = (establishment as any)?.temporary_closed ?? false;
   // Play notification sound and auto-print when new pending orders arrive
   useEffect(() => {
     // Skip first load - don't print existing orders
@@ -321,24 +318,13 @@ export default function Pedidos() {
             </Badge>
           )}
           {establishment && (
-            <PreparationTimeConfig establishmentId={establishment.id} />
-          )}
-          {/* Print Mode Badge */}
-          {printMode !== "none" && printModeLabels[printMode] && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Badge variant="outline" className="flex items-center gap-1 cursor-help">
-                  <Printer className="h-3 w-3" />
-                  {printModeLabels[printMode]}
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent>
-                {isPrintOnOrder 
-                  ? "Pedidos são impressos automaticamente ao serem recebidos"
-                  : "Pedidos são impressos automaticamente ao serem confirmados"
-                }
-              </TooltipContent>
-            </Tooltip>
+            <>
+              <PreparationTimeConfig establishmentId={establishment.id} />
+              <StoreQuickClose 
+                establishmentId={establishment.id}
+                isTemporaryClosed={isTemporaryClosed}
+              />
+            </>
           )}
         </div>
 

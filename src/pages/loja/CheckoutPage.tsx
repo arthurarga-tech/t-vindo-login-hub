@@ -15,7 +15,11 @@ export default function CheckoutPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { data: establishment, isLoading } = usePublicEstablishment(slug);
-  const { isOpen, nextOpenTime } = useStoreOpeningHours((establishment as any)?.opening_hours);
+  const isTemporaryClosed = (establishment as any)?.temporary_closed ?? false;
+  const { isOpen, nextOpenTime } = useStoreOpeningHours(
+    (establishment as any)?.opening_hours,
+    isTemporaryClosed
+  );
   
   const [scheduledFor, setScheduledFor] = useState<Date | null>(null);
   const [showScheduler, setShowScheduler] = useState(false);
