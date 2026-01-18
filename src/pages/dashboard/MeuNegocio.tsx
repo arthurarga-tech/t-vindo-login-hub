@@ -289,7 +289,12 @@ export default function MeuNegocio() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div 
+        className="space-y-6"
+        data-testid="meu-negocio-page-loading"
+        aria-busy="true"
+        aria-label="Carregando meu negócio"
+      >
         <div className="flex items-center gap-3">
           <Building2 className="h-8 w-8 text-primary" />
           <h1 className="text-2xl font-bold text-foreground">Meu Negócio</h1>
@@ -304,14 +309,21 @@ export default function MeuNegocio() {
   }
 
   return (
-    <div className="space-y-6">
+    <div 
+      className="space-y-6"
+      data-testid="meu-negocio-page"
+      role="main"
+      aria-label="Página meu negócio"
+    >
       <div className="flex items-center gap-3">
         <Building2 className="h-8 w-8 text-primary" />
-        <h1 className="text-2xl font-bold text-foreground">Meu Negócio</h1>
+        <h1 className="text-2xl font-bold text-foreground" data-testid="meu-negocio-title">
+          Meu Negócio
+        </h1>
       </div>
       
       {/* Card 1 - Informações Básicas */}
-      <Card>
+      <Card data-testid="meu-negocio-basic-info-card">
         <CardHeader>
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
@@ -328,6 +340,7 @@ export default function MeuNegocio() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Nome do seu estabelecimento"
+                data-testid="meu-negocio-name-input"
               />
             </div>
             
@@ -338,6 +351,7 @@ export default function MeuNegocio() {
                 onChange={(url) => setLogoUrl(url || "")}
                 folder="logos"
                 aspectRatio={1}
+                data-testid="meu-negocio-logo-upload"
               />
               <p className="text-sm text-muted-foreground">
                 Recomendado: imagem quadrada (1:1)
@@ -353,6 +367,7 @@ export default function MeuNegocio() {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Descreva seu estabelecimento..."
               rows={3}
+              data-testid="meu-negocio-description-input"
             />
           </div>
 
@@ -363,6 +378,7 @@ export default function MeuNegocio() {
               onChange={(url) => setBannerUrl(url || "")}
               folder="banners"
               aspectRatio={16 / 9}
+              data-testid="meu-negocio-banner-upload"
             />
             <p className="text-sm text-muted-foreground">
               Imagem de capa exibida no topo da loja. Recomendado: formato 16:9
@@ -372,7 +388,7 @@ export default function MeuNegocio() {
       </Card>
 
       {/* Card 2 - Contato e Endereço */}
-      <Card>
+      <Card data-testid="meu-negocio-contact-card">
         <CardHeader>
           <div className="flex items-center gap-2">
             <MapPin className="h-5 w-5 text-primary" />
@@ -392,6 +408,7 @@ export default function MeuNegocio() {
                   onChange={handlePhoneChange}
                   placeholder="(00) 00000-0000"
                   className="pl-10"
+                  data-testid="meu-negocio-phone-input"
                 />
               </div>
             </div>
@@ -403,6 +420,7 @@ export default function MeuNegocio() {
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 placeholder="Sua cidade"
+                data-testid="meu-negocio-city-input"
               />
             </div>
           </div>
@@ -415,6 +433,7 @@ export default function MeuNegocio() {
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder="Rua, número"
+                data-testid="meu-negocio-address-input"
               />
             </div>
             
@@ -425,6 +444,7 @@ export default function MeuNegocio() {
                 value={neighborhood}
                 onChange={(e) => setNeighborhood(e.target.value)}
                 placeholder="Bairro"
+                data-testid="meu-negocio-neighborhood-input"
               />
             </div>
           </div>
@@ -432,7 +452,7 @@ export default function MeuNegocio() {
       </Card>
 
       {/* Card 3 - Horários de Funcionamento */}
-      <Card>
+      <Card data-testid="meu-negocio-hours-card">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-primary" />
@@ -441,11 +461,12 @@ export default function MeuNegocio() {
           <CardDescription>Configure os horários de abertura e fechamento</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          <div className="space-y-3" data-testid="meu-negocio-hours-list">
             {(Object.keys(dayLabels) as Array<keyof OpeningHours>).map((day) => (
               <div
                 key={day}
                 className="flex items-center gap-4 p-3 rounded-lg bg-muted/50"
+                data-testid={`meu-negocio-day-${day}`}
               >
                 <div className="w-32 font-medium text-sm">{dayLabels[day]}</div>
                 
@@ -453,6 +474,7 @@ export default function MeuNegocio() {
                   <Switch
                     checked={!openingHours[day].closed}
                     onCheckedChange={(checked) => handleDayChange(day, "closed", !checked)}
+                    data-testid={`meu-negocio-day-${day}-switch`}
                   />
                   <span className="text-sm text-muted-foreground w-16">
                     {openingHours[day].closed ? "Fechado" : "Aberto"}
@@ -466,6 +488,7 @@ export default function MeuNegocio() {
                       value={openingHours[day].open}
                       onChange={(e) => handleDayChange(day, "open", e.target.value)}
                       className="w-28"
+                      data-testid={`meu-negocio-day-${day}-open`}
                     />
                     <span className="text-muted-foreground">às</span>
                     <Input
@@ -473,6 +496,7 @@ export default function MeuNegocio() {
                       value={openingHours[day].close}
                       onChange={(e) => handleDayChange(day, "close", e.target.value)}
                       className="w-28"
+                      data-testid={`meu-negocio-day-${day}-close`}
                     />
                   </div>
                 )}
@@ -483,7 +507,7 @@ export default function MeuNegocio() {
       </Card>
 
       {/* Card 4 - Service Modalities */}
-      <Card>
+      <Card data-testid="meu-negocio-services-card">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Store className="h-5 w-5 text-primary" />
@@ -504,6 +528,7 @@ export default function MeuNegocio() {
               <Switch
                 checked={serviceDelivery}
                 onCheckedChange={setServiceDelivery}
+                data-testid="meu-negocio-service-delivery-switch"
               />
             </div>
             
@@ -521,6 +546,7 @@ export default function MeuNegocio() {
                 <Switch
                   checked={locationSharingEnabled}
                   onCheckedChange={setLocationSharingEnabled}
+                  data-testid="meu-negocio-location-sharing-switch"
                 />
               </div>
             )}
@@ -536,6 +562,7 @@ export default function MeuNegocio() {
               <Switch
                 checked={servicePickup}
                 onCheckedChange={setServicePickup}
+                data-testid="meu-negocio-service-pickup-switch"
               />
             </div>
             
@@ -550,6 +577,7 @@ export default function MeuNegocio() {
               <Switch
                 checked={serviceDineIn}
                 onCheckedChange={setServiceDineIn}
+                data-testid="meu-negocio-service-dinein-switch"
               />
             </div>
           </div>
@@ -563,7 +591,7 @@ export default function MeuNegocio() {
       </Card>
 
       {/* Card - Order Scheduling */}
-      <Card>
+      <Card data-testid="meu-negocio-scheduling-card">
         <CardHeader>
           <div className="flex items-center gap-2">
             <CalendarClock className="h-5 w-5 text-primary" />
@@ -585,6 +613,7 @@ export default function MeuNegocio() {
             <Switch
               checked={allowScheduling}
               onCheckedChange={setAllowScheduling}
+              data-testid="meu-negocio-allow-scheduling-switch"
             />
           </div>
           {allowScheduling && (
@@ -596,7 +625,7 @@ export default function MeuNegocio() {
       </Card>
 
       {/* Card - Payment Methods */}
-      <Card>
+      <Card data-testid="meu-negocio-payment-card">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Wallet className="h-5 w-5 text-primary" />
@@ -619,16 +648,17 @@ export default function MeuNegocio() {
                 <Switch
                   checked={paymentPixEnabled}
                   onCheckedChange={setPaymentPixEnabled}
+                  data-testid="meu-negocio-payment-pix-switch"
                 />
               </div>
               
               {paymentPixEnabled && (
-                <div className="ml-8 space-y-3 p-3 border rounded-lg bg-background">
+                <div className="ml-8 space-y-3 p-3 border rounded-lg bg-background" data-testid="meu-negocio-pix-config">
                   <div className="grid gap-3 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="pixKeyType">Tipo da Chave</Label>
                       <Select value={pixKeyType} onValueChange={setPixKeyType}>
-                        <SelectTrigger>
+                        <SelectTrigger data-testid="meu-negocio-pix-type-select">
                           <SelectValue placeholder="Selecione..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -647,6 +677,7 @@ export default function MeuNegocio() {
                         value={pixKey}
                         onChange={(e) => setPixKey(e.target.value)}
                         placeholder="Sua chave PIX"
+                        data-testid="meu-negocio-pix-key-input"
                       />
                     </div>
                   </div>
@@ -657,6 +688,7 @@ export default function MeuNegocio() {
                       value={pixHolderName}
                       onChange={(e) => setPixHolderName(e.target.value)}
                       placeholder="Nome que aparece na transferência"
+                      data-testid="meu-negocio-pix-holder-input"
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
@@ -678,6 +710,7 @@ export default function MeuNegocio() {
               <Switch
                 checked={paymentCreditEnabled}
                 onCheckedChange={setPaymentCreditEnabled}
+                data-testid="meu-negocio-payment-credit-switch"
               />
             </div>
 
@@ -693,6 +726,7 @@ export default function MeuNegocio() {
               <Switch
                 checked={paymentDebitEnabled}
                 onCheckedChange={setPaymentDebitEnabled}
+                data-testid="meu-negocio-payment-debit-switch"
               />
             </div>
 
@@ -708,6 +742,7 @@ export default function MeuNegocio() {
               <Switch
                 checked={paymentCashEnabled}
                 onCheckedChange={setPaymentCashEnabled}
+                data-testid="meu-negocio-payment-cash-switch"
               />
             </div>
           </div>
@@ -721,7 +756,7 @@ export default function MeuNegocio() {
       </Card>
 
       {/* Card 5 - Delivery Info */}
-      <Card>
+      <Card data-testid="meu-negocio-delivery-card">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Truck className="h-5 w-5 text-primary" />
@@ -741,6 +776,7 @@ export default function MeuNegocio() {
                 value={deliveryFee}
                 onChange={(e) => setDeliveryFee(e.target.value)}
                 placeholder="0,00"
+                data-testid="meu-negocio-delivery-fee-input"
               />
               <p className="text-xs text-muted-foreground">
                 Taxa fixa cobrada em todos os pedidos de entrega
@@ -756,6 +792,7 @@ export default function MeuNegocio() {
                 value={minOrderValue}
                 onChange={(e) => setMinOrderValue(e.target.value)}
                 placeholder="0,00"
+                data-testid="meu-negocio-min-order-input"
               />
               <p className="text-xs text-muted-foreground">
                 Valor mínimo para aceitar pedidos
@@ -771,13 +808,14 @@ export default function MeuNegocio() {
               onChange={(e) => setDeliveryInfo(e.target.value)}
               placeholder="Ex: Entregamos em toda a cidade. Taxa de entrega a partir de R$ 5,00..."
               rows={3}
+              data-testid="meu-negocio-delivery-info-input"
             />
           </div>
         </CardContent>
       </Card>
 
       {/* Card 6 - Link da Loja */}
-      <Card>
+      <Card data-testid="meu-negocio-link-card">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Link2 className="h-5 w-5 text-primary" />
@@ -794,6 +832,7 @@ export default function MeuNegocio() {
               onChange={handleSlugChange}
               placeholder="minha-loja"
               className="lowercase"
+              data-testid="meu-negocio-slug-input"
             />
             <p className="text-sm text-muted-foreground">
               Use apenas letras minúsculas, números e hífens.
@@ -803,7 +842,7 @@ export default function MeuNegocio() {
           {storeUrl && (
             <div className="space-y-2">
               <Label>Link da sua loja</Label>
-              <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
+              <div className="flex items-center gap-2 p-3 bg-muted rounded-md" data-testid="meu-negocio-store-url">
                 <Link2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <span className="text-sm text-foreground truncate flex-1">{storeUrl}</span>
                 <Button
@@ -811,6 +850,7 @@ export default function MeuNegocio() {
                   size="sm"
                   onClick={handleCopyLink}
                   className="flex-shrink-0"
+                  data-testid="meu-negocio-copy-link-button"
                 >
                   {copied ? (
                     <Check className="h-4 w-4 text-primary" />
@@ -825,7 +865,12 @@ export default function MeuNegocio() {
       </Card>
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={saving} size="lg">
+        <Button 
+          onClick={handleSave} 
+          disabled={saving} 
+          size="lg"
+          data-testid="meu-negocio-save-button"
+        >
           {saving ? "Salvando..." : "Salvar Alterações"}
         </Button>
       </div>
