@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Category } from "./useCategories";
+import { useEffect } from "react";
 
 export interface PublicProduct {
   id: string;
@@ -13,7 +14,9 @@ export interface PublicProduct {
 }
 
 export function usePublicEstablishment(slug: string | undefined) {
-  return useQuery({
+  const queryClient = useQueryClient();
+  
+  const query = useQuery({
     queryKey: ["public-establishment", slug],
     queryFn: async () => {
       if (!slug) return null;
@@ -34,7 +37,38 @@ export function usePublicEstablishment(slug: string | undefined) {
       return data;
     },
     enabled: !!slug,
+    // Refetch more frequently to catch status changes
+    staleTime: 30 * 1000, // Consider data stale after 30 seconds
+    refetchInterval: 60 * 1000, // Refetch every 60 seconds
   });
+
+  // Subscribe to realtime changes for the establishment
+  useEffect(() => {
+    if (!query.data?.id) return;
+
+    const channel = supabase
+      .channel(`public-establishment-${query.data.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'establishments',
+          filter: `id=eq.${query.data.id}`,
+        },
+        () => {
+          // Invalidate the query to refetch fresh data
+          queryClient.invalidateQueries({ queryKey: ["public-establishment", slug] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [query.data?.id, slug, queryClient]);
+
+  return query;
 }
 
 export function usePublicCategories(establishmentId: string | undefined) {
