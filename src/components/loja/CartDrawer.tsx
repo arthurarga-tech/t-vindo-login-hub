@@ -21,15 +21,17 @@ export function CartDrawer({ isStoreOpen = true, allowScheduling = false }: Cart
     <Sheet>
       <SheetTrigger asChild>
         <Button 
-          size="icon" 
-          className={`relative h-8 w-8 sm:h-10 sm:w-10 bg-primary-foreground text-primary hover:bg-primary-foreground/90 shadow-md ${totalItems > 0 ? 'animate-pulse' : ''}`}
+          variant="outline"
+          size="sm"
+          className={`relative h-7 sm:h-9 px-1.5 sm:px-3 bg-primary-foreground/15 hover:bg-primary-foreground/25 text-primary-foreground border-primary-foreground/40 hover:border-primary-foreground/60 transition-all active:scale-95 ${totalItems > 0 ? 'ring-2 ring-primary-foreground/50' : ''}`}
           data-testid="cart-drawer-trigger"
           aria-label={`Carrinho com ${totalItems} itens`}
         >
-          <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
+          <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span className="ml-1 text-[10px] sm:text-sm">Carrinho</span>
           {totalItems > 0 && (
             <Badge 
-              className="absolute -top-2 -right-2 h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center p-0 text-[10px] sm:text-xs bg-destructive text-destructive-foreground animate-bounce"
+              className="absolute -top-1.5 -right-1.5 h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center p-0 text-[10px] sm:text-xs bg-destructive text-destructive-foreground animate-bounce"
               data-testid="cart-drawer-badge"
             >
               {totalItems}

@@ -71,7 +71,10 @@ export function ProductDetailModal({
     }));
 
     addItem(product, cartAddons.length > 0 ? cartAddons : undefined, quantity, observation);
-    toast.success(`${product.name} adicionado ao carrinho`);
+    toast.success(`${product.name} adicionado ao carrinho`, {
+      duration: 1500,
+      position: "top-center",
+    });
     onOpenChange(false);
   };
 

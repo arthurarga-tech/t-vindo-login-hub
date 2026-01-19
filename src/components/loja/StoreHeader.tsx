@@ -1,7 +1,6 @@
-import { Store, Clock, Phone, Package } from "lucide-react";
+import { Store, Phone, Package } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CartDrawer } from "./CartDrawer";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getCurrentDayInSaoPaulo, getCurrentMinutesInSaoPaulo } from "@/lib/dateUtils";
 
@@ -143,33 +142,37 @@ export function StoreHeader({ establishmentName, logoUrl, bannerUrl, phone, open
               </div>
             </div>
             
-            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-              {/* Track order button */}
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+              {/* Status indicator - purely informational, not clickable */}
+              {openingHours && (
+                <div 
+                  className={`flex items-center gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full select-none ${
+                    status.isOpen 
+                      ? 'bg-green-500/20 text-green-100 border border-green-400/30' 
+                      : 'bg-red-500/20 text-red-100 border border-red-400/30'
+                  }`}
+                  data-testid="store-header-status-badge"
+                  aria-label={status.isOpen ? "Loja aberta" : "Loja fechada"}
+                  role="status"
+                >
+                  <span className={`h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full ${status.isOpen ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+                  <span>{status.isOpen ? "Aberto" : "Fechado"}</span>
+                </div>
+              )}
+
+              {/* Track order button - clearly clickable */}
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 sm:h-9 px-2 sm:px-3 bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30"
+                className="h-7 sm:h-9 px-1.5 sm:px-3 bg-primary-foreground/15 hover:bg-primary-foreground/25 text-primary-foreground border-primary-foreground/40 hover:border-primary-foreground/60 transition-all active:scale-95"
                 onClick={() => navigate(`/loja/${slug}/rastrear`)}
                 data-testid="store-header-track-button"
                 aria-label="Acompanhar pedido"
               >
-                <Package className="h-4 w-4 sm:mr-1.5" />
-                <span className="hidden sm:inline text-xs sm:text-sm">Acompanhar Pedido</span>
+                <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="ml-1 text-[10px] sm:text-sm">Rastrear</span>
               </Button>
               
-              {/* Status badge in highlight */}
-              {openingHours && (
-                <Badge 
-                  variant={status.isOpen ? "default" : "destructive"}
-                  className={`text-xs px-2 sm:px-3 py-1 ${status.isOpen ? 'bg-green-600 hover:bg-green-700' : ''}`}
-                  data-testid="store-header-status-badge"
-                  aria-label={status.isOpen ? "Loja aberta" : "Loja fechada"}
-                >
-                  <Clock className="h-3 w-3 mr-1" />
-                  <span className="hidden sm:inline">{status.isOpen ? "Aberto" : "Fechado"}</span>
-                  <span className="sm:hidden">{status.isOpen ? "✓" : "✕"}</span>
-                </Badge>
-              )}
               <CartDrawer isStoreOpen={isStoreOpen} allowScheduling={allowScheduling} />
             </div>
           </div>
