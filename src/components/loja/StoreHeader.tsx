@@ -170,7 +170,7 @@ export function StoreHeader({ establishmentName, logoUrl, bannerUrl, phone, open
                 aria-label="Acompanhar pedido"
               >
                 <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span className="ml-1 text-[10px] sm:text-sm">Rastrear</span>
+                <span className="ml-1 text-[10px] sm:text-sm">Acompanhar</span>
               </Button>
               
               <CartDrawer isStoreOpen={isStoreOpen} allowScheduling={allowScheduling} />
