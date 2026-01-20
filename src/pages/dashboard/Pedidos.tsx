@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { ClipboardList, LayoutGrid, List, Volume2, VolumeX, RefreshCw, Loader2 } from "lucide-react";
+import { ClipboardList, LayoutGrid, List, Volume2, VolumeX, RefreshCw, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,6 +14,7 @@ import { useEstablishment } from "@/hooks/useEstablishment";
 import { usePrintOrder } from "@/hooks/usePrintOrder";
 import { PreparationTimeConfig } from "@/components/pedidos/PreparationTimeConfig";
 import { StoreQuickClose } from "@/components/pedidos/StoreQuickClose";
+import { QuickOrderModal } from "@/components/pedidos/QuickOrderModal";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 export default function Pedidos() {
@@ -32,6 +33,7 @@ export default function Pedidos() {
     showFinished: true,
     showScheduledOnly: false,
   });
+  const [showQuickOrderModal, setShowQuickOrderModal] = useState(false);
 
   const pendingOrders = orders?.filter((o) => o.status === "pending") || [];
   const pendingCount = pendingOrders.length;
@@ -53,6 +55,12 @@ export default function Pedidos() {
   
   // Temporary closed state
   const isTemporaryClosed = (establishment as any)?.temporary_closed ?? false;
+  
+  // Payment method settings for quick order
+  const paymentPixEnabled = (establishment as any)?.payment_pix_enabled ?? true;
+  const paymentCreditEnabled = (establishment as any)?.payment_credit_enabled ?? true;
+  const paymentDebitEnabled = (establishment as any)?.payment_debit_enabled ?? true;
+  const paymentCashEnabled = (establishment as any)?.payment_cash_enabled ?? true;
   // Play notification sound and auto-print when new pending orders arrive
   useEffect(() => {
     // Skip first load - don't print existing orders
@@ -330,6 +338,15 @@ export default function Pedidos() {
 
         <div className="flex items-center gap-2">
           <Button
+            onClick={() => setShowQuickOrderModal(true)}
+            className="gap-2"
+            data-testid="quick-order-button"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Novo Pedido</span>
+          </Button>
+          
+          <Button
             variant="outline"
             size="icon"
             onClick={() => setSoundEnabled(!soundEnabled)}
@@ -414,6 +431,18 @@ export default function Pedidos() {
         printLineHeight={printLineHeight}
         printContrastHigh={printContrastHigh}
       />
+
+      {establishment && (
+        <QuickOrderModal
+          open={showQuickOrderModal}
+          onClose={() => setShowQuickOrderModal(false)}
+          establishmentId={establishment.id}
+          paymentPixEnabled={paymentPixEnabled}
+          paymentCreditEnabled={paymentCreditEnabled}
+          paymentDebitEnabled={paymentDebitEnabled}
+          paymentCashEnabled={paymentCashEnabled}
+        />
+      )}
     </div>
   );
 }
