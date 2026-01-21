@@ -7,8 +7,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle, Clock, Package, Truck, Home, ArrowLeft, Copy, Link2, XCircle, MessageCircle, QrCode } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
+import { usePublicEstablishment } from "@/hooks/usePublicStore";
+import { hexToHSL } from "@/lib/formatters";
 
 const statusConfig: Record<string, { label: string; icon: React.ComponentType<any>; color: string }> = {
   pending: { label: "Pendente", icon: Clock, color: "bg-yellow-500" },
@@ -72,6 +74,19 @@ export default function OrderConfirmationPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [sharedLocationViaWhatsApp, setSharedLocationViaWhatsApp] = useState(false);
+
+  // Fetch establishment data for theme colors
+  const { data: establishment } = usePublicEstablishment(slug || "");
+
+  // Custom styles based on establishment theme colors
+  const customStyles = useMemo(() => {
+    const primaryColor = establishment?.theme_primary_color || "#ea580c";
+    const secondaryColor = establishment?.theme_secondary_color || "#1e293b";
+    return {
+      "--store-primary": hexToHSL(primaryColor),
+      "--store-secondary": hexToHSL(secondaryColor),
+    } as React.CSSProperties;
+  }, [establishment?.theme_primary_color, establishment?.theme_secondary_color]);
 
   // Use secure RPC function instead of direct query
   const { data: order, isLoading } = useQuery({
@@ -257,10 +272,12 @@ export default function OrderConfirmationPage() {
   return (
     <div 
       className="min-h-screen bg-background"
+      style={customStyles}
       data-testid="order-confirmation-page"
     >
       <header 
-        className="bg-primary text-primary-foreground py-4 shadow-md"
+        className="py-4 shadow-md text-primary-foreground"
+        style={{ backgroundColor: "hsl(var(--store-primary, var(--primary)))" }}
         data-testid="order-confirmation-header"
       >
         <div className="max-w-2xl mx-auto px-4">

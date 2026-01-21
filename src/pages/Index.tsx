@@ -1,4 +1,4 @@
-import tavindoLogo from "@/assets/tavindo-logo.png";
+import tavindoLogo from "@/assets/tavindodelivery.png";
 import FoodPatternBackground from "@/components/login/FoodPatternBackground";
 import LoginCard from "@/components/login/LoginCard";
 import LoginFooter from "@/components/login/LoginFooter";

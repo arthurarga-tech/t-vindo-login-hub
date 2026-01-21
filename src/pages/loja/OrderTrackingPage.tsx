@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,11 +9,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle, Clock, Package, Truck, Home, ArrowLeft, Search, XCircle, MapPin, CreditCard } from "lucide-react";
-import { useEffect } from "react";
 import { toast } from "sonner";
 import { usePublicEstablishment } from "@/hooks/usePublicStore";
 import { formatInSaoPaulo } from "@/lib/dateUtils";
 import { ptBR } from "date-fns/locale";
+import { hexToHSL } from "@/lib/formatters";
 
 const statusConfig: Record<string, { label: string; icon: React.ComponentType<any>; color: string }> = {
   pending: { label: "Pendente", icon: Clock, color: "bg-yellow-500" },
@@ -94,6 +94,16 @@ export default function OrderTrackingPage() {
   const [hasAutoLoaded, setHasAutoLoaded] = useState(false);
 
   const { data: establishment } = usePublicEstablishment(slug || "");
+
+  // Custom styles based on establishment theme colors
+  const customStyles = useMemo(() => {
+    const primaryColor = establishment?.theme_primary_color || "#ea580c";
+    const secondaryColor = establishment?.theme_secondary_color || "#1e293b";
+    return {
+      "--store-primary": hexToHSL(primaryColor),
+      "--store-secondary": hexToHSL(secondaryColor),
+    } as React.CSSProperties;
+  }, [establishment?.theme_primary_color, establishment?.theme_secondary_color]);
 
   // Auto-load last order from localStorage on mount
   useEffect(() => {
@@ -188,10 +198,12 @@ export default function OrderTrackingPage() {
   return (
     <div 
       className="min-h-screen bg-background"
+      style={customStyles}
       data-testid="order-tracking-page"
     >
       <header 
-        className="bg-primary text-primary-foreground py-4 shadow-md"
+        className="py-4 shadow-md text-primary-foreground"
+        style={{ backgroundColor: "hsl(var(--store-primary, var(--primary)))" }}
         data-testid="order-tracking-header"
       >
         <div className="max-w-2xl mx-auto px-4">
