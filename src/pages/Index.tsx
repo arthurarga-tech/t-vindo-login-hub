@@ -16,12 +16,14 @@ const Index = () => {
       <main className="flex-1 flex flex-col md:flex-row items-center justify-center px-6 md:px-12 lg:px-24 py-4 relative z-10 gap-8 md:gap-16 lg:gap-24">
         {/* Logo - Left side */}
         <div className="flex-1 flex items-center justify-center md:justify-end">
-          <img
-            src={tavindoLogo}
-            alt="TáVindo - Sistema de Delivery"
-            className="h-28 md:h-40 lg:h-48 w-auto object-contain"
-            data-testid="login-logo"
-          />
+          <div className="bg-[#ea580c] rounded-2xl p-6 md:p-8 lg:p-10 shadow-lg">
+            <img
+              src={tavindoLogo}
+              alt="TáVindo - Sistema de Delivery"
+              className="h-20 md:h-32 lg:h-40 w-auto object-contain"
+              data-testid="login-logo"
+            />
+          </div>
         </div>
 
         {/* Login Card - Right side */}
