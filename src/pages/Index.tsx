@@ -6,7 +6,7 @@ import LoginFooter from "@/components/login/LoginFooter";
 const Index = () => {
   return (
     <div 
-      className="h-screen flex flex-col bg-background relative overflow-hidden"
+      className="h-screen flex flex-col bg-primary relative overflow-hidden"
       data-testid="login-page"
       role="main"
       aria-label="Página de login"
