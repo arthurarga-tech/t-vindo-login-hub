@@ -1,10 +1,62 @@
 import { Outlet } from "react-router-dom";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { useMemo } from "react";
 import { hexToHSL } from "@/lib/formatters";
-import { Menu } from "lucide-react";
+import { Menu, PanelLeftClose, PanelLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+function DashboardHeader() {
+  const { toggleSidebar, open, isMobile } = useSidebar();
+
+  return (
+    <header className="h-12 sm:h-14 border-b border-border flex items-center px-3 sm:px-4 md:px-6">
+      {isMobile ? (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={toggleSidebar}
+          className="mr-2 sm:mr-4 h-9 px-3 flex items-center gap-2"
+        >
+          <Menu className="h-4 w-4" />
+          <span className="text-sm font-medium">Menu</span>
+        </Button>
+      ) : (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleSidebar}
+                className="mr-2 sm:mr-4 h-9 w-9 hover:bg-accent"
+              >
+                {open ? (
+                  <PanelLeftClose className="h-5 w-5" />
+                ) : (
+                  <PanelLeft className="h-5 w-5" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              {open ? "Recolher menu" : "Expandir menu"}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
+      <h1 className="text-sm sm:text-lg font-semibold text-foreground truncate">
+        Painel do Estabelecimento
+      </h1>
+    </header>
+  );
+}
 
 export function DashboardLayout() {
   const { data: establishment } = useEstablishment();
@@ -41,13 +93,7 @@ export function DashboardLayout() {
       <div className="min-h-screen flex w-full bg-background" style={customStyles}>
         <DashboardSidebar />
         <main className="flex-1 flex flex-col min-w-0">
-          <header className="h-12 sm:h-14 border-b border-border flex items-center px-3 sm:px-4 md:px-6">
-            <SidebarTrigger className="mr-2 sm:mr-4 h-9 px-3 border border-border rounded-md hover:bg-accent flex items-center gap-2">
-              <Menu className="h-4 w-4" />
-              <span className="text-sm font-medium md:hidden">Menu</span>
-            </SidebarTrigger>
-            <h1 className="text-sm sm:text-lg font-semibold text-foreground truncate">Painel do Estabelecimento</h1>
-          </header>
+          <DashboardHeader />
           <div className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto">
             <Outlet />
           </div>
