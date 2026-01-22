@@ -439,23 +439,47 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
         const storePhone = establishmentPhone.replace(/\D/g, "");
         const formattedPhone = storePhone.startsWith("55") ? storePhone : `55${storePhone}`;
         
-        let message = `Olá! Pedido #${orderNumber}\n`;
+        let message = `Ola! Pedido #${orderNumber}\n`;
         message += `Cliente: ${customer.name}\n\n`;
+        
+        // Helper to format PIX key type
+        const formatPixKeyType = (type: string): string => {
+          const types: Record<string, string> = {
+            cpf: "CPF",
+            cnpj: "CNPJ", 
+            email: "E-mail",
+            phone: "Telefone",
+            random: "Chave Aleatoria"
+          };
+          return types[type] || type;
+        };
+        
+        // Build PIX info block
+        const buildPixInfo = () => {
+          let pixInfo = `\n---\nDados para pagamento PIX:\n`;
+          if (pixHolderName) pixInfo += `Titular: ${pixHolderName}\n`;
+          if (pixKeyType) pixInfo += `Tipo: ${formatPixKeyType(pixKeyType)}\n`;
+          pixInfo += `Chave: ${pixKey}\n`;
+          pixInfo += `---\n\nCopie a chave acima para realizar o pagamento!`;
+          return pixInfo;
+        };
         
         if ((shareLocationViaWhatsApp && needsAddress) && (paymentMethod === "pix" && pixKey)) {
           // Scenario 1: PIX + Location
           message += `Estou enviando:\n`;
-          message += `📍 Minha localização para entrega (Número: ${customer.addressNumber})\n`;
-          message += `💳 Comprovante do pagamento Pix\n\n`;
+          message += `* Minha localizacao para entrega (Numero: ${customer.addressNumber})\n`;
+          message += `* Comprovante do pagamento Pix\n\n`;
           message += `Valor: ${formatPrice(orderTotal)}`;
+          message += buildPixInfo();
         } else if (shareLocationViaWhatsApp && needsAddress) {
           // Scenario 2: Location only
-          message += `📍 Estou enviando minha localização para entrega.\n`;
-          message += `Número da casa: ${customer.addressNumber}`;
+          message += `Estou enviando minha localizacao para entrega.\n`;
+          message += `Numero da casa: ${customer.addressNumber}`;
         } else if (paymentMethod === "pix" && pixKey) {
           // Scenario 3: PIX only
-          message += `💳 Estou enviando o comprovante do pagamento Pix.\n\n`;
+          message += `Estou enviando o comprovante do pagamento Pix.\n\n`;
           message += `Valor: ${formatPrice(orderTotal)}`;
+          message += buildPixInfo();
         }
         
         const encodedMessage = encodeURIComponent(message);

@@ -71,18 +71,29 @@ export function DashboardSidebar() {
       aria-label="Menu principal"
     >
       <SidebarHeader className="p-4 border-b border-border">
-        <div className="flex items-center gap-2">
-          <img 
-            src={tavindoLogo} 
-            alt="TáVindo" 
-            className="h-10 w-auto"
-            data-testid="sidebar-logo"
-          />
-          <SidebarTrigger 
-            className="ml-auto md:hidden"
-            data-testid="sidebar-toggle"
-            aria-label="Alternar menu"
-          />
+        <div className="flex items-center gap-3">
+          {(establishment as any)?.logo_url ? (
+            <div className="h-10 w-10 bg-[#ea580c] rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+              <img 
+                src={(establishment as any).logo_url} 
+                alt={establishment?.name || "Estabelecimento"} 
+                className="h-8 w-8 object-contain"
+                data-testid="sidebar-logo-establishment"
+              />
+            </div>
+          ) : (
+            <div className="h-10 w-10 bg-[#ea580c] rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+              <img 
+                src={tavindoLogo} 
+                alt="TáVindo" 
+                className="h-8 w-8 object-contain"
+                data-testid="sidebar-logo"
+              />
+            </div>
+          )}
+          <span className="font-semibold text-foreground truncate text-sm">
+            {establishment?.name || "TáVindo"}
+          </span>
         </div>
       </SidebarHeader>
 

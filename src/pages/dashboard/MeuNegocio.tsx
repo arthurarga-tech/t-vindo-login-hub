@@ -461,16 +461,28 @@ export default function MeuNegocio() {
           <CardDescription>Configure os horários de abertura e fechamento</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3" data-testid="meu-negocio-hours-list">
+          <div className="space-y-3 pb-4" data-testid="meu-negocio-hours-list">
             {(Object.keys(dayLabels) as Array<keyof OpeningHours>).map((day) => (
               <div
                 key={day}
-                className="flex items-center gap-4 p-3 rounded-lg bg-muted/50"
+                className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-3 rounded-lg bg-muted/50"
                 data-testid={`meu-negocio-day-${day}`}
               >
-                <div className="w-32 font-medium text-sm">{dayLabels[day]}</div>
+                <div className="flex items-center justify-between sm:w-32">
+                  <span className="font-medium text-sm">{dayLabels[day]}</span>
+                  <div className="flex items-center gap-2 sm:hidden">
+                    <span className="text-sm text-muted-foreground">
+                      {openingHours[day].closed ? "Fechado" : "Aberto"}
+                    </span>
+                    <Switch
+                      checked={!openingHours[day].closed}
+                      onCheckedChange={(checked) => handleDayChange(day, "closed", !checked)}
+                      data-testid={`meu-negocio-day-${day}-switch-mobile`}
+                    />
+                  </div>
+                </div>
                 
-                <div className="flex items-center gap-2">
+                <div className="hidden sm:flex items-center gap-2">
                   <Switch
                     checked={!openingHours[day].closed}
                     onCheckedChange={(checked) => handleDayChange(day, "closed", !checked)}
@@ -482,22 +494,28 @@ export default function MeuNegocio() {
                 </div>
                 
                 {!openingHours[day].closed && (
-                  <div className="flex items-center gap-2 ml-auto">
-                    <Input
-                      type="time"
-                      value={openingHours[day].open}
-                      onChange={(e) => handleDayChange(day, "open", e.target.value)}
-                      className="w-28"
-                      data-testid={`meu-negocio-day-${day}-open`}
-                    />
-                    <span className="text-muted-foreground">às</span>
-                    <Input
-                      type="time"
-                      value={openingHours[day].close}
-                      onChange={(e) => handleDayChange(day, "close", e.target.value)}
-                      className="w-28"
-                      data-testid={`meu-negocio-day-${day}-close`}
-                    />
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:ml-auto w-full sm:w-auto">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground w-12 sm:hidden">Abre:</span>
+                      <Input
+                        type="time"
+                        value={openingHours[day].open}
+                        onChange={(e) => handleDayChange(day, "open", e.target.value)}
+                        className="w-full sm:w-28"
+                        data-testid={`meu-negocio-day-${day}-open`}
+                      />
+                    </div>
+                    <span className="hidden sm:block text-muted-foreground">às</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground w-12 sm:hidden">Fecha:</span>
+                      <Input
+                        type="time"
+                        value={openingHours[day].close}
+                        onChange={(e) => handleDayChange(day, "close", e.target.value)}
+                        className="w-full sm:w-28"
+                        data-testid={`meu-negocio-day-${day}-close`}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
