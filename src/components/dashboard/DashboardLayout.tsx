@@ -18,39 +18,30 @@ function DashboardHeader() {
 
   return (
     <header className="h-12 sm:h-14 border-b border-border flex items-center px-3 sm:px-4 md:px-6">
-      {isMobile ? (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={toggleSidebar}
-          className="mr-2 sm:mr-4 h-9 px-3 flex items-center gap-2"
-        >
-          <Menu className="h-4 w-4" />
-          <span className="text-sm font-medium">Menu</span>
-        </Button>
-      ) : (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleSidebar}
-                className="mr-2 sm:mr-4 h-9 w-9 hover:bg-accent"
-              >
-                {open ? (
-                  <PanelLeftClose className="h-5 w-5" />
-                ) : (
-                  <PanelLeft className="h-5 w-5" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              {open ? "Recolher menu" : "Expandir menu"}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={toggleSidebar}
+              className="mr-3 sm:mr-4 h-9 px-3 flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+            >
+              {isMobile ? (
+                <Menu className="h-4 w-4" />
+              ) : open ? (
+                <PanelLeftClose className="h-4 w-4" />
+              ) : (
+                <PanelLeft className="h-4 w-4" />
+              )}
+              <span className="text-sm font-medium">Menu</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {open ? "Recolher menu" : "Expandir menu"}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       <h1 className="text-sm sm:text-lg font-semibold text-foreground truncate">
         Painel do Estabelecimento
       </h1>
