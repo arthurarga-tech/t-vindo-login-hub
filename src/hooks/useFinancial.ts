@@ -270,8 +270,7 @@ export function useFinancialSummary(filters: FinancialFilters) {
       const summary = (data || []).reduce(
         (acc, t) => {
           if (t.type === "income") {
-            acc.grossIncome += Number(t.gross_amount) || 0;
-            acc.netIncome += Number(t.net_amount) || 0;
+            acc.grossIncome += Number(t.net_amount) || 0; // Bruto = vendas - taxas de cartão
             acc.totalFees += Number(t.fee_amount) || 0;
           } else {
             acc.totalExpenses += Number(t.gross_amount) || 0;
@@ -281,7 +280,9 @@ export function useFinancialSummary(filters: FinancialFilters) {
         { grossIncome: 0, netIncome: 0, totalFees: 0, totalExpenses: 0, balance: 0 }
       );
 
-      summary.balance = summary.netIncome - summary.totalExpenses;
+      // Líquido = Bruto - Despesas
+      summary.netIncome = summary.grossIncome - summary.totalExpenses;
+      summary.balance = summary.netIncome;
 
       return summary;
     },

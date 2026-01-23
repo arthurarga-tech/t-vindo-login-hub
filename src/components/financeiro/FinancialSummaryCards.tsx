@@ -22,14 +22,7 @@ export function FinancialSummaryCards({ summary, isLoading }: FinancialSummaryCa
       icon: TrendingUp,
       color: "text-blue-600",
       bgColor: "bg-blue-100",
-    },
-    {
-      title: "Faturamento Líquido",
-      value: summary.netIncome,
-      icon: Wallet,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
-      subtitle: summary.totalFees > 0 ? `-${formatCurrency(summary.totalFees)} taxas` : undefined,
+      subtitle: summary.totalFees > 0 ? `Taxas: -${formatCurrency(summary.totalFees)}` : undefined,
     },
     {
       title: "Despesas",
@@ -37,6 +30,14 @@ export function FinancialSummaryCards({ summary, isLoading }: FinancialSummaryCa
       icon: TrendingDown,
       color: "text-red-600",
       bgColor: "bg-red-100",
+    },
+    {
+      title: "Faturamento Líquido",
+      value: summary.netIncome,
+      icon: Wallet,
+      color: summary.netIncome >= 0 ? "text-green-600" : "text-red-600",
+      bgColor: summary.netIncome >= 0 ? "bg-green-100" : "bg-red-100",
+      subtitle: "Bruto - Despesas",
     },
     {
       title: "Saldo",
