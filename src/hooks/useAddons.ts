@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useEstablishment } from "./useEstablishment";
 
 export interface AddonGroup {
   id: string;
@@ -26,13 +25,6 @@ export interface Addon {
   order_position: number;
   created_at: string;
   updated_at: string;
-}
-
-export interface ProductAddonGroup {
-  id: string;
-  product_id: string;
-  addon_group_id: string;
-  created_at: string;
 }
 
 export interface AddonGroupFormData {
@@ -277,108 +269,6 @@ export function useDeleteAddon(addonGroupId: string | undefined) {
     },
     onError: () => {
       toast.error("Erro ao excluir adicional");
-    },
-  });
-}
-
-// Fetch all addon groups for an establishment
-export function useAllAddonGroups() {
-  const { data: establishment } = useEstablishment();
-
-  return useQuery({
-    queryKey: ["all-addon-groups", establishment?.id],
-    queryFn: async () => {
-      if (!establishment?.id) return [];
-
-      const { data, error } = await supabase
-        .from("addon_groups")
-        .select(`
-          *,
-          category:categories(name)
-        `)
-        .eq("establishment_id", establishment.id)
-        .eq("active", true)
-        .order("name");
-
-      if (error) throw error;
-      return data as (AddonGroup & { category: { name: string } | null })[];
-    },
-    enabled: !!establishment?.id,
-  });
-}
-
-// Fetch addon groups linked to a specific product
-export function useProductAddonGroups(productId: string | undefined) {
-  return useQuery({
-    queryKey: ["product-addon-groups", productId],
-    queryFn: async () => {
-      if (!productId) return [];
-
-      const { data, error } = await supabase
-        .from("product_addon_groups")
-        .select(`
-          *,
-          addon_group:addon_groups(
-            *,
-            category:categories(name)
-          )
-        `)
-        .eq("product_id", productId);
-
-      if (error) throw error;
-      return data as (ProductAddonGroup & { 
-        addon_group: AddonGroup & { category: { name: string } | null } 
-      })[];
-    },
-    enabled: !!productId,
-  });
-}
-
-// Link addon group to product
-export function useLinkAddonGroupToProduct() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ productId, addonGroupId }: { productId: string; addonGroupId: string }) => {
-      const { error } = await supabase
-        .from("product_addon_groups")
-        .insert({
-          product_id: productId,
-          addon_group_id: addonGroupId,
-        });
-
-      if (error) throw error;
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["product-addon-groups", variables.productId] });
-      toast.success("Grupo de adicionais vinculado ao produto");
-    },
-    onError: () => {
-      toast.error("Erro ao vincular grupo de adicionais");
-    },
-  });
-}
-
-// Unlink addon group from product
-export function useUnlinkAddonGroupFromProduct() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ productId, addonGroupId }: { productId: string; addonGroupId: string }) => {
-      const { error } = await supabase
-        .from("product_addon_groups")
-        .delete()
-        .eq("product_id", productId)
-        .eq("addon_group_id", addonGroupId);
-
-      if (error) throw error;
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["product-addon-groups", variables.productId] });
-      toast.success("Grupo de adicionais removido do produto");
-    },
-    onError: () => {
-      toast.error("Erro ao remover grupo de adicionais");
     },
   });
 }
