@@ -9,7 +9,7 @@ import { OrderKanban } from "@/components/pedidos/OrderKanban";
 import { OrderList } from "@/components/pedidos/OrderList";
 import { OrderDetailModal } from "@/components/pedidos/OrderDetailModal";
 import { OrderFilters, OrderFiltersState } from "@/components/pedidos/OrderFilters";
-import { startOfDay, startOfWeek, subDays, isAfter } from "date-fns";
+import { startOfDay, startOfWeek, startOfMonth, subDays, isAfter } from "date-fns";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { usePrintOrder } from "@/hooks/usePrintOrder";
 import { PreparationTimeConfig } from "@/components/pedidos/PreparationTimeConfig";
@@ -29,7 +29,7 @@ export default function Pedidos() {
   const [filters, setFilters] = useState<OrderFiltersState>({
     search: "",
     status: "all",
-    dateRange: "all",
+    dateRange: "today",
     showFinished: true,
     showScheduledOnly: false,
   });
@@ -261,31 +261,29 @@ export default function Pedidos() {
     }
 
     // Date range filter
-    if (filters.dateRange !== "all") {
-      const now = new Date();
-      let startDate: Date;
+    const now = new Date();
+    let startDate: Date;
 
-      switch (filters.dateRange) {
-        case "today":
-          startDate = startOfDay(now);
-          break;
-        case "yesterday":
-          startDate = startOfDay(subDays(now, 1));
-          result = result.filter((o) => {
-            const orderDate = new Date(o.created_at);
-            return orderDate >= startDate && orderDate < startOfDay(now);
-          });
-          break;
-        case "week":
-          startDate = startOfWeek(now, { weekStartsOn: 0 });
-          break;
-        default:
-          startDate = new Date(0);
-      }
-
-      if (filters.dateRange !== "yesterday") {
+    switch (filters.dateRange) {
+      case "today":
+        startDate = startOfDay(now);
         result = result.filter((o) => isAfter(new Date(o.created_at), startDate));
-      }
+        break;
+      case "yesterday":
+        startDate = startOfDay(subDays(now, 1));
+        result = result.filter((o) => {
+          const orderDate = new Date(o.created_at);
+          return orderDate >= startDate && orderDate < startOfDay(now);
+        });
+        break;
+      case "week":
+        startDate = startOfWeek(now, { weekStartsOn: 0 });
+        result = result.filter((o) => isAfter(new Date(o.created_at), startDate));
+        break;
+      case "month":
+        startDate = startOfMonth(now);
+        result = result.filter((o) => isAfter(new Date(o.created_at), startDate));
+        break;
     }
 
     // Hide finished orders (delivered/cancelled)
