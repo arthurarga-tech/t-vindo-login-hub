@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Edit2, Trash2, Eye, EyeOff, Package, GripVertical } from "lucide-react";
+import { Edit2, Trash2, Eye, EyeOff, Package, GripVertical, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Product, useDeleteProduct, useUpdateProduct, useReorderProducts } from "@/hooks/useProducts";
+import { ProductAddonGroupsModal } from "./ProductAddonGroupsModal";
 import { cn } from "@/lib/utils";
 import {
   DndContext,
@@ -45,6 +46,7 @@ interface SortableProductCardProps {
   onEdit: (product: Product) => void;
   onDelete: (id: string) => void;
   onToggleActive: (product: Product) => void;
+  onManageAddons: (product: Product) => void;
   formatPrice: (price: number) => string;
 }
 
@@ -53,6 +55,7 @@ function SortableProductCard({
   onEdit,
   onDelete,
   onToggleActive,
+  onManageAddons,
   formatPrice,
 }: SortableProductCardProps) {
   const {
@@ -146,11 +149,11 @@ function SortableProductCard({
             </span>
           </div>
 
-          <div className="flex items-center gap-1 mt-3 pt-3 border-t">
+          <div className="flex items-center gap-1 mt-3 pt-3 border-t flex-wrap">
             <Button
               variant="ghost"
               size="sm"
-              className="flex-1"
+              className="flex-1 min-w-0"
               onClick={() => onToggleActive(product)}
               data-testid={`product-card-${product.id}-toggle-active-button`}
               aria-label={product.active ? "Ocultar produto" : "Mostrar produto"}
@@ -158,25 +161,36 @@ function SortableProductCard({
               {product.active ? (
                 <>
                   <EyeOff className="h-4 w-4 mr-1" />
-                  Ocultar
+                  <span className="hidden sm:inline">Ocultar</span>
                 </>
               ) : (
                 <>
                   <Eye className="h-4 w-4 mr-1" />
-                  Mostrar
+                  <span className="hidden sm:inline">Mostrar</span>
                 </>
               )}
             </Button>
             <Button
               variant="ghost"
               size="sm"
-              className="flex-1"
+              className="flex-1 min-w-0"
+              onClick={() => onManageAddons(product)}
+              data-testid={`product-card-${product.id}-addons-button`}
+              aria-label="Gerenciar adicionais"
+            >
+              <Link2 className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Adicionais</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex-1 min-w-0"
               onClick={() => onEdit(product)}
               data-testid={`product-card-${product.id}-edit-button`}
               aria-label="Editar produto"
             >
               <Edit2 className="h-4 w-4 mr-1" />
-              Editar
+              <span className="hidden sm:inline">Editar</span>
             </Button>
             <Button
               variant="ghost"
@@ -202,6 +216,7 @@ export function ProductList({
   isLoading,
 }: ProductListProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [addonProduct, setAddonProduct] = useState<Product | null>(null);
   const deleteProduct = useDeleteProduct(establishmentId);
   const updateProduct = useUpdateProduct(establishmentId);
   const reorderProducts = useReorderProducts(establishmentId);
@@ -315,6 +330,7 @@ export function ProductList({
                 onEdit={onEdit}
                 onDelete={setDeleteId}
                 onToggleActive={handleToggleActive}
+                onManageAddons={setAddonProduct}
                 formatPrice={formatPrice}
               />
             ))}
@@ -347,6 +363,12 @@ export function ProductList({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ProductAddonGroupsModal
+        open={!!addonProduct}
+        onOpenChange={(open) => !open && setAddonProduct(null)}
+        product={addonProduct}
+      />
     </>
   );
 }
