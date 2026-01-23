@@ -8,7 +8,7 @@ import { OrderStatus } from "@/hooks/useOrders";
 export interface OrderFiltersState {
   search: string;
   status: OrderStatus | "all";
-  dateRange: "all" | "today" | "yesterday" | "week";
+  dateRange: "today" | "yesterday" | "week" | "month";
   showFinished: boolean;
   showScheduledOnly: boolean;
 }
@@ -30,17 +30,17 @@ const statusOptions: { value: OrderStatus | "all"; label: string }[] = [
 ];
 
 const dateOptions = [
-  { value: "all", label: "Qualquer data" },
   { value: "today", label: "Hoje" },
   { value: "yesterday", label: "Ontem" },
   { value: "week", label: "Esta semana" },
+  { value: "month", label: "Este mês" },
 ];
 
 export function OrderFilters({ filters, onChange }: OrderFiltersProps) {
   const hasActiveFilters = 
     filters.search || 
     filters.status !== "all" || 
-    filters.dateRange !== "all" ||
+    filters.dateRange !== "today" ||
     !filters.showFinished ||
     filters.showScheduledOnly;
 
@@ -48,7 +48,7 @@ export function OrderFilters({ filters, onChange }: OrderFiltersProps) {
     onChange({
       search: "",
       status: "all",
-      dateRange: "all",
+      dateRange: "today",
       showFinished: true,
       showScheduledOnly: false,
     });
