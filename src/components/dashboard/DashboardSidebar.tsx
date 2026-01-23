@@ -73,20 +73,18 @@ export function DashboardSidebar() {
       <SidebarHeader className="p-4 border-b border-border">
         <div className="flex items-center gap-3">
           {(establishment as any)?.logo_url ? (
-            <div className="h-10 w-10 bg-[#ea580c] rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
-              <img 
-                src={(establishment as any).logo_url} 
-                alt={establishment?.name || "Estabelecimento"} 
-                className="h-8 w-8 object-contain"
-                data-testid="sidebar-logo-establishment"
-              />
-            </div>
+            <img 
+              src={(establishment as any).logo_url} 
+              alt={establishment?.name || "Estabelecimento"} 
+              className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover bg-primary/10 border-2 border-primary/20 flex-shrink-0"
+              data-testid="sidebar-logo-establishment"
+            />
           ) : (
-            <div className="h-10 w-10 bg-[#ea580c] rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-primary flex items-center justify-center flex-shrink-0 border-2 border-primary/20">
               <img 
                 src={tavindoLogo} 
                 alt="TáVindo" 
-                className="h-8 w-8 object-contain"
+                className="h-7 w-7 sm:h-8 sm:w-8 object-contain"
                 data-testid="sidebar-logo"
               />
             </div>
