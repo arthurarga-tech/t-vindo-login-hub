@@ -25,7 +25,7 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
-  SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import tavindoLogo from "@/assets/tavindo-logo.png";
@@ -43,7 +43,14 @@ const menuItems = [
 export function DashboardSidebar() {
   const { signOut } = useAuth();
   const { data: establishment } = useEstablishment();
+  const { setOpenMobile, isMobile } = useSidebar();
   const [copied, setCopied] = useState(false);
+
+  const handleMenuItemClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   const handleCopyLink = async () => {
     if (!establishment?.slug) {
@@ -126,6 +133,7 @@ export function DashboardSidebar() {
                       activeClassName="bg-primary/10 text-primary font-medium border-l-2 border-primary"
                       data-testid={`sidebar-nav-${item.testId}`}
                       aria-label={item.title}
+                      onClick={handleMenuItemClick}
                     >
                       <item.icon className="h-5 w-5" />
                       <span>{item.title}</span>
