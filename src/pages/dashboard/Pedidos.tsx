@@ -341,7 +341,7 @@ export default function Pedidos() {
             data-testid="quick-order-button"
           >
             <Plus className="h-4 w-4" />
-            Novo Pedido
+            <span className="hidden sm:inline">Novo Pedido</span>
           </Button>
           
           <Button
