@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { ImageUpload } from "@/components/catalogo/ImageUpload";
+import { TimePicker } from "@/components/ui/time-picker";
 import {
   Select,
   SelectContent,
@@ -495,23 +496,23 @@ export default function MeuNegocio() {
                 
                 {!openingHours[day].closed && (
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:ml-auto w-full sm:w-auto">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-1 sm:flex-initial">
                       <span className="text-sm text-muted-foreground w-12 sm:hidden">Abre:</span>
-                      <Input
-                        type="time"
+                      <TimePicker
                         value={openingHours[day].open}
-                        onChange={(e) => handleDayChange(day, "open", e.target.value)}
+                        onChange={(value) => handleDayChange(day, "open", value)}
+                        placeholder="Abre"
                         className="w-full sm:w-28"
                         data-testid={`meu-negocio-day-${day}-open`}
                       />
                     </div>
                     <span className="hidden sm:block text-muted-foreground">às</span>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-1 sm:flex-initial">
                       <span className="text-sm text-muted-foreground w-12 sm:hidden">Fecha:</span>
-                      <Input
-                        type="time"
+                      <TimePicker
                         value={openingHours[day].close}
-                        onChange={(e) => handleDayChange(day, "close", e.target.value)}
+                        onChange={(value) => handleDayChange(day, "close", value)}
+                        placeholder="Fecha"
                         className="w-full sm:w-28"
                         data-testid={`meu-negocio-day-${day}-close`}
                       />
