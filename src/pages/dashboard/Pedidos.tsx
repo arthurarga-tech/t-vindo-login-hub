@@ -10,6 +10,7 @@ import { OrderList } from "@/components/pedidos/OrderList";
 import { OrderDetailModal } from "@/components/pedidos/OrderDetailModal";
 import { OrderFilters, OrderFiltersState } from "@/components/pedidos/OrderFilters";
 import { startOfDay, startOfWeek, startOfMonth, subDays, isAfter } from "date-fns";
+import { getNowInSaoPaulo } from "@/lib/dateUtils";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { usePrintOrder } from "@/hooks/usePrintOrder";
 import { PreparationTimeConfig } from "@/components/pedidos/PreparationTimeConfig";
@@ -260,8 +261,8 @@ export default function Pedidos() {
       result = result.filter((o) => o.status === filters.status);
     }
 
-    // Date range filter
-    const now = new Date();
+    // Date range filter - use São Paulo timezone
+    const now = getNowInSaoPaulo();
     let startDate: Date;
 
     switch (filters.dateRange) {
