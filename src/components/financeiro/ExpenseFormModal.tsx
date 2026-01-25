@@ -10,6 +10,7 @@ import { Calendar as CalendarIcon, Settings } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { getNowInSaoPaulo } from "@/lib/dateUtils";
 import { FinancialCategory, FinancialTransaction, useCreateTransaction, useUpdateTransaction } from "@/hooks/useFinancial";
 import { toast } from "sonner";
 
@@ -31,7 +32,7 @@ export function ExpenseFormModal({
   const [categoryId, setCategoryId] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
-  const [date, setDate] = useState<Date>(new Date());
+  const [date, setDate] = useState<Date>(getNowInSaoPaulo());
   
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
@@ -97,7 +98,7 @@ export function ExpenseFormModal({
     setCategoryId("");
     setAmount("");
     setDescription("");
-    setDate(new Date());
+    setDate(getNowInSaoPaulo());
   };
 
   const isPending = createTransaction.isPending || updateTransaction.isPending;
