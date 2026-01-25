@@ -79,6 +79,24 @@ export function createTodayInSaoPaulo(hours: number = 0, minutes: number = 0): D
 }
 
 /**
+ * Get start of day in São Paulo timezone
+ */
+export function startOfDayInSaoPaulo(date?: Date): Date {
+  const d = date ? toSaoPauloTime(date) : getNowInSaoPaulo();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/**
+ * Get end of day in São Paulo timezone
+ */
+export function endOfDayInSaoPaulo(date?: Date): Date {
+  const d = date ? toSaoPauloTime(date) : getNowInSaoPaulo();
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+/**
  * Get dates for the next N days starting from today in São Paulo
  */
 export function getNextDaysInSaoPaulo(count: number): Date[] {

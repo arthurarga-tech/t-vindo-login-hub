@@ -3,12 +3,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Calendar as CalendarIcon, Plus } from "lucide-react";
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfDay, endOfDay, subDays } from "date-fns";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { FinancialCategory } from "@/hooks/useFinancial";
 import { DateRange } from "react-day-picker";
-import { getNowInSaoPaulo } from "@/lib/dateUtils";
+import { getNowInSaoPaulo, startOfDayInSaoPaulo, endOfDayInSaoPaulo } from "@/lib/dateUtils";
 
 type PeriodType = "today" | "yesterday" | "week" | "month" | "quarter" | "custom";
 
@@ -47,11 +47,11 @@ export function FinancialFilters({
     
     switch (newPeriod) {
       case "today":
-        onDateRangeChange({ start: startOfDay(today), end: endOfDay(today) });
+        onDateRangeChange({ start: startOfDayInSaoPaulo(today), end: endOfDayInSaoPaulo(today) });
         break;
       case "yesterday":
         const yesterday = subDays(today, 1);
-        onDateRangeChange({ start: startOfDay(yesterday), end: endOfDay(yesterday) });
+        onDateRangeChange({ start: startOfDayInSaoPaulo(yesterday), end: endOfDayInSaoPaulo(yesterday) });
         break;
       case "week":
         onDateRangeChange({ start: startOfWeek(today, { locale: ptBR }), end: endOfWeek(today, { locale: ptBR }) });

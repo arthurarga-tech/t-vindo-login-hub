@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { DollarSign } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { startOfMonth, endOfMonth } from "date-fns";
-import { getNowInSaoPaulo } from "@/lib/dateUtils";
+import { getNowInSaoPaulo, formatInSaoPaulo } from "@/lib/dateUtils";
 import {
   useFinancialCategories,
   useFinancialTransactions,
