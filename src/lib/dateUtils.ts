@@ -82,7 +82,7 @@ export function createTodayInSaoPaulo(hours: number = 0, minutes: number = 0): D
  * Get start of day in São Paulo timezone
  */
 export function startOfDayInSaoPaulo(date?: Date): Date {
-  const d = date ? toSaoPauloTime(date) : getNowInSaoPaulo();
+  const d = date ? new Date(date.getTime()) : getNowInSaoPaulo();
   d.setHours(0, 0, 0, 0);
   return d;
 }
@@ -91,9 +91,18 @@ export function startOfDayInSaoPaulo(date?: Date): Date {
  * Get end of day in São Paulo timezone
  */
 export function endOfDayInSaoPaulo(date?: Date): Date {
-  const d = date ? toSaoPauloTime(date) : getNowInSaoPaulo();
+  const d = date ? new Date(date.getTime()) : getNowInSaoPaulo();
   d.setHours(23, 59, 59, 999);
   return d;
+}
+
+/**
+ * Get the date string in São Paulo timezone (YYYY-MM-DD format)
+ * This is the correct way to get a date for database queries
+ */
+export function getDateStringInSaoPaulo(date?: Date): string {
+  const d = date || new Date();
+  return formatTz(d, "yyyy-MM-dd", { timeZone: SAO_PAULO_TIMEZONE });
 }
 
 /**
