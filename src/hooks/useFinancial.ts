@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEstablishment } from "./useEstablishment";
-import { formatInSaoPaulo } from "@/lib/dateUtils";
+import { getDateStringInSaoPaulo } from "@/lib/dateUtils";
 
 export interface FinancialCategory {
   id: string;
@@ -129,8 +129,8 @@ export function useFinancialTransactions(filters: FinancialFilters) {
           category:financial_categories(*)
         `)
         .eq("establishment_id", establishment.id)
-        .gte("transaction_date", formatInSaoPaulo(filters.startDate, "yyyy-MM-dd"))
-        .lte("transaction_date", formatInSaoPaulo(filters.endDate, "yyyy-MM-dd"))
+        .gte("transaction_date", getDateStringInSaoPaulo(filters.startDate))
+        .lte("transaction_date", getDateStringInSaoPaulo(filters.endDate))
         .order("transaction_date", { ascending: false })
         .order("created_at", { ascending: false });
 
@@ -180,7 +180,7 @@ export function useCreateTransaction() {
           fee_amount: 0,
           net_amount: transaction.gross_amount,
           description: transaction.description,
-          transaction_date: formatInSaoPaulo(transaction.transaction_date, "yyyy-MM-dd"),
+          transaction_date: getDateStringInSaoPaulo(transaction.transaction_date),
           payment_method: transaction.payment_method || null,
         });
 
@@ -217,7 +217,7 @@ export function useUpdateTransaction() {
           gross_amount,
           net_amount: gross_amount,
           description,
-          transaction_date: formatInSaoPaulo(transaction_date, "yyyy-MM-dd"),
+          transaction_date: getDateStringInSaoPaulo(transaction_date),
         })
         .eq("id", id);
 
@@ -263,8 +263,8 @@ export function useFinancialSummary(filters: FinancialFilters) {
         .from("financial_transactions")
         .select("type, gross_amount, fee_amount, net_amount")
         .eq("establishment_id", establishment.id)
-        .gte("transaction_date", formatInSaoPaulo(filters.startDate, "yyyy-MM-dd"))
-        .lte("transaction_date", formatInSaoPaulo(filters.endDate, "yyyy-MM-dd"));
+        .gte("transaction_date", getDateStringInSaoPaulo(filters.startDate))
+        .lte("transaction_date", getDateStringInSaoPaulo(filters.endDate));
 
       if (error) throw error;
 
