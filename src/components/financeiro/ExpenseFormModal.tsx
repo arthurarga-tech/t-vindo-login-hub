@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Calendar as CalendarIcon, Settings } from "lucide-react";
-import { format } from "date-fns";
+import { parse, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { getNowInSaoPaulo } from "@/lib/dateUtils";
@@ -46,7 +46,7 @@ export function ExpenseFormModal({
       setCategoryId(editTransaction.category_id);
       setAmount(editTransaction.gross_amount.toString().replace(".", ","));
       setDescription(editTransaction.description);
-      setDate(new Date(editTransaction.transaction_date));
+      setDate(parse(editTransaction.transaction_date, "yyyy-MM-dd", new Date()));
     } else {
       resetForm();
     }

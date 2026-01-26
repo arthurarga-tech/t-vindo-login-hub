@@ -2,7 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Trash2, Pencil, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
-import { format } from "date-fns";
+import { parse, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { FinancialTransaction } from "@/hooks/useFinancial";
 import {
@@ -97,7 +97,7 @@ export function TransactionList({ transactions, isLoading, onDelete, onEdit }: T
                 className="font-medium"
                 data-testid="transaction-date"
               >
-                {format(new Date(t.transaction_date), "dd/MM/yy", { locale: ptBR })}
+                {format(parse(t.transaction_date, "yyyy-MM-dd", new Date()), "dd/MM/yy", { locale: ptBR })}
               </TableCell>
               <TableCell>
                 {t.type === "income" ? (
