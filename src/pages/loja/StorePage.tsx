@@ -12,6 +12,7 @@ import { CartProvider } from "@/hooks/useCart";
 import { AlertCircle } from "lucide-react";
 import { useStoreOpeningHours } from "@/hooks/useStoreOpeningHours";
 import { hexToHSL } from "@/lib/formatters";
+import { useThemeColor } from "@/hooks/useThemeColor";
 
 export default function StorePage() {
   const { slug } = useParams<{ slug: string }>();
@@ -27,6 +28,9 @@ export default function StorePage() {
     (establishment as any)?.opening_hours,
     isTemporaryClosed
   );
+
+  // Dynamically update browser theme-color based on establishment's primary color
+  useThemeColor((establishment as any)?.theme_primary_color);
 
   const isLoading = loadingEstablishment || loadingCategories || loadingProducts;
 
