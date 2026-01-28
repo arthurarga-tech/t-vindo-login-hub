@@ -275,6 +275,7 @@ export default function OrderTrackingPage() {
               <Button 
                 type="submit" 
                 disabled={!orderNumber}
+                style={{ backgroundColor: "hsl(var(--store-primary, var(--primary)))" }}
                 data-testid="order-tracking-search-button"
               >
                 <Search className="h-4 w-4 mr-2" />

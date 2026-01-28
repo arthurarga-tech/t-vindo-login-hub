@@ -137,7 +137,7 @@ export function ProductAddonSelector({
                   <div
                     key={addon.id}
                     className={`flex items-center justify-between p-3 rounded-md border ${
-                      quantity > 0 ? "border-primary bg-primary/5" : "border-border"
+                      quantity > 0 ? "border-[hsl(var(--store-primary,var(--primary)))] bg-[hsl(var(--store-primary,var(--primary))/0.05)]" : "border-border"
                     }`}
                     data-testid={`addon-item-${addon.id}`}
                     role="listitem"
@@ -150,7 +150,8 @@ export function ProductAddonSelector({
                         {addon.name}
                       </span>
                       <span 
-                        className="text-sm font-medium text-primary ml-2"
+                        className="text-sm font-medium ml-2"
+                        style={{ color: "hsl(var(--store-primary, var(--primary)))" }}
                         data-testid="addon-item-price"
                       >
                         +{formatPrice(addon.price)}

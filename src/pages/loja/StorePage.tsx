@@ -166,6 +166,11 @@ export default function StorePage() {
                 const categoryProducts = productsByCategory?.[category.id] || [];
                 if (categoryProducts.length === 0) return null;
                 
+                // Skip if a specific category is selected and this is not it
+                if (activeCategory !== null && activeCategory !== category.id) {
+                  return null;
+                }
+                
                 return (
                   <CategorySection
                     key={category.id}
