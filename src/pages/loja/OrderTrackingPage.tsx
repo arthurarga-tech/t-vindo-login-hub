@@ -14,6 +14,7 @@ import { usePublicEstablishment } from "@/hooks/usePublicStore";
 import { formatInSaoPaulo } from "@/lib/dateUtils";
 import { ptBR } from "date-fns/locale";
 import { hexToHSL } from "@/lib/formatters";
+import { useThemeColor } from "@/hooks/useThemeColor";
 
 const statusConfig: Record<string, { label: string; icon: React.ComponentType<any>; color: string }> = {
   pending: { label: "Pendente", icon: Clock, color: "bg-yellow-500" },
@@ -94,6 +95,9 @@ export default function OrderTrackingPage() {
   const [hasAutoLoaded, setHasAutoLoaded] = useState(false);
 
   const { data: establishment } = usePublicEstablishment(slug || "");
+
+  // Dynamically update browser theme-color based on establishment's primary color
+  useThemeColor(establishment?.theme_primary_color);
 
   // Custom styles based on establishment theme colors
   const customStyles = useMemo(() => {

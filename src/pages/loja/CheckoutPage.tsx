@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScheduleSelector } from "@/components/loja/ScheduleSelector";
 import { hexToHSL } from "@/lib/formatters";
+import { useThemeColor } from "@/hooks/useThemeColor";
 
 export default function CheckoutPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -25,6 +26,9 @@ export default function CheckoutPage() {
   const [showScheduler, setShowScheduler] = useState(false);
 
   const allowScheduling = (establishment as any)?.allow_scheduling ?? false;
+
+  // Dynamically update browser theme-color based on establishment's primary color
+  useThemeColor((establishment as any)?.theme_primary_color);
 
   // Generate custom CSS variables for theme
   const customStyles = useMemo(() => {
