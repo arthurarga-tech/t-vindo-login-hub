@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { usePublicEstablishment, usePublicCategories, usePublicProducts } from "@/hooks/usePublicStore";
 import { usePublicPreparationTime } from "@/hooks/usePublicPreparationTime";
@@ -5,16 +6,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StoreHeader } from "@/components/loja/StoreHeader";
 import { StoreInfo } from "@/components/loja/StoreInfo";
 import { CategorySection } from "@/components/loja/CategorySection";
+import { CategoryFilter } from "@/components/loja/CategoryFilter";
 import { CartBar } from "@/components/loja/CartBar";
 import { CartProvider } from "@/hooks/useCart";
-import { AlertCircle, Clock } from "lucide-react";
-import { useMemo } from "react";
+import { AlertCircle } from "lucide-react";
 import { useStoreOpeningHours } from "@/hooks/useStoreOpeningHours";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { hexToHSL } from "@/lib/formatters";
 
 export default function StorePage() {
   const { slug } = useParams<{ slug: string }>();
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   
   const { data: establishment, isLoading: loadingEstablishment } = usePublicEstablishment(slug);
   const { data: categories, isLoading: loadingCategories } = usePublicCategories(establishment?.id);
@@ -109,6 +110,15 @@ export default function StorePage() {
           isTemporaryClosed={isTemporaryClosed}
           isStoreOpen={isOpen}
           allowScheduling={(establishment as any).allow_scheduling}
+          nextOpenTime={nextOpenTime}
+        />
+        
+        {/* Category filter - sticky navigation */}
+        <CategoryFilter
+          categories={categories || []}
+          activeCategory={activeCategory}
+          onSelectCategory={setActiveCategory}
+          stickyTop={120}
         />
         
         <main 
@@ -116,22 +126,6 @@ export default function StorePage() {
           data-testid="store-page-main"
           role="main"
         >
-          {!isOpen && (
-            <Alert 
-              variant="destructive" 
-              className="mb-4 sm:mb-6"
-              data-testid="store-page-closed-alert"
-              role="alert"
-            >
-              <Clock className="h-4 w-4" />
-              <AlertTitle className="text-sm sm:text-base">Estabelecimento Fechado</AlertTitle>
-              <AlertDescription className="text-xs sm:text-sm">
-                {nextOpenTime
-                  ? `Abrimos ${nextOpenTime.day} às ${nextOpenTime.time}`
-                  : "Consulte os horários de funcionamento abaixo"}
-              </AlertDescription>
-            </Alert>
-          )}
           <StoreInfo
             description={(establishment as any).description}
             phone={(establishment as any).phone}
@@ -162,6 +156,7 @@ export default function StorePage() {
             </div>
           ) : (
             <div 
+              id="store-page-categories"
               className="space-y-6 sm:space-y-8"
               data-testid="store-page-categories"
               role="region"

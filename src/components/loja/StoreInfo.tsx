@@ -1,6 +1,6 @@
-import { MapPin, Phone, Clock, Truck, Info, Timer } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import { MapPin, Phone, Clock, Truck, Info, Timer, ChevronDown, ChevronUp } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface DayHours {
   open: string;
@@ -73,6 +73,8 @@ export function StoreInfo({
   minOrderValue,
   estimatedTime,
 }: StoreInfoProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
   const hasAddress = address || neighborhood || city;
   const hasDeliveryInfo = deliveryInfo || (minOrderValue && minOrderValue > 0);
   const hasAnyInfo = description || phone || hasAddress || openingHours || hasDeliveryInfo || estimatedTime;
@@ -80,6 +82,7 @@ export function StoreInfo({
   if (!hasAnyInfo) return null;
 
   const fullAddress = [address, neighborhood, city].filter(Boolean).join(", ");
+  const shortLocation = [neighborhood, city].filter(Boolean).join(", ");
 
   // Format estimated time display
   const getEstimatedTimeLabel = () => {
@@ -91,137 +94,172 @@ export function StoreInfo({
     return `~${estimatedTime.totalMinutes} min`;
   };
 
+  const hasExpandableContent = description || phone || (hasAddress && address) || openingHours || hasDeliveryInfo;
+
   return (
-    <Card 
-      className="mb-6"
-      data-testid="store-info"
-      role="region"
-      aria-label="Informações da loja"
+    <Collapsible 
+      open={isExpanded} 
+      onOpenChange={setIsExpanded}
+      className="mb-4"
     >
-      <CardContent className="p-4 space-y-4">
-        {/* Estimated Time Badge */}
-        {estimatedTime && (
-          <div className="flex items-center gap-2">
-            <Badge 
-              variant="secondary" 
-              className="flex items-center gap-1.5 text-sm py-1 px-3"
-              data-testid="store-info-estimated-time"
-            >
-              <Timer className="h-4 w-4" />
-              <span>Tempo estimado: {getEstimatedTimeLabel()}</span>
-            </Badge>
+      {/* Compact summary - always visible */}
+      <div 
+        className="bg-card border border-border rounded-lg overflow-hidden"
+        data-testid="store-info"
+        role="region"
+        aria-label="Informações da loja"
+      >
+        <CollapsibleTrigger 
+          className="w-full p-3 flex items-center justify-between gap-3 hover:bg-muted/50 transition-colors"
+          data-testid="store-info-toggle"
+          aria-expanded={isExpanded}
+        >
+          <div className="flex items-center gap-4 text-sm flex-wrap">
+            {/* Estimated time */}
+            {estimatedTime && (
+              <div 
+                className="flex items-center gap-1.5 text-foreground"
+                data-testid="store-info-estimated-time"
+              >
+                <Timer className="h-4 w-4 text-[hsl(var(--store-primary,var(--primary)))]" />
+                <span className="font-medium">{getEstimatedTimeLabel()}</span>
+              </div>
+            )}
+            
+            {/* Short location */}
+            {shortLocation && (
+              <div 
+                className="flex items-center gap-1.5 text-muted-foreground"
+                data-testid="store-info-short-location"
+              >
+                <MapPin className="h-4 w-4 text-[hsl(var(--store-primary,var(--primary)))]" />
+                <span>{shortLocation}</span>
+              </div>
+            )}
+            
+            {/* Min order if no other info */}
+            {!estimatedTime && !shortLocation && minOrderValue && minOrderValue > 0 && (
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <Truck className="h-4 w-4 text-[hsl(var(--store-primary,var(--primary)))]" />
+                <span>Mín. {formatPrice(minOrderValue)}</span>
+              </div>
+            )}
           </div>
-        )}
-
-        {/* Description */}
-        {description && (
-          <div 
-            className="flex gap-3"
-            data-testid="store-info-description"
-          >
-            <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-muted-foreground">{description}</p>
-          </div>
-        )}
-
-        {/* Contact & Address */}
-        <div className="flex flex-wrap gap-x-6 gap-y-3">
-          {phone && (
-            <a
-              href={`tel:${phone.replace(/\D/g, "")}`}
-              className="flex items-center gap-2 text-sm hover:text-primary transition-colors"
-              data-testid="store-info-phone"
-              aria-label={`Telefone: ${phone}`}
-            >
-              <Phone className="h-4 w-4 text-primary" />
-              <span>{phone}</span>
-            </a>
-          )}
-
-          {hasAddress && (
-            <div 
-              className="flex items-center gap-2 text-sm"
-              data-testid="store-info-address"
-            >
-              <MapPin className="h-4 w-4 text-primary" />
-              <span>{fullAddress}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Opening Hours */}
-        {openingHours && (
-          <div 
-            className="space-y-2"
-            data-testid="store-info-hours"
-            role="region"
-            aria-label="Horários de funcionamento"
-          >
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Clock className="h-4 w-4 text-primary" />
-              <span>Horários de Funcionamento</span>
-            </div>
-            <div 
-              className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 text-xs"
-              role="list"
-            >
-              {dayOrder.map((day) => {
-                const hours = openingHours[day];
-                return (
-                  <div
-                    key={day}
-                    className={`p-2 rounded-md text-center ${
-                      hours?.closed
-                        ? "bg-muted text-muted-foreground"
-                        : "bg-primary/10 text-foreground"
-                    }`}
-                    data-testid={`store-info-hours-${day}`}
-                    role="listitem"
-                  >
-                    <div className="font-medium">{dayLabels[day]}</div>
-                    <div className="mt-1">
-                      {hours?.closed ? (
-                        "Fechado"
-                      ) : (
-                        <>
-                          {hours?.open}
-                          <br />
-                          {hours?.close}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Delivery Info */}
-        {hasDeliveryInfo && (
-          <div 
-            className="space-y-2"
-            data-testid="store-info-delivery"
-            role="region"
-            aria-label="Informações de entrega"
-          >
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Truck className="h-4 w-4 text-primary" />
-              <span>Entrega</span>
-            </div>
-            <div className="text-sm text-muted-foreground space-y-1">
-              {minOrderValue && minOrderValue > 0 && (
-                <p data-testid="store-info-min-order">
-                  Pedido mínimo: {formatPrice(minOrderValue)}
-                </p>
-              )}
-              {deliveryInfo && (
-                <p data-testid="store-info-delivery-text">{deliveryInfo}</p>
+          
+          {hasExpandableContent && (
+            <div className="flex items-center gap-1 text-muted-foreground text-xs flex-shrink-0">
+              <span className="hidden sm:inline">{isExpanded ? "Ver menos" : "Ver mais"}</span>
+              {isExpanded ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
               )}
             </div>
+          )}
+        </CollapsibleTrigger>
+
+        {/* Expandable content */}
+        <CollapsibleContent>
+          <div className="px-3 pb-3 pt-1 space-y-3 border-t border-border/50">
+            {/* Description */}
+            {description && (
+              <div 
+                className="flex gap-2 pt-2"
+                data-testid="store-info-description"
+              >
+                <Info className="h-4 w-4 text-[hsl(var(--store-primary,var(--primary)))] flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-muted-foreground">{description}</p>
+              </div>
+            )}
+
+            {/* Contact & Full Address */}
+            <div className="flex flex-col gap-2">
+              {phone && (
+                <a
+                  href={`tel:${phone.replace(/\D/g, "")}`}
+                  className="flex items-center gap-2 text-sm hover:text-[hsl(var(--store-primary,var(--primary)))] transition-colors"
+                  data-testid="store-info-phone"
+                  aria-label={`Telefone: ${phone}`}
+                >
+                  <Phone className="h-4 w-4 text-[hsl(var(--store-primary,var(--primary)))]" />
+                  <span>{phone}</span>
+                </a>
+              )}
+
+              {hasAddress && address && (
+                <div 
+                  className="flex items-start gap-2 text-sm text-muted-foreground"
+                  data-testid="store-info-address"
+                >
+                  <MapPin className="h-4 w-4 text-[hsl(var(--store-primary,var(--primary)))] flex-shrink-0 mt-0.5" />
+                  <span>{fullAddress}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Opening Hours - Compact list format */}
+            {openingHours && (
+              <div 
+                className="space-y-2"
+                data-testid="store-info-hours"
+                role="region"
+                aria-label="Horários de funcionamento"
+              >
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Clock className="h-4 w-4 text-[hsl(var(--store-primary,var(--primary)))]" />
+                  <span>Horários</span>
+                </div>
+                <div 
+                  className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground pl-6"
+                  role="list"
+                >
+                  {dayOrder.map((day) => {
+                    const hours = openingHours[day];
+                    return (
+                      <div
+                        key={day}
+                        className="flex justify-between"
+                        data-testid={`store-info-hours-${day}`}
+                        role="listitem"
+                      >
+                        <span className="font-medium text-foreground">{dayLabels[day]}</span>
+                        <span>
+                          {hours?.closed ? "Fechado" : `${hours?.open} - ${hours?.close}`}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Delivery Info */}
+            {hasDeliveryInfo && (
+              <div 
+                className="space-y-1"
+                data-testid="store-info-delivery"
+                role="region"
+                aria-label="Informações de entrega"
+              >
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Truck className="h-4 w-4 text-[hsl(var(--store-primary,var(--primary)))]" />
+                  <span>Entrega</span>
+                </div>
+                <div className="text-xs text-muted-foreground pl-6 space-y-0.5">
+                  {minOrderValue && minOrderValue > 0 && (
+                    <p data-testid="store-info-min-order">
+                      Pedido mínimo: {formatPrice(minOrderValue)}
+                    </p>
+                  )}
+                  {deliveryInfo && (
+                    <p data-testid="store-info-delivery-text">{deliveryInfo}</p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
   );
 }
