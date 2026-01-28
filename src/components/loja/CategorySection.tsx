@@ -13,6 +13,7 @@ interface CategorySectionProps {
 export function CategorySection({ category, products }: CategorySectionProps) {
   return (
     <section
+      id={`category-${category.id}`}
       data-testid={`category-section-${category.id}`}
       aria-labelledby={`category-title-${category.id}`}
     >
