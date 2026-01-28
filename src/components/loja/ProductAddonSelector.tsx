@@ -151,7 +151,7 @@ export function ProductAddonSelector({
                       </span>
                       <span 
                         className="text-sm font-medium ml-2"
-                        style={{ color: "hsl(var(--store-primary, var(--primary)))" }}
+                        style={{ color: "hsl(var(--store-secondary, var(--secondary-foreground)))" }}
                         data-testid="addon-item-price"
                       >
                         +{formatPrice(addon.price)}
