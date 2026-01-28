@@ -522,7 +522,11 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
 
   return (
     <div className="min-h-screen bg-background" data-testid="checkout-form">
-      <header className="bg-primary text-primary-foreground py-3 sm:py-4 shadow-md sticky top-0 z-50" data-testid="checkout-header">
+      <header 
+        className="text-primary-foreground py-3 sm:py-4 shadow-md sticky top-0 z-50" 
+        style={{ backgroundColor: "hsl(var(--store-primary, var(--primary)))" }}
+        data-testid="checkout-header"
+      >
         <div className="max-w-2xl mx-auto px-3 sm:px-4">
           <div className="flex items-center gap-2 sm:gap-3">
             <Button
@@ -721,7 +725,7 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
                   <div className="flex items-center space-x-3 p-3 border rounded-lg">
                     <RadioGroupItem value="delivery" id="delivery" />
                     <Label htmlFor="delivery" className="flex-1 cursor-pointer flex items-center gap-3">
-                      <Truck className="h-5 w-5 text-primary" />
+                      <Truck className="h-5 w-5" style={{ color: "hsl(var(--store-primary, var(--primary)))" }} />
                       <div>
                         <span className="font-medium">Entrega</span>
                         <p className="text-sm text-muted-foreground">Receba no seu endereço</p>
@@ -733,7 +737,7 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
                   <div className="flex items-center space-x-3 p-3 border rounded-lg">
                     <RadioGroupItem value="pickup" id="pickup" />
                     <Label htmlFor="pickup" className="flex-1 cursor-pointer flex items-center gap-3">
-                      <Package className="h-5 w-5 text-primary" />
+                      <Package className="h-5 w-5" style={{ color: "hsl(var(--store-primary, var(--primary)))" }} />
                       <div>
                         <span className="font-medium">Retirada</span>
                         <p className="text-sm text-muted-foreground">Retire no estabelecimento</p>
@@ -745,7 +749,7 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
                   <div className="flex items-center space-x-3 p-3 border rounded-lg">
                     <RadioGroupItem value="dine_in" id="dine_in" />
                     <Label htmlFor="dine_in" className="flex-1 cursor-pointer flex items-center gap-3">
-                      <UtensilsCrossed className="h-5 w-5 text-primary" />
+                      <UtensilsCrossed className="h-5 w-5" style={{ color: "hsl(var(--store-primary, var(--primary)))" }} />
                       <div>
                         <span className="font-medium">Comer no Local</span>
                         <p className="text-sm text-muted-foreground">Consuma no estabelecimento</p>
@@ -760,10 +764,10 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
 
         {/* Info for pickup/dine-in */}
         {orderType === "pickup" && (
-          <Card className="border-primary/30 bg-primary/5">
+          <Card className="border-[hsl(var(--store-primary,var(--primary))/0.3)] bg-[hsl(var(--store-primary,var(--primary))/0.05)]">
             <CardContent className="pt-4">
               <div className="flex items-start gap-3">
-                <Package className="h-5 w-5 text-primary mt-0.5" />
+                <Package className="h-5 w-5 mt-0.5" style={{ color: "hsl(var(--store-primary, var(--primary)))" }} />
                 <div>
                   <p className="font-medium">Retirada no Local</p>
                   <p className="text-sm text-muted-foreground">
@@ -781,10 +785,10 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
         )}
 
         {orderType === "dine_in" && (
-          <Card className="border-primary/30 bg-primary/5">
+          <Card className="border-[hsl(var(--store-primary,var(--primary))/0.3)] bg-[hsl(var(--store-primary,var(--primary))/0.05)]">
             <CardContent className="pt-4">
               <div className="flex items-start gap-3">
-                <UtensilsCrossed className="h-5 w-5 text-primary mt-0.5" />
+                <UtensilsCrossed className="h-5 w-5 mt-0.5" style={{ color: "hsl(var(--store-primary, var(--primary)))" }} />
                 <div>
                   <p className="font-medium">Consumo no Local</p>
                   <p className="text-sm text-muted-foreground">
@@ -851,7 +855,7 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
                   />
                   <div className="space-y-1">
                     <Label htmlFor="shareLocation" className="cursor-pointer flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-primary" />
+                      <MapPin className="h-4 w-4" style={{ color: "hsl(var(--store-primary, var(--primary)))" }} />
                       <span className="font-medium">Compartilhar localização via WhatsApp</span>
                     </Label>
                     <p className="text-sm text-muted-foreground">

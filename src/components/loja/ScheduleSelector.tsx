@@ -79,14 +79,14 @@ export function ScheduleSelector({ openingHours, onScheduleSelect, selectedDate 
 
   return (
     <Card 
-      className="border-primary/20"
+      className="border-[hsl(var(--store-primary,var(--primary))/0.2)]"
       data-testid="schedule-selector"
       role="region"
       aria-label="Seletor de agendamento"
     >
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-primary" />
+          <Calendar className="h-5 w-5" style={{ color: "hsl(var(--store-primary, var(--primary)))" }} />
           Agendar Pedido
         </CardTitle>
       </CardHeader>
@@ -173,12 +173,12 @@ export function ScheduleSelector({ openingHours, onScheduleSelect, selectedDate 
         {/* Selected Schedule Display */}
         {selectedDate && (
           <div 
-            className="flex items-center justify-center gap-2 p-3 bg-primary/10 rounded-lg"
+            className="flex items-center justify-center gap-2 p-3 bg-[hsl(var(--store-primary,var(--primary))/0.1)] rounded-lg"
             data-testid="schedule-selector-confirmation"
             role="status"
             aria-live="polite"
           >
-            <Calendar className="h-4 w-4 text-primary" />
+            <Calendar className="h-4 w-4" style={{ color: "hsl(var(--store-primary, var(--primary)))" }} />
             <span className="font-medium">
               Agendado para {formatInSaoPaulo(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })} às {formatInSaoPaulo(selectedDate, "HH:mm", { locale: ptBR })}
             </span>
