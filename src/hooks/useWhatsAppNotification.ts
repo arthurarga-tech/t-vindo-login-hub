@@ -1,17 +1,6 @@
 import { useEstablishment } from "./useEstablishment";
-import { Order, OrderStatus } from "./useOrders";
-
-// Map from our status codes to template keys
-const statusToTemplateKey: Partial<Record<OrderStatus, string>> = {
-  confirmed: "confirmed",
-  preparing: "preparing",
-  ready_for_pickup: "ready_pickup",
-  ready: "ready_delivery",
-  out_for_delivery: "out_for_delivery",
-  delivered: "delivered",
-  picked_up: "picked_up",
-  served: "served",
-};
+import { Order } from "./useOrders";
+import { OrderStatus, statusToWhatsAppTemplateKey } from "@/lib/orderStatus";
 
 const defaultTemplates: Record<string, string> = {
   confirmed: "✅ Olá {nome_cliente}! Seu pedido #{numero_pedido} foi confirmado! Valor: R$ {total}. Obrigado pela preferência! - {nome_estabelecimento}",
@@ -66,7 +55,7 @@ export function useWhatsAppNotification() {
   };
 
   const generateWhatsAppLink = (order: Order, status: OrderStatus): string | null => {
-    const templateKey = statusToTemplateKey[status];
+    const templateKey = statusToWhatsAppTemplateKey[status];
     if (!templateKey) return null;
 
     const phone = order.customer?.phone;

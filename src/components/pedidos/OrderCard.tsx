@@ -2,7 +2,15 @@ import { Clock, User, MapPin, Phone, CreditCard, MessageSquare, Truck, Package, 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Order, OrderStatus, OrderType, orderTypeLabels } from "@/hooks/useOrders";
+import { Order } from "@/hooks/useOrders";
+import { 
+  OrderStatus, 
+  OrderType, 
+  orderTypeLabels, 
+  statusDisplayConfig, 
+  quickActionLabels,
+  paymentMethodLabels 
+} from "@/lib/orderStatus";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toSaoPauloTime } from "@/lib/dateUtils";
@@ -17,44 +25,8 @@ interface OrderCardProps {
   compact?: boolean;
 }
 
-const statusConfig: Record<OrderStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  pending: { label: "Pendente", variant: "destructive" },
-  confirmed: { label: "Confirmado", variant: "default" },
-  preparing: { label: "Preparando", variant: "secondary" },
-  ready: { label: "Pronto", variant: "default" },
-  out_for_delivery: { label: "Saiu p/ Entrega", variant: "secondary" },
-  delivered: { label: "Entregue", variant: "outline" },
-  ready_for_pickup: { label: "Pronto p/ Retirada", variant: "default" },
-  picked_up: { label: "Retirado", variant: "outline" },
-  ready_to_serve: { label: "Pronto p/ Servir", variant: "default" },
-  served: { label: "Servido", variant: "outline" },
-  cancelled: { label: "Cancelado", variant: "destructive" },
-};
-
-const nextStatusLabels: Record<OrderStatus, string> = {
-  pending: "Confirmar",
-  confirmed: "Preparar",
-  preparing: "Pronto",
-  ready: "Saiu Entrega",
-  out_for_delivery: "Entregue",
-  delivered: "",
-  ready_for_pickup: "Retirado",
-  picked_up: "",
-  ready_to_serve: "Servido",
-  served: "",
-  cancelled: "",
-};
-
-const paymentLabels: Record<string, string> = {
-  pix: "Pix",
-  card: "Cartão",
-  credit: "Crédito",
-  debit: "Débito",
-  cash: "Dinheiro",
-};
-
 export function OrderCard({ order, onClick, onQuickStatusChange, onPrint, nextStatus, compact = false }: OrderCardProps) {
-  const status = statusConfig[order.status as OrderStatus] || statusConfig.pending;
+  const status = statusDisplayConfig[order.status as OrderStatus] || statusDisplayConfig.pending;
   const orderType = (order.order_type || "delivery") as OrderType;
   const typeInfo = orderTypeLabels[orderType];
   const timeAgo = formatDistanceToNow(toSaoPauloTime(order.created_at), {
@@ -241,7 +213,7 @@ export function OrderCard({ order, onClick, onQuickStatusChange, onPrint, nextSt
             data-testid={`order-card-${order.id}-payment-method`}
           >
             <CreditCard className={compact ? "h-3 w-3" : "h-4 w-4"} text-muted-foreground />
-            <span>{paymentLabels[order.payment_method] || order.payment_method}</span>
+            <span>{paymentMethodLabels[order.payment_method] || order.payment_method}</span>
           </div>
           <span 
             className={`font-bold text-primary ${compact ? 'text-sm' : ''}`}
@@ -257,9 +229,9 @@ export function OrderCard({ order, onClick, onQuickStatusChange, onPrint, nextSt
             className={`w-full ${compact ? 'h-7 text-xs' : 'mt-2'}`}
             onClick={handleQuickAction}
             data-testid={`order-card-${order.id}-quick-action-button`}
-            aria-label={`${nextStatusLabels[order.status as OrderStatus] || "Avançar"} pedido ${order.order_number}`}
+            aria-label={`${quickActionLabels[order.status as OrderStatus] || "Avançar"} pedido ${order.order_number}`}
           >
-            {nextStatusLabels[order.status as OrderStatus] || "Avançar"}
+            {quickActionLabels[order.status as OrderStatus] || "Avançar"}
             <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         )}

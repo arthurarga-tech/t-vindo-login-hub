@@ -6,26 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle, Clock, Package, Truck, Home, ArrowLeft, Copy, Link2, XCircle, MessageCircle, QrCode } from "lucide-react";
+import { CheckCircle, ArrowLeft, Copy, Link2, MessageCircle, QrCode } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { usePublicEstablishment } from "@/hooks/usePublicStore";
 import { hexToHSL } from "@/lib/formatters";
 import { useThemeColor } from "@/hooks/useThemeColor";
-
-const statusConfig: Record<string, { label: string; icon: React.ComponentType<any>; color: string }> = {
-  pending: { label: "Pendente", icon: Clock, color: "bg-yellow-500" },
-  confirmed: { label: "Confirmado", icon: CheckCircle, color: "bg-blue-500" },
-  preparing: { label: "Preparando", icon: Package, color: "bg-orange-500" },
-  ready: { label: "Pronto", icon: Package, color: "bg-green-500" },
-  ready_pickup: { label: "Pronto para Retirada", icon: Package, color: "bg-green-500" },
-  ready_delivery: { label: "Pronto para Entrega", icon: Package, color: "bg-green-500" },
-  out_for_delivery: { label: "Saiu para entrega", icon: Truck, color: "bg-purple-500" },
-  delivered: { label: "Entregue", icon: Home, color: "bg-green-600" },
-  picked_up: { label: "Retirado", icon: CheckCircle, color: "bg-green-600" },
-  served: { label: "Servido", icon: CheckCircle, color: "bg-green-600" },
-  cancelled: { label: "Cancelado", icon: XCircle, color: "bg-red-500" },
-};
+import { 
+  getStatusDisplay, 
+  paymentMethodLabels 
+} from "@/lib/orderStatus";
 
 interface OrderItemAddon {
   id: string;
@@ -192,8 +182,9 @@ export default function OrderConfirmationPage() {
           
           // Show toast notification for status change
           const newStatus = payload.new?.status;
-          if (newStatus && statusConfig[newStatus]) {
-            toast.success(`Status atualizado: ${statusConfig[newStatus].label}`);
+          if (newStatus) {
+            const statusInfo = getStatusDisplay(newStatus);
+            toast.success(`Status atualizado: ${statusInfo.label}`);
           }
         }
       )
@@ -222,13 +213,6 @@ export default function OrderConfirmationPage() {
       style: "currency",
       currency: "BRL",
     }).format(price);
-  };
-
-  const paymentMethodLabels: Record<string, string> = {
-    pix: "Pix",
-    credit: "Cartão de Crédito",
-    debit: "Cartão de Débito",
-    cash: "Dinheiro",
   };
 
   if (isLoading) {
@@ -271,7 +255,7 @@ export default function OrderConfirmationPage() {
     );
   }
 
-  const status = statusConfig[order.status] || statusConfig.pending;
+  const status = getStatusDisplay(order.status);
   const StatusIcon = status.icon;
 
   return (
@@ -486,7 +470,7 @@ export default function OrderConfirmationPage() {
               className="font-medium"
               data-testid="order-confirmation-payment-method"
             >
-              {paymentMethodLabels[order.payment_method]}
+              {paymentMethodLabels[order.payment_method] || order.payment_method}
             </p>
             {order.payment_method === "pix" && establishmentPixKey ? (
               <p className="text-sm text-muted-foreground">Pagamento antecipado via Pix</p>
@@ -494,15 +478,12 @@ export default function OrderConfirmationPage() {
               <p className="text-sm text-muted-foreground">Pagamento na entrega</p>
             )}
             {order.payment_method === "cash" && order.change_for && order.change_for > 0 && (
-              <div 
-                className="pt-2 border-t space-y-1"
-                data-testid="order-confirmation-change-info"
-              >
-                <p className="text-sm">
-                  Troco para: <span className="font-medium">{formatPrice(order.change_for)}</span>
+              <div className="mt-2 pt-2 border-t space-y-1">
+                <p className="text-sm text-muted-foreground">
+                  Troco para: <span className="font-medium text-foreground">{formatPrice(order.change_for)}</span>
                 </p>
                 <p className="text-sm text-primary font-medium">
-                  Troco: {formatPrice(order.change_for - order.total)}
+                  Levar troco: {formatPrice(order.change_for - order.total)}
                 </p>
               </div>
             )}
@@ -511,54 +492,36 @@ export default function OrderConfirmationPage() {
 
         {/* PIX Receipt Button */}
         {showPixReceiptButton && (
-          <Card 
-            className="border-green-200 bg-green-50 dark:bg-green-950/20"
-            data-testid="order-confirmation-pix-card"
-          >
-            <CardContent className="pt-6 space-y-4">
-              <div className="flex items-center gap-2">
-                <QrCode className="h-5 w-5 text-green-600" />
-                <span className="font-medium text-green-800 dark:text-green-400">Pagamento via Pix</span>
+          <Card data-testid="order-confirmation-pix-receipt-card">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-3">
+                <QrCode className="h-10 w-10 text-primary mx-auto" />
+                <p className="text-sm text-muted-foreground">
+                  Já fez o pagamento Pix? Envie o comprovante:
+                </p>
+                <Button 
+                  onClick={sendPixReceipt}
+                  className="gap-2"
+                  style={{ backgroundColor: "hsl(142, 70%, 45%)" }}
+                  data-testid="order-confirmation-pix-receipt-button"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Enviar Comprovante via WhatsApp
+                </Button>
               </div>
-              <p className="text-sm text-green-700 dark:text-green-500">
-                Por favor, envie o comprovante de pagamento pelo WhatsApp.
-              </p>
-              <Button
-                className="w-full bg-green-600 hover:bg-green-700"
-                onClick={sendPixReceipt}
-                data-testid="order-confirmation-pix-whatsapp-button"
-                aria-label="Enviar comprovante via WhatsApp"
-              >
-                <MessageCircle className="h-4 w-4 mr-2" />
-                Enviar Comprovante via WhatsApp
-              </Button>
             </CardContent>
           </Card>
         )}
 
-        {order.notes && (
-          <Card data-testid="order-confirmation-notes-card">
-            <CardHeader>
-              <CardTitle className="text-lg">Observações</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p 
-                className="text-sm"
-                data-testid="order-confirmation-notes-content"
-              >
-                {order.notes}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
+        {/* Back to Store */}
         <Button
           variant="outline"
           className="w-full"
           onClick={() => navigate(`/loja/${slug}`)}
-          data-testid="order-confirmation-new-order-button"
+          data-testid="order-confirmation-back-to-store-button"
         >
-          Fazer novo pedido
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar para a loja
         </Button>
       </main>
     </div>
