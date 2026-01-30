@@ -29,6 +29,7 @@ interface QuickOrderProductListProps {
     productId: string;
     productName: string;
     productPrice: number;
+    categoryId: string;
     quantity: number;
     observation?: string;
     addons: SelectedAddon[];
@@ -270,6 +271,7 @@ function CategorySection({
         productId: product.id,
         productName: product.name,
         productPrice: product.price,
+        categoryId: category.id,
         quantity: 1,
         addons: [],
       });
@@ -282,6 +284,7 @@ function CategorySection({
         productId: selectedProduct.id,
         productName: selectedProduct.name,
         productPrice: selectedProduct.price,
+        categoryId: category.id,
         quantity,
         observation: observation || undefined,
         addons: selectedAddons,

@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { X, User, ShoppingCart, CreditCard, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { User, ShoppingCart, CreditCard, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { formatPrice, formatPhone, extractPhoneDigits } from "@/lib/formatters";
 import { QuickOrderProductList } from "./QuickOrderProductList";
 import { QuickOrderCart, QuickOrderCartItem } from "./QuickOrderCart";
+import { QuickOrderEditItemModal } from "./QuickOrderEditItemModal";
 import { useCreateQuickOrder } from "@/hooks/useQuickOrder";
 import { toast } from "sonner";
 
@@ -48,6 +49,7 @@ export function QuickOrderModal({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">("");
   const [changeFor, setChangeFor] = useState("");
   const [notes, setNotes] = useState("");
+  const [editingItem, setEditingItem] = useState<QuickOrderCartItem | null>(null);
 
   const createQuickOrder = useCreateQuickOrder();
 
@@ -59,6 +61,7 @@ export function QuickOrderModal({
     setPaymentMethod("");
     setChangeFor("");
     setNotes("");
+    setEditingItem(null);
   }, []);
 
   const handleClose = () => {
@@ -71,6 +74,7 @@ export function QuickOrderModal({
       productId: string;
       productName: string;
       productPrice: number;
+      categoryId: string;
       quantity: number;
       observation?: string;
       addons: { id: string; name: string; price: number; quantity: number }[];
@@ -84,6 +88,14 @@ export function QuickOrderModal({
     },
     []
   );
+
+  const handleSaveEditedItem = useCallback((updatedItem: QuickOrderCartItem) => {
+    setCartItems((prev) =>
+      prev.map((item) => (item.id === updatedItem.id ? updatedItem : item))
+    );
+    setEditingItem(null);
+    toast.success("Item atualizado", { duration: 1000 });
+  }, []);
 
   const handleUpdateQuantity = useCallback((itemId: string, quantity: number) => {
     if (quantity < 1) return;
@@ -275,6 +287,7 @@ export function QuickOrderModal({
                 items={cartItems}
                 onUpdateQuantity={handleUpdateQuantity}
                 onRemoveItem={handleRemoveItem}
+                onEditItem={setEditingItem}
               />
             </div>
           )}
@@ -433,6 +446,13 @@ export function QuickOrderModal({
           )}
         </div>
       </DialogContent>
+
+      <QuickOrderEditItemModal
+        item={editingItem}
+        open={editingItem !== null}
+        onClose={() => setEditingItem(null)}
+        onSave={handleSaveEditedItem}
+      />
     </Dialog>
   );
 }
