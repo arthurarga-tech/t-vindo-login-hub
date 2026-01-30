@@ -20,6 +20,7 @@ interface CartContextType {
   addItem: (product: PublicProduct, selectedAddons?: CartAddon[], quantity?: number, observation?: string) => void;
   removeItem: (productId: string, itemIndex: number) => void;
   updateQuantity: (itemIndex: number, quantity: number) => void;
+  updateItem: (itemIndex: number, updates: Partial<Omit<CartItem, "product">>) => void;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
@@ -77,6 +78,14 @@ export function CartProvider({ children, establishmentSlug }: { children: ReactN
     );
   };
 
+  const updateItem = (itemIndex: number, updates: Partial<Omit<CartItem, "product">>) => {
+    setItems((prev) =>
+      prev.map((item, index) =>
+        index === itemIndex ? { ...item, ...updates } : item
+      )
+    );
+  };
+
   const clearCart = () => {
     setItems([]);
   };
@@ -94,6 +103,7 @@ export function CartProvider({ children, establishmentSlug }: { children: ReactN
         addItem,
         removeItem,
         updateQuantity,
+        updateItem,
         clearCart,
         totalItems,
         totalPrice,

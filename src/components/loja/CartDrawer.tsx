@@ -1,11 +1,13 @@
-import { ShoppingCart, Plus, Minus, Trash2, Calendar } from "lucide-react";
+import { useState } from "react";
+import { ShoppingCart, Plus, Minus, Trash2, Calendar, Pencil } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
-import { useCart } from "@/hooks/useCart";
+import { useCart, CartItem } from "@/hooks/useCart";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { formatPrice } from "@/lib/formatters";
+import { CartEditItemModal } from "./CartEditItemModal";
 
 interface CartDrawerProps {
   isStoreOpen?: boolean;
@@ -15,7 +17,17 @@ interface CartDrawerProps {
 export function CartDrawer({ isStoreOpen = true, allowScheduling = false }: CartDrawerProps) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { items, totalItems, totalPrice, updateQuantity, removeItem, clearCart } = useCart();
+  const { items, totalItems, totalPrice, updateQuantity, updateItem, removeItem, clearCart } = useCart();
+  const [editingItem, setEditingItem] = useState<{ item: CartItem; index: number } | null>(null);
+
+  const handleEditItem = (item: CartItem, index: number) => {
+    setEditingItem({ item, index });
+  };
+
+  const handleSaveEditedItem = (index: number, updates: Partial<CartItem>) => {
+    updateItem(index, updates);
+    setEditingItem(null);
+  };
 
   return (
     <Sheet>
@@ -123,7 +135,7 @@ export function CartDrawer({ isStoreOpen = true, allowScheduling = false }: Cart
                         <Button
                           variant="outline"
                           size="icon"
-                          className="h-7 w-7"
+                          className="h-8 w-8"
                           onClick={() => updateQuantity(index, item.quantity - 1)}
                           data-testid="cart-item-decrease"
                           aria-label="Diminuir quantidade"
@@ -139,7 +151,7 @@ export function CartDrawer({ isStoreOpen = true, allowScheduling = false }: Cart
                         <Button
                           variant="outline"
                           size="icon"
-                          className="h-7 w-7"
+                          className="h-8 w-8"
                           onClick={() => updateQuantity(index, item.quantity + 1)}
                           data-testid="cart-item-increase"
                           aria-label="Aumentar quantidade"
@@ -149,7 +161,17 @@ export function CartDrawer({ isStoreOpen = true, allowScheduling = false }: Cart
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-destructive hover:text-destructive ml-auto"
+                          className="h-8 w-8"
+                          onClick={() => handleEditItem(item, index)}
+                          data-testid="cart-item-edit"
+                          aria-label={`Editar ${item.product.name}`}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
                           onClick={() => removeItem(item.product.id, index)}
                           data-testid="cart-item-remove"
                           aria-label={`Remover ${item.product.name} do carrinho`}
@@ -211,6 +233,14 @@ export function CartDrawer({ isStoreOpen = true, allowScheduling = false }: Cart
           </>
         )}
       </SheetContent>
+
+      <CartEditItemModal
+        item={editingItem?.item ?? null}
+        itemIndex={editingItem?.index ?? -1}
+        open={editingItem !== null}
+        onOpenChange={(open) => !open && setEditingItem(null)}
+        onSave={handleSaveEditedItem}
+      />
     </Sheet>
   );
 }
