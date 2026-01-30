@@ -922,6 +922,9 @@ export type Database = {
           payment_debit_enabled: boolean | null
           payment_pix_enabled: boolean | null
           phone: string | null
+          pix_holder_name: string | null
+          pix_key: string | null
+          pix_key_type: string | null
           service_delivery: boolean | null
           service_dine_in: boolean | null
           service_pickup: boolean | null
@@ -951,6 +954,9 @@ export type Database = {
           payment_debit_enabled?: boolean | null
           payment_pix_enabled?: boolean | null
           phone?: string | null
+          pix_holder_name?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
           service_delivery?: boolean | null
           service_dine_in?: boolean | null
           service_pickup?: boolean | null
@@ -980,6 +986,9 @@ export type Database = {
           payment_debit_enabled?: boolean | null
           payment_pix_enabled?: boolean | null
           phone?: string | null
+          pix_holder_name?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
           service_delivery?: boolean | null
           service_dine_in?: boolean | null
           service_pickup?: boolean | null
