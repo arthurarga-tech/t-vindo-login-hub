@@ -8,40 +8,20 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle, Clock, Package, Truck, Home, ArrowLeft, Search, XCircle, MapPin, CreditCard } from "lucide-react";
+import { Clock, ArrowLeft, Search, XCircle, MapPin, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { usePublicEstablishment } from "@/hooks/usePublicStore";
 import { formatInSaoPaulo } from "@/lib/dateUtils";
 import { ptBR } from "date-fns/locale";
 import { hexToHSL } from "@/lib/formatters";
 import { useThemeColor } from "@/hooks/useThemeColor";
-
-const statusConfig: Record<string, { label: string; icon: React.ComponentType<any>; color: string }> = {
-  pending: { label: "Pendente", icon: Clock, color: "bg-yellow-500" },
-  confirmed: { label: "Confirmado", icon: CheckCircle, color: "bg-blue-500" },
-  preparing: { label: "Preparando", icon: Package, color: "bg-orange-500" },
-  ready: { label: "Pronto", icon: Package, color: "bg-green-500" },
-  ready_pickup: { label: "Pronto para Retirada", icon: Package, color: "bg-green-500" },
-  ready_delivery: { label: "Pronto para Entrega", icon: Package, color: "bg-green-500" },
-  out_for_delivery: { label: "Saiu para entrega", icon: Truck, color: "bg-purple-500" },
-  delivered: { label: "Entregue", icon: Home, color: "bg-green-600" },
-  picked_up: { label: "Retirado", icon: CheckCircle, color: "bg-green-600" },
-  served: { label: "Servido", icon: CheckCircle, color: "bg-green-600" },
-  cancelled: { label: "Cancelado", icon: XCircle, color: "bg-red-500" },
-};
-
-const paymentMethodLabels: Record<string, string> = {
-  pix: "Pix",
-  credit: "Cartão de Crédito",
-  debit: "Cartão de Débito",
-  cash: "Dinheiro",
-};
-
-const orderTypeLabels: Record<string, string> = {
-  delivery: "Entrega",
-  pickup: "Retirada",
-  dine_in: "Consumo local",
-};
+import { 
+  getStatusDisplay, 
+  paymentMethodLabels, 
+  orderTypePublicLabels, 
+  finalizedStatuses,
+  statusDisplayConfig,
+} from "@/lib/orderStatus";
 
 interface OrderItemAddon {
   id: string;
@@ -82,9 +62,6 @@ interface PublicOrder {
   customer: Customer;
   items: OrderItem[];
 }
-
-// Statuses that are considered "finalized"
-const finalizedStatuses = ["delivered", "picked_up", "served", "cancelled"];
 
 export default function OrderTrackingPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -167,8 +144,9 @@ export default function OrderTrackingPage() {
           queryClient.invalidateQueries({ queryKey: ["order-by-number", establishment?.id, searchedNumber] });
           
           const newStatus = payload.new?.status;
-          if (newStatus && statusConfig[newStatus]) {
-            toast.success(`Status atualizado: ${statusConfig[newStatus].label}`);
+          if (newStatus) {
+            const statusInfo = getStatusDisplay(newStatus);
+            toast.success(`Status atualizado: ${statusInfo.label}`);
           }
         }
       )
@@ -196,8 +174,9 @@ export default function OrderTrackingPage() {
     }).format(price);
   };
 
-  const status = order ? (statusConfig[order.status] || statusConfig.pending) : null;
+  const status = order ? getStatusDisplay(order.status) : null;
   const StatusIcon = status?.icon;
+  const isFinalized = order ? finalizedStatuses.includes(order.status as any) : false;
 
   return (
     <div 
@@ -255,7 +234,7 @@ export default function OrderTrackingPage() {
               Buscar Pedido
             </CardTitle>
             <CardDescription data-testid="order-tracking-search-description">
-              {order && !finalizedStatuses.includes(order.status) 
+              {order && !isFinalized 
                 ? "Seu último pedido está sendo exibido abaixo"
                 : "Digite o número do seu pedido para acompanhar em tempo real"}
             </CardDescription>
@@ -355,7 +334,7 @@ export default function OrderTrackingPage() {
                   </span>
                   <span className="mx-2">•</span>
                   <span data-testid="order-tracking-order-type">
-                    {orderTypeLabels[order.order_type] || order.order_type}
+                    {orderTypePublicLabels[order.order_type] || order.order_type}
                   </span>
                 </div>
               </CardContent>
@@ -468,9 +447,11 @@ export default function OrderTrackingPage() {
                     className="mt-2 pt-2 border-t space-y-1 text-sm"
                     data-testid="order-tracking-change-info"
                   >
-                    <p>Troco para: <span className="font-medium">{formatPrice(order.change_for)}</span></p>
+                    <p className="text-muted-foreground">
+                      Troco para: <span className="font-medium text-foreground">{formatPrice(order.change_for)}</span>
+                    </p>
                     <p className="text-primary font-medium">
-                      Troco: {formatPrice(order.change_for - order.total)}
+                      Levar troco: {formatPrice(order.change_for - order.total)}
                     </p>
                   </div>
                 )}
@@ -483,29 +464,13 @@ export default function OrderTrackingPage() {
                 <CardHeader>
                   <CardTitle className="text-lg">Observações</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p 
-                    className="text-sm"
-                    data-testid="order-tracking-notes-content"
-                  >
-                    {order.notes}
-                  </p>
+                <CardContent data-testid="order-tracking-notes-content">
+                  <p className="text-sm">{order.notes}</p>
                 </CardContent>
               </Card>
             )}
           </>
         )}
-
-        {/* Back to Store Button */}
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={() => navigate(`/loja/${slug}`)}
-          data-testid="order-tracking-back-to-store-button"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar para a loja
-        </Button>
       </main>
     </div>
   );

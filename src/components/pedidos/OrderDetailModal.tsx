@@ -14,7 +14,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Order, OrderStatus, useUpdateOrderStatus, orderTypeLabels, getStatusFlow } from "@/hooks/useOrders";
+import { Order, useUpdateOrderStatus } from "@/hooks/useOrders";
+import { 
+  OrderStatus, 
+  OrderType, 
+  orderTypeLabels, 
+  getStatusFlow,
+  statusDisplayConfig,
+  paymentMethodLabels,
+  nextStatusButtonLabels,
+  previousStatusButtonLabels 
+} from "@/lib/orderStatus";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { usePrintOrder } from "@/hooks/usePrintOrder";
@@ -46,37 +56,16 @@ interface OrderDetailModalProps {
   printContrastHigh?: boolean;
 }
 
-const statusConfig: Record<OrderStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  pending: { label: "Pendente", variant: "destructive" },
-  confirmed: { label: "Confirmado", variant: "default" },
-  preparing: { label: "Preparando", variant: "secondary" },
-  ready: { label: "Pronto", variant: "default" },
-  out_for_delivery: { label: "Saiu p/ Entrega", variant: "secondary" },
-  delivered: { label: "Entregue", variant: "outline" },
-  ready_for_pickup: { label: "Pronto p/ Retirada", variant: "default" },
-  picked_up: { label: "Retirado", variant: "outline" },
-  ready_to_serve: { label: "Pronto p/ Servir", variant: "default" },
-  served: { label: "Servido", variant: "outline" },
-  cancelled: { label: "Cancelado", variant: "destructive" },
-};
-
-const paymentLabels: Record<string, string> = {
-  pix: "Pix",
-  credit: "Cartão de Crédito",
-  debit: "Cartão de Débito",
-  cash: "Dinheiro",
-};
-
 export function OrderDetailModal({ order, open, onClose, establishmentName, logoUrl, printMode = "none", printFontSize = 12, printMarginLeft = 0, printMarginRight = 0, printFontBold = true, printLineHeight = 1.4, printContrastHigh = false }: OrderDetailModalProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const updateStatus = useUpdateOrderStatus();
   const { printOrder } = usePrintOrder();
-  const { sendNotification, openWhatsApp, isEnabled: isWhatsAppEnabled } = useWhatsAppNotification();
+  const { openWhatsApp } = useWhatsAppNotification();
 
   if (!order) return null;
 
-  const status = statusConfig[order.status as OrderStatus] || statusConfig.pending;
-  const orderType = order.order_type || "delivery";
+  const status = statusDisplayConfig[order.status as OrderStatus] || statusDisplayConfig.pending;
+  const orderType = (order.order_type || "delivery") as OrderType;
   const typeInfo = orderTypeLabels[orderType];
   const statusFlow = getStatusFlow(orderType);
   
@@ -118,7 +107,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
 
     try {
       await updateStatus.mutateAsync({ orderId: order.id, status: newStatus });
-      toast.success(`Status atualizado para: ${statusConfig[newStatus].label}`);
+      toast.success(`Status atualizado para: ${statusDisplayConfig[newStatus].label}`);
       
       const isPrintOnConfirm = printMode && printMode.includes("on_confirm");
       
@@ -138,34 +127,6 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
 
   const handleWhatsAppClick = () => {
     openWhatsApp(order, order.status as OrderStatus);
-  };
-
-  const nextStatusLabels: Record<OrderStatus, string> = {
-    pending: "",
-    confirmed: "Confirmar Pedido",
-    preparing: "Iniciar Preparo",
-    ready: "Marcar como Pronto",
-    out_for_delivery: "Saiu para Entrega",
-    delivered: "Marcar como Entregue",
-    ready_for_pickup: "Pronto p/ Retirada",
-    picked_up: "Marcar como Retirado",
-    ready_to_serve: "Pronto p/ Servir",
-    served: "Marcar como Servido",
-    cancelled: "Cancelar",
-  };
-
-  const previousStatusLabels: Record<OrderStatus, string> = {
-    pending: "Voltar para Pendente",
-    confirmed: "Voltar para Confirmado",
-    preparing: "Voltar para Preparando",
-    ready: "Voltar para Pronto",
-    out_for_delivery: "Voltar para Saiu p/ Entrega",
-    delivered: "",
-    ready_for_pickup: "Voltar para Pronto p/ Retirada",
-    picked_up: "",
-    ready_to_serve: "Voltar para Pronto p/ Servir",
-    served: "",
-    cancelled: "",
   };
 
   return (
@@ -310,7 +271,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
           <div className="space-y-1" data-testid="order-detail-payment">
             <div className="flex items-center gap-2">
               <CreditCard className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium" data-testid="order-detail-payment-method">{paymentLabels[order.payment_method] || order.payment_method}</span>
+              <span className="font-medium" data-testid="order-detail-payment-method">{paymentMethodLabels[order.payment_method] || order.payment_method}</span>
               <span className="text-muted-foreground">• Pagamento na entrega</span>
             </div>
             {order.payment_method === "cash" && (order as any).change_for && (order as any).change_for > 0 && (
@@ -371,7 +332,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
                     disabled={updateStatus.isPending}
                     data-testid="order-detail-previous-status-button"
                   >
-                    {previousStatusLabels[previousStatus]}
+                    {previousStatusButtonLabels[previousStatus]}
                   </Button>
                 )}
                 {nextStatus && (
@@ -381,7 +342,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
                     disabled={updateStatus.isPending}
                     data-testid="order-detail-next-status-button"
                   >
-                    {nextStatusLabels[nextStatus]}
+                    {nextStatusButtonLabels[nextStatus]}
                   </Button>
                 )}
                 <Button 
@@ -417,7 +378,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
               }}
               data-testid="order-cancel-dialog-confirm"
             >
-              Cancelar Pedido
+              Confirmar Cancelamento
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

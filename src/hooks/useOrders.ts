@@ -3,23 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEstablishment } from "./useEstablishment";
 import { useEffect, useRef, useCallback, useMemo } from "react";
 import { getNowInSaoPaulo } from "@/lib/dateUtils";
+import { 
+  orderTypeLabels, 
+  getStatusFlow 
+} from "@/lib/orderStatus";
+import type { OrderStatus, OrderType } from "@/lib/orderStatus";
+
+// Re-export for backwards compatibility
+export type { OrderStatus, OrderType };
+export { orderTypeLabels, getStatusFlow };
 
 const ORDERS_PAGE_SIZE = 50;
-
-export type OrderStatus = 
-  | "pending" 
-  | "confirmed" 
-  | "preparing" 
-  | "ready" 
-  | "out_for_delivery" 
-  | "delivered" 
-  | "ready_for_pickup" 
-  | "picked_up" 
-  | "ready_to_serve" 
-  | "served" 
-  | "cancelled";
-
-export type OrderType = "delivery" | "pickup" | "dine_in";
 
 export interface OrderItem {
   id: string;
@@ -58,22 +52,6 @@ export interface Order {
     city: string | null;
   };
   items: OrderItem[];
-}
-
-export const orderTypeLabels: Record<OrderType, { label: string; icon: string }> = {
-  delivery: { label: "Entrega", icon: "🚚" },
-  pickup: { label: "Retirada", icon: "📦" },
-  dine_in: { label: "No Local", icon: "🍽️" },
-};
-
-export const statusFlowByOrderType: Record<OrderType, OrderStatus[]> = {
-  delivery: ["pending", "confirmed", "preparing", "ready", "out_for_delivery", "delivered"],
-  pickup: ["pending", "confirmed", "preparing", "ready_for_pickup", "picked_up"],
-  dine_in: ["pending", "confirmed", "preparing", "ready_to_serve", "served"],
-};
-
-export function getStatusFlow(orderType: OrderType): OrderStatus[] {
-  return statusFlowByOrderType[orderType] || statusFlowByOrderType.delivery;
 }
 
 // Hook for playing notification sound

@@ -1,4 +1,5 @@
-import { Order, OrderStatus, OrderType, getStatusFlow, useUpdateOrderStatus } from "@/hooks/useOrders";
+import { Order, useUpdateOrderStatus } from "@/hooks/useOrders";
+import { OrderStatus, OrderType, getStatusFlow } from "@/lib/orderStatus";
 import { OrderCard } from "./OrderCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
