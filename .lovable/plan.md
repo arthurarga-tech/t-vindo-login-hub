@@ -1,328 +1,366 @@
 
-# Plano: Botão de Editar Produto no Carrinho do Pedido Rápido
+# Plano: Correção de Exibição de Status e WhatsApp na Loja Pública
 
-## Objetivo
-Adicionar funcionalidade de edição de itens do carrinho no fluxo de "Novo Pedido - Balcão", permitindo modificar adicionais, quantidade e observação de produtos já adicionados, com foco na experiência mobile.
+## Resumo do Problema
 
----
+Após as alterações de segurança, foram identificados os seguintes problemas:
 
-## Análise do Problema
-
-Atualmente no `QuickOrderCart.tsx`:
-- Permite apenas alterar quantidade (+/-)
-- Permite remover item (lixeira)
-- **Não há opção de editar adicionais ou observação**
-
-O usuário precisa excluir e adicionar novamente o produto caso queira alterar um adicional.
+1. **Pedido #219 mostra "Pendente" ao invés de "Pronto para Retirada"**: O mapeamento de status nas páginas públicas usa `ready_pickup` mas o status real do banco é `ready_for_pickup`
+2. **Botão WhatsApp bloqueado**: Precisa verificar se há referências a `api.whatsapp.com` em vez de `wa.me`
+3. **Código duplicado**: Configurações de status duplicadas em 4+ arquivos
 
 ---
 
-## Arquitetura da Solução
+## Análise Detalhada
+
+### Problema 1: Mapeamento de Status Incorreto
+
+**Arquivos afetados:**
+- `src/pages/loja/OrderTrackingPage.tsx` (linha 24)
+- `src/pages/loja/OrderConfirmationPage.tsx` (linha 21)
+
+**Status atual no código:**
+```typescript
+const statusConfig = {
+  ready_pickup: { label: "Pronto para Retirada", ... },  // ERRADO
+  ready_delivery: { label: "Pronto para Entrega", ... }, // ERRADO
+};
+```
+
+**Status corretos no banco de dados (de `useOrders.ts`):**
+```typescript
+type OrderStatus = 
+  | "ready"            // Para delivery
+  | "ready_for_pickup" // Para retirada
+  | "ready_to_serve"   // Para consumo local
+```
+
+### Problema 2: WhatsApp URL
+
+O hook `useWhatsAppNotification.ts` usa corretamente `https://wa.me/` (linha 83).
+Preciso verificar se há outra fonte gerando `api.whatsapp.com`.
+
+### Problema 3: Duplicação
+
+O `statusConfig` está duplicado em:
+- `OrderTrackingPage.tsx`
+- `OrderConfirmationPage.tsx`
+- `OrderDetailModal.tsx`
+- `OrderCard.tsx`
+
+---
+
+## Solução Proposta
+
+### Etapa 1: Criar Arquivo Centralizado de Configuração de Status
+
+**Novo arquivo: `src/lib/orderStatus.ts`**
+
+Este arquivo vai conter:
+- Tipo `OrderStatus` e `OrderType` (mover de `useOrders.ts`)
+- Configurações de exibição para cada status
+- Fluxos de status por tipo de pedido
+- Mapeamento de templates WhatsApp
 
 ```text
-┌─────────────────────────────────────────────┐
-│           QuickOrderCart                     │
-│  ┌─────────────────────────────────────────┐│
-│  │ [Produto] [Adicionais] [Preço]          ││
-│  │ [−] 1 [+]  [✏️ Editar] [🗑️ Excluir]    ││ ← NOVO botão Editar
-│  └─────────────────────────────────────────┘│
-└─────────────────────────────────────────────┘
-          │
-          ▼ (ao clicar em Editar)
-┌─────────────────────────────────────────────┐
-│        QuickOrderEditItemModal (NOVO)       │
-│  ┌─────────────────────────────────────────┐│
-│  │ Nome do Produto                         ││
-│  │ ─────────────────────                   ││
-│  │ Quantidade: [−] 2 [+]                   ││
-│  │ ─────────────────────                   ││
-│  │ ☑ Adicional 1 (+R$ 2,00)  [−] 1 [+]    ││
-│  │ ☐ Adicional 2 (+R$ 3,00)               ││
-│  │ ─────────────────────                   ││
-│  │ Observação: [_______________]           ││
-│  │ ─────────────────────                   ││
-│  │ [Cancelar]        [Salvar R$ XX,XX]    ││
-│  └─────────────────────────────────────────┘│
-└─────────────────────────────────────────────┘
+src/lib/orderStatus.ts
+├── OrderStatus (tipo)
+├── OrderType (tipo)
+├── statusConfig (labels, cores, ícones)
+├── statusFlowByOrderType
+├── getStatusFlow()
+├── whatsappTemplateKeys
+├── paymentMethodLabels
+└── orderTypeLabels
 ```
+
+### Etapa 2: Corrigir Mapeamento de Status
+
+Adicionar os status corretos:
+- `ready_for_pickup` → "Pronto para Retirada"
+- `ready_to_serve` → "Pronto para Servir"
+- Remover `ready_pickup` e `ready_delivery` que não existem
+
+### Etapa 3: Atualizar Arquivos Consumidores
+
+Refatorar os seguintes arquivos para usar o módulo centralizado:
+1. `src/pages/loja/OrderTrackingPage.tsx`
+2. `src/pages/loja/OrderConfirmationPage.tsx`
+3. `src/components/pedidos/OrderDetailModal.tsx`
+4. `src/components/pedidos/OrderCard.tsx`
+5. `src/components/pedidos/OrderKanban.tsx`
+6. `src/hooks/useWhatsAppNotification.ts`
+7. `src/hooks/useOrders.ts` (manter tipos, importar do novo arquivo)
+
+### Etapa 4: Verificar e Testar WhatsApp
+
+Verificar se há outras referências a `api.whatsapp.com` e garantir que todos os links usem `wa.me`.
 
 ---
 
 ## Mudanças Detalhadas
 
-### 1. Novo Componente: QuickOrderEditItemModal.tsx
+### 1. Novo Arquivo: `src/lib/orderStatus.ts`
 
-**Arquivo:** `src/components/pedidos/QuickOrderEditItemModal.tsx` (criar)
-
-**Funcionalidades:**
-- Recebe o item do carrinho para edição
-- Carrega os addon groups da categoria do produto
-- Permite alterar quantidade
-- Permite marcar/desmarcar adicionais e suas quantidades
-- Permite editar observação
-- Botão "Salvar" atualiza o item no carrinho
-- Botão "Cancelar" fecha sem salvar
-
-**Props:**
 ```typescript
-interface QuickOrderEditItemModalProps {
-  item: QuickOrderCartItem | null;
-  open: boolean;
-  onClose: () => void;
-  onSave: (updatedItem: QuickOrderCartItem) => void;
-  establishmentId: string;
+import { Clock, CheckCircle, Package, Truck, Home, XCircle, UtensilsCrossed } from "lucide-react";
+import { ComponentType } from "react";
+
+// Types
+export type OrderStatus = 
+  | "pending" 
+  | "confirmed" 
+  | "preparing" 
+  | "ready" 
+  | "out_for_delivery" 
+  | "delivered" 
+  | "ready_for_pickup" 
+  | "picked_up" 
+  | "ready_to_serve" 
+  | "served" 
+  | "cancelled";
+
+export type OrderType = "delivery" | "pickup" | "dine_in";
+
+// Status display configuration
+export interface StatusDisplayConfig {
+  label: string;
+  variant: "default" | "secondary" | "destructive" | "outline";
+  icon: ComponentType<{ className?: string }>;
+  color: string;
+}
+
+export const statusDisplayConfig: Record<OrderStatus, StatusDisplayConfig> = {
+  pending: { label: "Pendente", variant: "destructive", icon: Clock, color: "bg-yellow-500" },
+  confirmed: { label: "Confirmado", variant: "default", icon: CheckCircle, color: "bg-blue-500" },
+  preparing: { label: "Preparando", variant: "secondary", icon: Package, color: "bg-orange-500" },
+  ready: { label: "Pronto", variant: "default", icon: Package, color: "bg-green-500" },
+  ready_for_pickup: { label: "Pronto para Retirada", variant: "default", icon: Package, color: "bg-green-500" },
+  ready_to_serve: { label: "Pronto para Servir", variant: "default", icon: UtensilsCrossed, color: "bg-green-500" },
+  out_for_delivery: { label: "Saiu para Entrega", variant: "secondary", icon: Truck, color: "bg-purple-500" },
+  delivered: { label: "Entregue", variant: "outline", icon: Home, color: "bg-green-600" },
+  picked_up: { label: "Retirado", variant: "outline", icon: CheckCircle, color: "bg-green-600" },
+  served: { label: "Servido", variant: "outline", icon: CheckCircle, color: "bg-green-600" },
+  cancelled: { label: "Cancelado", variant: "destructive", icon: XCircle, color: "bg-red-500" },
+};
+
+// Status flows by order type
+export const statusFlowByOrderType: Record<OrderType, OrderStatus[]> = {
+  delivery: ["pending", "confirmed", "preparing", "ready", "out_for_delivery", "delivered"],
+  pickup: ["pending", "confirmed", "preparing", "ready_for_pickup", "picked_up"],
+  dine_in: ["pending", "confirmed", "preparing", "ready_to_serve", "served"],
+};
+
+export function getStatusFlow(orderType: OrderType): OrderStatus[] {
+  return statusFlowByOrderType[orderType] || statusFlowByOrderType.delivery;
+}
+
+// WhatsApp template key mapping
+export const statusToWhatsAppTemplateKey: Partial<Record<OrderStatus, string>> = {
+  confirmed: "confirmed",
+  preparing: "preparing",
+  ready_for_pickup: "ready_pickup",
+  ready: "ready_delivery",
+  out_for_delivery: "out_for_delivery",
+  delivered: "delivered",
+  picked_up: "picked_up",
+  served: "served",
+};
+
+// Order type labels
+export const orderTypeLabels: Record<OrderType, { label: string; icon: string }> = {
+  delivery: { label: "Entrega", icon: "🚚" },
+  pickup: { label: "Retirada", icon: "📦" },
+  dine_in: { label: "No Local", icon: "🍽️" },
+};
+
+// Payment method labels
+export const paymentMethodLabels: Record<string, string> = {
+  pix: "Pix",
+  credit: "Cartão de Crédito",
+  debit: "Cartão de Débito",
+  cash: "Dinheiro",
+};
+
+// Next status button labels
+export const nextStatusButtonLabels: Record<OrderStatus, string> = {
+  pending: "",
+  confirmed: "Confirmar Pedido",
+  preparing: "Iniciar Preparo",
+  ready: "Marcar como Pronto",
+  ready_for_pickup: "Pronto p/ Retirada",
+  ready_to_serve: "Pronto p/ Servir",
+  out_for_delivery: "Saiu para Entrega",
+  delivered: "Marcar como Entregue",
+  picked_up: "Marcar como Retirado",
+  served: "Marcar como Servido",
+  cancelled: "Cancelar",
+};
+
+// Quick action labels (compact)
+export const quickActionLabels: Record<OrderStatus, string> = {
+  pending: "Confirmar",
+  confirmed: "Preparar",
+  preparing: "Pronto",
+  ready: "Saiu Entrega",
+  ready_for_pickup: "Retirado",
+  ready_to_serve: "Servido",
+  out_for_delivery: "Entregue",
+  delivered: "",
+  picked_up: "",
+  served: "",
+  cancelled: "",
+};
+
+// Finalized statuses (for tracking page)
+export const finalizedStatuses: OrderStatus[] = ["delivered", "picked_up", "served", "cancelled"];
+
+// Helper to get status display or fallback to pending
+export function getStatusDisplay(status: string): StatusDisplayConfig {
+  return statusDisplayConfig[status as OrderStatus] || statusDisplayConfig.pending;
 }
 ```
 
-**Características Mobile-First:**
-- Touch targets mínimo 44x44px
-- Scroll interno para lista de adicionais
-- Botões de ação no rodapé sempre visíveis
-- Layout vertical otimizado para telas pequenas
+### 2. Atualizar `OrderTrackingPage.tsx`
 
----
+**Remover:**
+- Definição local de `statusConfig`
+- Definição local de `paymentMethodLabels`
+- Definição local de `orderTypeLabels`
+- Definição local de `finalizedStatuses`
 
-### 2. Modificar QuickOrderCart.tsx
-
-**Arquivo:** `src/components/pedidos/QuickOrderCart.tsx`
-
-**Mudanças:**
-
-1. Adicionar prop `onEditItem` para callback de edição
-2. Adicionar botão de editar (ícone Pencil) ao lado do botão de excluir
-3. Layout compacto para mobile: botões de ação em linha
-
-**Antes:**
-```text
-[−] 1 [+] [🗑️]
-```
-
-**Depois:**
-```text
-[−] 1 [+] [✏️] [🗑️]
-```
-
-**Props atualizadas:**
+**Adicionar:**
 ```typescript
-interface QuickOrderCartProps {
-  items: QuickOrderCartItem[];
-  onUpdateQuantity: (itemId: string, quantity: number) => void;
-  onRemoveItem: (itemId: string) => void;
-  onEditItem: (item: QuickOrderCartItem) => void;  // NOVO
-}
+import { 
+  statusDisplayConfig, 
+  paymentMethodLabels, 
+  orderTypeLabels, 
+  finalizedStatuses,
+  getStatusDisplay,
+  OrderStatus 
+} from "@/lib/orderStatus";
 ```
 
----
-
-### 3. Modificar QuickOrderModal.tsx
-
-**Arquivo:** `src/components/pedidos/QuickOrderModal.tsx`
-
-**Mudanças:**
-
-1. Adicionar estado para item em edição: `editingItem`
-2. Adicionar handler `handleEditItem` para abrir modal de edição
-3. Adicionar handler `handleSaveEditedItem` para salvar alterações
-4. Integrar `QuickOrderEditItemModal`
-5. Passar callback `onEditItem` para `QuickOrderCart`
-
-**Novo estado:**
+**Alterar uso:**
 ```typescript
-const [editingItem, setEditingItem] = useState<QuickOrderCartItem | null>(null);
+// Antes:
+const status = order ? (statusConfig[order.status] || statusConfig.pending) : null;
+
+// Depois:
+const status = order ? getStatusDisplay(order.status) : null;
 ```
 
-**Novo handler:**
+### 3. Atualizar `OrderConfirmationPage.tsx`
+
+Mesmas mudanças que OrderTrackingPage.tsx.
+
+### 4. Atualizar `OrderDetailModal.tsx`
+
+**Remover:**
+- Definição local de `statusConfig`
+- Definição local de `paymentLabels`
+- Definição local de `nextStatusLabels`
+- Definição local de `previousStatusLabels`
+
+**Importar do módulo centralizado.**
+
+### 5. Atualizar `OrderCard.tsx`
+
+**Remover:**
+- Definição local de `statusConfig`
+- Definição local de `nextStatusLabels`
+- Definição local de `paymentLabels`
+
+**Importar do módulo centralizado.**
+
+### 6. Atualizar `useOrders.ts`
+
+**Remover:**
+- `OrderStatus` type (mover para orderStatus.ts)
+- `OrderType` type (mover para orderStatus.ts)
+- `orderTypeLabels` (mover para orderStatus.ts)
+- `statusFlowByOrderType` (mover para orderStatus.ts)
+- `getStatusFlow` (mover para orderStatus.ts)
+
+**Adicionar:**
 ```typescript
-const handleSaveEditedItem = useCallback((updatedItem: QuickOrderCartItem) => {
-  setCartItems((prev) =>
-    prev.map((item) => (item.id === updatedItem.id ? updatedItem : item))
-  );
-  setEditingItem(null);
-}, []);
+import { 
+  OrderStatus, 
+  OrderType, 
+  orderTypeLabels, 
+  statusFlowByOrderType, 
+  getStatusFlow 
+} from "@/lib/orderStatus";
+
+// Re-export for backwards compatibility
+export { OrderStatus, OrderType, orderTypeLabels, getStatusFlow };
 ```
 
----
+### 7. Atualizar `useWhatsAppNotification.ts`
 
-### 4. Interface QuickOrderCartItem
+**Remover:**
+- `statusToTemplateKey` (mover para orderStatus.ts)
 
-**Arquivo:** `src/components/pedidos/QuickOrderCart.tsx`
-
-**Mudança:** Adicionar `categoryId` ao item para poder carregar os adicionais corretos
-
+**Importar:**
 ```typescript
-export interface QuickOrderCartItem {
-  id: string;
-  productId: string;
-  productName: string;
-  productPrice: number;
-  quantity: number;
-  observation?: string;
-  categoryId: string;  // NOVO - necessário para carregar addon groups
-  addons: {
-    id: string;
-    name: string;
-    price: number;
-    quantity: number;
-  }[];
-}
+import { statusToWhatsAppTemplateKey, OrderStatus } from "@/lib/orderStatus";
 ```
 
 ---
 
-### 5. Modificar QuickOrderProductList.tsx
+## Arquivos a Criar/Modificar
 
-**Arquivo:** `src/components/pedidos/QuickOrderProductList.tsx`
-
-**Mudança:** Incluir `categoryId` ao adicionar item
-
-```typescript
-onAddItem({
-  productId: product.id,
-  productName: product.name,
-  productPrice: product.price,
-  categoryId: category.id,  // NOVO
-  quantity: 1,
-  addons: [],
-});
-```
-
----
-
-## Arquivos a Modificar/Criar
-
-| Arquivo | Tipo | Descrição |
+| Arquivo | Ação | Descrição |
 |---------|------|-----------|
-| `src/components/pedidos/QuickOrderEditItemModal.tsx` | Criar | Modal de edição de item |
-| `src/components/pedidos/QuickOrderCart.tsx` | Modificar | Adicionar botão editar e prop onEditItem |
-| `src/components/pedidos/QuickOrderModal.tsx` | Modificar | Integrar modal de edição e handlers |
-| `src/components/pedidos/QuickOrderProductList.tsx` | Modificar | Incluir categoryId nos itens |
-
----
-
-## Seção Técnica
-
-### QuickOrderEditItemModal.tsx - Estrutura
-
-```typescript
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Minus } from "lucide-react";
-import { formatPrice } from "@/lib/formatters";
-import { useAddonGroups, useAddonsForGroups } from "@/hooks/useAddons";
-import { QuickOrderCartItem } from "./QuickOrderCart";
-
-interface QuickOrderEditItemModalProps {
-  item: QuickOrderCartItem | null;
-  open: boolean;
-  onClose: () => void;
-  onSave: (updatedItem: QuickOrderCartItem) => void;
-}
-
-export function QuickOrderEditItemModal({ item, open, onClose, onSave }: QuickOrderEditItemModalProps) {
-  const [quantity, setQuantity] = useState(1);
-  const [observation, setObservation] = useState("");
-  const [selectedAddons, setSelectedAddons] = useState<Map<string, number>>(new Map());
-  
-  const { data: addonGroups } = useAddonGroups(item?.categoryId);
-  // ... carregar addons e lógica de edição
-  
-  // Inicializar estado com dados do item ao abrir
-  useEffect(() => {
-    if (item && open) {
-      setQuantity(item.quantity);
-      setObservation(item.observation || "");
-      const addonsMap = new Map<string, number>();
-      item.addons.forEach(addon => addonsMap.set(addon.id, addon.quantity));
-      setSelectedAddons(addonsMap);
-    }
-  }, [item, open]);
-
-  const handleSave = () => {
-    if (!item) return;
-    // Construir item atualizado e chamar onSave
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      {/* Conteúdo do modal similar ao ProductAddonSelector */}
-    </Dialog>
-  );
-}
-```
-
-### QuickOrderCart.tsx - Botão de Editar
-
-```typescript
-// Adicionar ao layout de cada item:
-<Button
-  size="icon"
-  variant="ghost"
-  className="h-7 w-7"
-  onClick={() => onEditItem(item)}
-  data-testid={`quick-order-cart-item-edit-${item.id}`}
-  aria-label="Editar item"
->
-  <Pencil className="h-3 w-3" />
-</Button>
-```
-
-### QuickOrderModal.tsx - Integração
-
-```typescript
-// Estado para edição
-const [editingItem, setEditingItem] = useState<QuickOrderCartItem | null>(null);
-
-// Handler para salvar
-const handleSaveEditedItem = useCallback((updatedItem: QuickOrderCartItem) => {
-  setCartItems((prev) =>
-    prev.map((item) => (item.id === updatedItem.id ? updatedItem : item))
-  );
-  setEditingItem(null);
-  toast.success("Item atualizado", { duration: 1000 });
-}, []);
-
-// Render
-<QuickOrderCart
-  items={cartItems}
-  onUpdateQuantity={handleUpdateQuantity}
-  onRemoveItem={handleRemoveItem}
-  onEditItem={setEditingItem}  // NOVO
-/>
-
-<QuickOrderEditItemModal
-  item={editingItem}
-  open={editingItem !== null}
-  onClose={() => setEditingItem(null)}
-  onSave={handleSaveEditedItem}
-/>
-```
-
----
-
-## Considerações Mobile-First
-
-- **Touch targets**: Todos os botões com mínimo 44x44px
-- **Layout responsivo**: Modal ocupa 95% da largura em mobile
-- **Scroll interno**: Lista de adicionais com scroll se necessário
-- **Botões fixos**: Footer com ações sempre visível
-- **Feedback visual**: Toast de confirmação ao salvar
-- **Animação suave**: Transição ao abrir/fechar modal
+| `src/lib/orderStatus.ts` | Criar | Módulo centralizado de configuração de status |
+| `src/pages/loja/OrderTrackingPage.tsx` | Modificar | Importar configurações centralizadas |
+| `src/pages/loja/OrderConfirmationPage.tsx` | Modificar | Importar configurações centralizadas |
+| `src/components/pedidos/OrderDetailModal.tsx` | Modificar | Importar configurações centralizadas |
+| `src/components/pedidos/OrderCard.tsx` | Modificar | Importar configurações centralizadas |
+| `src/components/pedidos/OrderKanban.tsx` | Modificar | Verificar consistência |
+| `src/components/pedidos/OrderList.tsx` | Modificar | Verificar consistência |
+| `src/hooks/useOrders.ts` | Modificar | Re-exportar do módulo centralizado |
+| `src/hooks/useWhatsAppNotification.ts` | Modificar | Importar do módulo centralizado |
 
 ---
 
 ## Testes a Realizar
 
-1. Adicionar produto com adicionais
-2. Clicar em Editar no carrinho
-3. Verificar se adicionais selecionados estão marcados
-4. Alterar seleção de adicionais
-5. Alterar quantidade
-6. Editar observação
-7. Salvar e verificar atualização no carrinho
-8. Cancelar edição e verificar que item não mudou
-9. Testar em viewport mobile (390x844)
+1. **Teste de Status na Página de Rastreamento**
+   - Acessar `/loja/dom-burguer/rastrear`
+   - Buscar pedido #219
+   - Verificar se mostra "Pronto para Retirada" (não "Pendente")
+
+2. **Teste de WhatsApp**
+   - Abrir um pedido no dashboard
+   - Clicar no botão do WhatsApp
+   - Verificar se abre `wa.me` com a mensagem correta
+
+3. **Teste de Fluxo Completo - Retirada**
+   - Criar pedido de retirada na loja pública
+   - Avançar status: pendente → confirmado → preparando → pronto p/ retirada → retirado
+   - Verificar se cliente vê status correto em cada etapa
+
+4. **Teste de Fluxo Completo - Delivery**
+   - Criar pedido de delivery
+   - Avançar status: pendente → confirmado → preparando → pronto → saiu p/ entrega → entregue
+   - Verificar status na página de rastreamento
+
+5. **Teste de Fluxo Completo - Consumo Local**
+   - Criar pedido via Novo Pedido - Balcão (dine_in)
+   - Avançar status: pendente → confirmado → preparando → pronto p/ servir → servido
+   - Verificar consistência
+
+6. **Teste de WhatsApp em Cada Status**
+   - Para cada status que tem template, clicar no botão WhatsApp
+   - Verificar se a mensagem está formatada corretamente
+
+---
+
+## Benefícios da Refatoração
+
+1. **Manutenibilidade**: Mudanças de status em um único lugar
+2. **Consistência**: Mesmo mapeamento em todas as páginas
+3. **Tipo seguro**: TypeScript garante uso correto de status
+4. **Testabilidade**: Configurações exportáveis para testes unitários
+5. **Documentação**: Código auto-documentado com tipos claros
