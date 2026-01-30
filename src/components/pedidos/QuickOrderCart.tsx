@@ -1,4 +1,4 @@
-import { X, Plus, Minus, Trash2 } from "lucide-react";
+import { Plus, Minus, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -12,6 +12,7 @@ export interface QuickOrderCartItem {
   productPrice: number;
   quantity: number;
   observation?: string;
+  categoryId: string;
   addons: {
     id: string;
     name: string;
@@ -24,9 +25,10 @@ interface QuickOrderCartProps {
   items: QuickOrderCartItem[];
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onRemoveItem: (itemId: string) => void;
+  onEditItem: (item: QuickOrderCartItem) => void;
 }
 
-export function QuickOrderCart({ items, onUpdateQuantity, onRemoveItem }: QuickOrderCartProps) {
+export function QuickOrderCart({ items, onUpdateQuantity, onRemoveItem, onEditItem }: QuickOrderCartProps) {
   const calculateItemTotal = (item: QuickOrderCartItem) => {
     const addonsTotal = item.addons.reduce((sum, addon) => sum + addon.price * addon.quantity, 0);
     return (item.productPrice + addonsTotal) * item.quantity;
@@ -84,7 +86,7 @@ export function QuickOrderCart({ items, onUpdateQuantity, onRemoveItem }: QuickO
                   <Button
                     size="icon"
                     variant="outline"
-                    className="h-7 w-7"
+                    className="h-8 w-8"
                     onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
                     disabled={item.quantity <= 1}
                     data-testid={`quick-order-cart-item-decrease-${item.id}`}
@@ -95,7 +97,7 @@ export function QuickOrderCart({ items, onUpdateQuantity, onRemoveItem }: QuickO
                   <Button
                     size="icon"
                     variant="outline"
-                    className="h-7 w-7"
+                    className="h-8 w-8"
                     onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
                     data-testid={`quick-order-cart-item-increase-${item.id}`}
                   >
@@ -104,7 +106,17 @@ export function QuickOrderCart({ items, onUpdateQuantity, onRemoveItem }: QuickO
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-7 w-7 text-destructive hover:text-destructive"
+                    className="h-8 w-8"
+                    onClick={() => onEditItem(item)}
+                    data-testid={`quick-order-cart-item-edit-${item.id}`}
+                    aria-label="Editar item"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
                     onClick={() => onRemoveItem(item.id)}
                     data-testid={`quick-order-cart-item-remove-${item.id}`}
                   >
