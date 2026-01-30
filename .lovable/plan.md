@@ -1,377 +1,328 @@
 
-# Plano de Modernização da Loja - Mobile First
+# Plano: Botão de Editar Produto no Carrinho do Pedido Rápido
 
 ## Objetivo
-Transformar a experiência da loja pública para ser **otimizada para mobile**, com produtos visíveis rapidamente, informações essenciais acessíveis e navegação intuitiva por categoria.
+Adicionar funcionalidade de edição de itens do carrinho no fluxo de "Novo Pedido - Balcão", permitindo modificar adicionais, quantidade e observação de produtos já adicionados, com foco na experiência mobile.
 
 ---
 
-## Problemas Identificados (Visão Mobile)
+## Análise do Problema
 
-| Problema | Impacto no Mobile |
-|----------|-------------------|
-| Header usa `bg-primary` (laranja padrão) ao invés da cor cadastrada | Marca do estabelecimento não é respeitada |
-| Nome truncado com "A..." | Usuário não identifica a loja |
-| Badge "Fechado" + texto "Fechado agora" abaixo | Ocupa 2 linhas com mesma informação |
-| Card Alert "Estabelecimento Fechado" | Ocupa ~80px de altura valiosa |
-| StoreInfo com grid 7 dias visível | Empurra produtos para ~600px de scroll |
-| Sem filtro de categorias | Difícil navegar em catálogos grandes |
+Atualmente no `QuickOrderCart.tsx`:
+- Permite apenas alterar quantidade (+/-)
+- Permite remover item (lixeira)
+- **Não há opção de editar adicionais ou observação**
+
+O usuário precisa excluir e adicionar novamente o produto caso queira alterar um adicional.
 
 ---
 
-## Arquitetura das Mudanças
+## Arquitetura da Solução
 
 ```text
-ANTES (viewport 390x844):
-┌─────────────────────────────────┐
-│ [Logo] A...   [Fechado][🛒]     │ ← Nome cortado
-│         Fechado agora           │ ← Texto redundante
-├─────────────────────────────────┤
-│ ⚠️ Estabelecimento Fechado      │ ← Card redundante
-│ Abrimos Amanhã às 13:30         │
-├─────────────────────────────────┤
-│ ⏱ 30-40 min                     │
-│ 📍 Rua do Rosário...            │
-│ 📞 (35) 99750-3633              │
-│ 🕐 Seg Ter Qua Qui Sex Sab Dom  │ ← Grid ocupa muito
-│    13  13  13  13  13  fec fec  │
-│    20  19  19  19  19           │
-│ 🚚 Pedido mínimo: R$ 10,00      │
-├─────────────────────────────────┤
-│ PRODUTOS (muito abaixo!)        │ ← ~600px de scroll
-└─────────────────────────────────┘
-
-DEPOIS (viewport 390x844):
-┌─────────────────────────────────┐
-│ [Logo]             [🧭][🛒]     │ ← Header limpo
-│ Açaí da Jana                    │ ← Nome completo
-│      [🔴 Abre Amanhã 13:30]     │ ← Status integrado
-├─────────────────────────────────┤
-│ [Todos][Açaí 300][Açaí 500][▶  │ ← Filtro sticky
-├─────────────────────────────────┤
-│ ⏱ 30-40 min  📍 Centro    [+]  │ ← Compacto
-├─────────────────────────────────┤
-│ 🍨 PRODUTOS (visíveis!)         │ ← ~180px de scroll
-│   [Produto 1]  [Produto 2]      │
-└─────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│           QuickOrderCart                     │
+│  ┌─────────────────────────────────────────┐│
+│  │ [Produto] [Adicionais] [Preço]          ││
+│  │ [−] 1 [+]  [✏️ Editar] [🗑️ Excluir]    ││ ← NOVO botão Editar
+│  └─────────────────────────────────────────┘│
+└─────────────────────────────────────────────┘
+          │
+          ▼ (ao clicar em Editar)
+┌─────────────────────────────────────────────┐
+│        QuickOrderEditItemModal (NOVO)       │
+│  ┌─────────────────────────────────────────┐│
+│  │ Nome do Produto                         ││
+│  │ ─────────────────────                   ││
+│  │ Quantidade: [−] 2 [+]                   ││
+│  │ ─────────────────────                   ││
+│  │ ☑ Adicional 1 (+R$ 2,00)  [−] 1 [+]    ││
+│  │ ☐ Adicional 2 (+R$ 3,00)               ││
+│  │ ─────────────────────                   ││
+│  │ Observação: [_______________]           ││
+│  │ ─────────────────────                   ││
+│  │ [Cancelar]        [Salvar R$ XX,XX]    ││
+│  └─────────────────────────────────────────┘│
+└─────────────────────────────────────────────┘
 ```
 
 ---
 
 ## Mudanças Detalhadas
 
-### 1. StoreHeader.tsx - Otimização Mobile
+### 1. Novo Componente: QuickOrderEditItemModal.tsx
 
-**Arquivo:** `src/components/loja/StoreHeader.tsx`
+**Arquivo:** `src/components/pedidos/QuickOrderEditItemModal.tsx` (criar)
 
-**Mudanças:**
-
-1. **Cor dinâmica já funciona** - O `headerStyle` já aplica `primaryColor`, mas precisa garantir que está sendo usado corretamente
-2. **Remover texto redundante "Fechado agora"** (linhas 181-188) - já existe badge no header
-3. **Integrar próximo horário no badge de status** - mostrar "Abre Amanhã 13:30" direto no badge
-4. **Aumentar espaço para nome** - reorganizar layout para nome ocupar linha completa em mobile
-
-**Nova estrutura mobile:**
-```text
-Linha 1: [Logo 40px] [Acompanhar] [Carrinho]
-Linha 2: Nome do Estabelecimento (completo)
-Linha 3: [Badge: 🔴 Abre Amanhã 13:30]
-```
-
-**Props adicionais necessárias:**
-- `nextOpenTime?: { day: string; time: string } | null` (já disponível via `useStoreOpeningHours`)
-
----
-
-### 2. StorePage.tsx - Remover Redundâncias
-
-**Arquivo:** `src/pages/loja/StorePage.tsx`
-
-**Mudanças:**
-
-1. **Remover Alert "Estabelecimento Fechado"** (linhas 119-134)
-   - Informação já integrada no header
-   - Economiza ~80px de altura
-
-2. **Passar `nextOpenTime` para StoreHeader**
-   - Já calculado pelo hook `useStoreOpeningHours`
-
-3. **Adicionar CategoryFilter** (novo componente)
-   - Inserir entre header e StoreInfo
-   - Sticky para ficar sempre visível ao scrollar
-
----
-
-### 3. StoreInfo.tsx - Formato Compacto
-
-**Arquivo:** `src/components/loja/StoreInfo.tsx`
-
-**Redesign completo para mobile:**
-
-**Modo Compacto (padrão):**
-```text
-┌────────────────────────────────────────┐
-│ ⏱ 30-40 min    📍 Centro, Jesuânia [▼]│
-└────────────────────────────────────────┘
-```
-
-**Modo Expandido (ao clicar [▼]):**
-```text
-┌────────────────────────────────────────┐
-│ ⏱ 30-40 min    📍 Centro, Jesuânia [▲]│
-├────────────────────────────────────────┤
-│ "Açaí cremoso e delicioso..."          │
-│                                         │
-│ 📞 (35) 99750-3633                      │
-│ 📍 Rua do Rosário, 320                  │
-│                                         │
-│ 🕐 Horários                             │
-│    Seg: 13:00-20:00                     │
-│    Ter: 13:30-19:00                     │
-│    ...                                  │
-│                                         │
-│ 🚚 Pedido mínimo: R$ 10,00              │
-└────────────────────────────────────────┘
-```
-
-**Implementação:**
-- Usar `Collapsible` do Radix (já disponível)
-- Estado `isExpanded` default `false`
-- Animação suave de abertura
-- Botão toggle estilo "Ver mais" / "Ver menos"
-
----
-
-### 4. CategoryFilter.tsx - Novo Componente
-
-**Arquivo:** `src/components/loja/CategoryFilter.tsx` (criar)
-
-**Características mobile-first:**
-
-- **Sticky** abaixo do header (z-index 40)
-- **Scroll horizontal** nativo (touch-friendly)
-- **Altura compacta** (~44px)
-- **Touch targets** mínimo 44x44px
-- **Feedback visual** na categoria ativa
-
-**Layout:**
-```text
-┌────────────────────────────────────────┐
-│ [Todos] [Açaí 300ml] [Açaí 500ml] [▶  │
-└────────────────────────────────────────┘
-```
+**Funcionalidades:**
+- Recebe o item do carrinho para edição
+- Carrega os addon groups da categoria do produto
+- Permite alterar quantidade
+- Permite marcar/desmarcar adicionais e suas quantidades
+- Permite editar observação
+- Botão "Salvar" atualiza o item no carrinho
+- Botão "Cancelar" fecha sem salvar
 
 **Props:**
 ```typescript
-interface CategoryFilterProps {
-  categories: Array<{ id: string; name: string; image_url?: string | null }>;
-  onSelectCategory: (categoryId: string | null) => void;
-  activeCategory: string | null;
+interface QuickOrderEditItemModalProps {
+  item: QuickOrderCartItem | null;
+  open: boolean;
+  onClose: () => void;
+  onSave: (updatedItem: QuickOrderCartItem) => void;
+  establishmentId: string;
 }
 ```
 
-**Comportamento:**
-- Clicar em categoria → scroll suave para seção
-- Categoria "Todos" seleciona null (mostra todas)
-- Scroll automático do filtro para manter categoria ativa visível
+**Características Mobile-First:**
+- Touch targets mínimo 44x44px
+- Scroll interno para lista de adicionais
+- Botões de ação no rodapé sempre visíveis
+- Layout vertical otimizado para telas pequenas
 
 ---
 
-### 5. CategorySection.tsx - Adicionar Navegação
+### 2. Modificar QuickOrderCart.tsx
 
-**Arquivo:** `src/components/loja/CategorySection.tsx`
+**Arquivo:** `src/components/pedidos/QuickOrderCart.tsx`
 
-**Mudança:**
-- Adicionar `id` para navegação por âncora
+**Mudanças:**
 
-```tsx
-<section
-  id={`category-${category.id}`}  // ADICIONAR
-  data-testid={`category-section-${category.id}`}
-  // ...
->
+1. Adicionar prop `onEditItem` para callback de edição
+2. Adicionar botão de editar (ícone Pencil) ao lado do botão de excluir
+3. Layout compacto para mobile: botões de ação em linha
+
+**Antes:**
+```text
+[−] 1 [+] [🗑️]
 ```
 
----
+**Depois:**
+```text
+[−] 1 [+] [✏️] [🗑️]
+```
 
-## Arquivos a Modificar
-
-| Arquivo | Tipo | Prioridade |
-|---------|------|------------|
-| `src/components/loja/StoreHeader.tsx` | Modificar | Alta |
-| `src/pages/loja/StorePage.tsx` | Modificar | Alta |
-| `src/components/loja/StoreInfo.tsx` | Redesenhar | Alta |
-| `src/components/loja/CategoryFilter.tsx` | Criar | Alta |
-| `src/components/loja/CategorySection.tsx` | Modificar | Média |
-
----
-
-## Seção Tecnica
-
-### StoreHeader.tsx - Mudanças Especificas
-
+**Props atualizadas:**
 ```typescript
-// Adicionar prop
-interface StoreHeaderProps {
-  // ... props existentes
-  nextOpenTime?: { day: string; time: string } | null;
+interface QuickOrderCartProps {
+  items: QuickOrderCartItem[];
+  onUpdateQuantity: (itemId: string, quantity: number) => void;
+  onRemoveItem: (itemId: string) => void;
+  onEditItem: (item: QuickOrderCartItem) => void;  // NOVO
 }
-
-// Mudanca no layout mobile (linhas 112-143):
-// ANTES: flex items-center justify-between gap-2
-// DEPOIS: flex flex-col para mobile, row para desktop
-
-// Remover linhas 181-188 (texto redundante "Fechado agora")
-
-// Modificar badge de status para incluir horário:
-// "Fechado" → "Abre Amanhã 13:30" (quando nextOpenTime disponível)
 ```
 
-### StorePage.tsx - Mudancas Especificas
+---
 
+### 3. Modificar QuickOrderModal.tsx
+
+**Arquivo:** `src/components/pedidos/QuickOrderModal.tsx`
+
+**Mudanças:**
+
+1. Adicionar estado para item em edição: `editingItem`
+2. Adicionar handler `handleEditItem` para abrir modal de edição
+3. Adicionar handler `handleSaveEditedItem` para salvar alterações
+4. Integrar `QuickOrderEditItemModal`
+5. Passar callback `onEditItem` para `QuickOrderCart`
+
+**Novo estado:**
 ```typescript
-// Adicionar import
-import { CategoryFilter } from "@/components/loja/CategoryFilter";
-
-// Adicionar estado para categoria ativa
-const [activeCategory, setActiveCategory] = useState<string | null>(null);
-
-// Remover bloco Alert (linhas 119-134)
-
-// Adicionar CategoryFilter após header:
-<CategoryFilter
-  categories={categories || []}
-  activeCategory={activeCategory}
-  onSelectCategory={setActiveCategory}
-/>
-
-// Passar nextOpenTime para StoreHeader:
-<StoreHeader
-  // ... props existentes
-  nextOpenTime={nextOpenTime}
-/>
+const [editingItem, setEditingItem] = useState<QuickOrderCartItem | null>(null);
 ```
 
-### StoreInfo.tsx - Redesign Completo
-
+**Novo handler:**
 ```typescript
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp } from "lucide-react";
-
-// Adicionar estado
-const [isExpanded, setIsExpanded] = useState(false);
-
-// Layout compacto como trigger
-// Conteúdo expandido dentro de CollapsibleContent
+const handleSaveEditedItem = useCallback((updatedItem: QuickOrderCartItem) => {
+  setCartItems((prev) =>
+    prev.map((item) => (item.id === updatedItem.id ? updatedItem : item))
+  );
+  setEditingItem(null);
+}, []);
 ```
 
-### CategoryFilter.tsx - Novo Componente
+---
+
+### 4. Interface QuickOrderCartItem
+
+**Arquivo:** `src/components/pedidos/QuickOrderCart.tsx`
+
+**Mudança:** Adicionar `categoryId` ao item para poder carregar os adicionais corretos
 
 ```typescript
-import { useRef, useEffect } from "react";
+export interface QuickOrderCartItem {
+  id: string;
+  productId: string;
+  productName: string;
+  productPrice: number;
+  quantity: number;
+  observation?: string;
+  categoryId: string;  // NOVO - necessário para carregar addon groups
+  addons: {
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+  }[];
+}
+```
+
+---
+
+### 5. Modificar QuickOrderProductList.tsx
+
+**Arquivo:** `src/components/pedidos/QuickOrderProductList.tsx`
+
+**Mudança:** Incluir `categoryId` ao adicionar item
+
+```typescript
+onAddItem({
+  productId: product.id,
+  productName: product.name,
+  productPrice: product.price,
+  categoryId: category.id,  // NOVO
+  quantity: 1,
+  addons: [],
+});
+```
+
+---
+
+## Arquivos a Modificar/Criar
+
+| Arquivo | Tipo | Descrição |
+|---------|------|-----------|
+| `src/components/pedidos/QuickOrderEditItemModal.tsx` | Criar | Modal de edição de item |
+| `src/components/pedidos/QuickOrderCart.tsx` | Modificar | Adicionar botão editar e prop onEditItem |
+| `src/components/pedidos/QuickOrderModal.tsx` | Modificar | Integrar modal de edição e handlers |
+| `src/components/pedidos/QuickOrderProductList.tsx` | Modificar | Incluir categoryId nos itens |
+
+---
+
+## Seção Técnica
+
+### QuickOrderEditItemModal.tsx - Estrutura
+
+```typescript
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Plus, Minus } from "lucide-react";
+import { formatPrice } from "@/lib/formatters";
+import { useAddonGroups, useAddonsForGroups } from "@/hooks/useAddons";
+import { QuickOrderCartItem } from "./QuickOrderCart";
 
-interface CategoryFilterProps {
-  categories: Array<{ id: string; name: string; image_url?: string | null }>;
-  onSelectCategory: (categoryId: string | null) => void;
-  activeCategory: string | null;
+interface QuickOrderEditItemModalProps {
+  item: QuickOrderCartItem | null;
+  open: boolean;
+  onClose: () => void;
+  onSave: (updatedItem: QuickOrderCartItem) => void;
 }
 
-export function CategoryFilter({ categories, onSelectCategory, activeCategory }: CategoryFilterProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const handleSelect = (categoryId: string | null) => {
-    onSelectCategory(categoryId);
-    
-    // Scroll suave para a seção
-    if (categoryId) {
-      const element = document.getElementById(`category-${categoryId}`);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+export function QuickOrderEditItemModal({ item, open, onClose, onSave }: QuickOrderEditItemModalProps) {
+  const [quantity, setQuantity] = useState(1);
+  const [observation, setObservation] = useState("");
+  const [selectedAddons, setSelectedAddons] = useState<Map<string, number>>(new Map());
+  
+  const { data: addonGroups } = useAddonGroups(item?.categoryId);
+  // ... carregar addons e lógica de edição
+  
+  // Inicializar estado com dados do item ao abrir
+  useEffect(() => {
+    if (item && open) {
+      setQuantity(item.quantity);
+      setObservation(item.observation || "");
+      const addonsMap = new Map<string, number>();
+      item.addons.forEach(addon => addonsMap.set(addon.id, addon.quantity));
+      setSelectedAddons(addonsMap);
     }
+  }, [item, open]);
+
+  const handleSave = () => {
+    if (!item) return;
+    // Construir item atualizado e chamar onSave
   };
 
   return (
-    <div 
-      className="sticky top-[76px] z-40 bg-background/95 backdrop-blur-sm border-b py-2"
-      data-testid="category-filter"
-    >
-      <div className="max-w-4xl mx-auto px-3">
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-          <Button
-            variant={activeCategory === null ? "default" : "outline"}
-            size="sm"
-            className="flex-shrink-0 h-9"
-            onClick={() => handleSelect(null)}
-          >
-            Todos
-          </Button>
-          {categories.map((category) => (
-            <Button
-              key={category.id}
-              variant={activeCategory === category.id ? "default" : "outline"}
-              size="sm"
-              className="flex-shrink-0 h-9"
-              onClick={() => handleSelect(category.id)}
-            >
-              {category.name}
-            </Button>
-          ))}
-        </div>
-      </div>
-    </div>
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      {/* Conteúdo do modal similar ao ProductAddonSelector */}
+    </Dialog>
   );
 }
 ```
 
----
+### QuickOrderCart.tsx - Botão de Editar
 
-## Metricas de Sucesso Mobile
-
-| Metrica | Antes | Depois |
-|---------|-------|--------|
-| Scroll ate primeiro produto | ~600px | ~180px |
-| Nome do estabelecimento visivel | Parcial | Completo |
-| Informacoes redundantes | 3 locais | 1 local |
-| Navegacao por categoria | Inexistente | Sticky filter |
-| Touch targets | Variavel | Min 44px |
-
----
-
-## Ordem de Implementacao
-
-1. **Fase 1**: StoreHeader - layout mobile, remover texto redundante, integrar nextOpenTime
-2. **Fase 2**: StorePage - remover Alert, passar nextOpenTime
-3. **Fase 3**: CategoryFilter - criar componente sticky com scroll horizontal
-4. **Fase 4**: StoreInfo - redesenhar para formato compacto com expansao
-5. **Fase 5**: CategorySection - adicionar IDs para navegacao
-6. **Fase 6**: Testes em dispositivos reais (iPhone SE, Galaxy S21)
-
----
-
-## Consideracoes de Acessibilidade Mobile
-
-- **Touch targets**: Minimo 44x44px para todos os botoes
-- **Contraste**: Manter ratio 4.5:1 em todos os textos
-- **Focus states**: Visiveis para navegacao por teclado
-- **Screen readers**: ARIA labels em todos os elementos interativos
-- **Scroll horizontal**: Indicador visual de mais conteudo (sombra/fade)
-
----
-
-## CSS Utilitarios Necessarios
-
-```css
-/* Adicionar ao index.css se necessario */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
+```typescript
+// Adicionar ao layout de cada item:
+<Button
+  size="icon"
+  variant="ghost"
+  className="h-7 w-7"
+  onClick={() => onEditItem(item)}
+  data-testid={`quick-order-cart-item-edit-${item.id}`}
+  aria-label="Editar item"
+>
+  <Pencil className="h-3 w-3" />
+</Button>
 ```
+
+### QuickOrderModal.tsx - Integração
+
+```typescript
+// Estado para edição
+const [editingItem, setEditingItem] = useState<QuickOrderCartItem | null>(null);
+
+// Handler para salvar
+const handleSaveEditedItem = useCallback((updatedItem: QuickOrderCartItem) => {
+  setCartItems((prev) =>
+    prev.map((item) => (item.id === updatedItem.id ? updatedItem : item))
+  );
+  setEditingItem(null);
+  toast.success("Item atualizado", { duration: 1000 });
+}, []);
+
+// Render
+<QuickOrderCart
+  items={cartItems}
+  onUpdateQuantity={handleUpdateQuantity}
+  onRemoveItem={handleRemoveItem}
+  onEditItem={setEditingItem}  // NOVO
+/>
+
+<QuickOrderEditItemModal
+  item={editingItem}
+  open={editingItem !== null}
+  onClose={() => setEditingItem(null)}
+  onSave={handleSaveEditedItem}
+/>
+```
+
+---
+
+## Considerações Mobile-First
+
+- **Touch targets**: Todos os botões com mínimo 44x44px
+- **Layout responsivo**: Modal ocupa 95% da largura em mobile
+- **Scroll interno**: Lista de adicionais com scroll se necessário
+- **Botões fixos**: Footer com ações sempre visível
+- **Feedback visual**: Toast de confirmação ao salvar
+- **Animação suave**: Transição ao abrir/fechar modal
+
+---
+
+## Testes a Realizar
+
+1. Adicionar produto com adicionais
+2. Clicar em Editar no carrinho
+3. Verificar se adicionais selecionados estão marcados
+4. Alterar seleção de adicionais
+5. Alterar quantidade
+6. Editar observação
+7. Salvar e verificar atualização no carrinho
+8. Cancelar edição e verificar que item não mudou
+9. Testar em viewport mobile (390x844)
