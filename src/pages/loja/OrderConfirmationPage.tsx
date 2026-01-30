@@ -137,8 +137,9 @@ export default function OrderConfirmationPage() {
     queryKey: ["establishment-phone", order?.establishment_id],
     queryFn: async () => {
       if (!order?.establishment_id) return null;
+      // Use establishments_public view for security
       const { data } = await supabase
-        .from('establishments')
+        .from('establishments_public')
         .select('phone, pix_key')
         .eq('id', order.establishment_id)
         .single();

@@ -21,8 +21,9 @@ export function usePublicEstablishment(slug: string | undefined) {
     queryFn: async () => {
       if (!slug) return null;
 
+      // Use establishments_public view for security - excludes sensitive fields like owner_id, card fees
       const { data, error } = await supabase
-        .from("establishments")
+        .from("establishments_public")
         .select(`
           id, name, slug, description, logo_url, banner_url, phone, address, neighborhood, city, 
           opening_hours, delivery_info, min_order_value, theme_primary_color, theme_secondary_color, 
