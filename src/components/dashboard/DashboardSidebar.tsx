@@ -42,7 +42,7 @@ const menuItems = [
 
 export function DashboardSidebar() {
   const { signOut } = useAuth();
-  const { data: establishment } = useEstablishment();
+  const { data: establishment, isLoading: isLoadingEstablishment } = useEstablishment();
   const { setOpenMobile, isMobile } = useSidebar();
   const [copied, setCopied] = useState(false);
 
@@ -79,7 +79,10 @@ export function DashboardSidebar() {
     >
       <SidebarHeader className="p-4 border-b border-border">
         <div className="flex items-center gap-3">
-          {(establishment as any)?.logo_url ? (
+          {isLoadingEstablishment ? (
+            // Skeleton while loading - prevents flash of TáVindo logo
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-muted animate-pulse flex-shrink-0" />
+          ) : (establishment as any)?.logo_url ? (
             <img 
               src={(establishment as any).logo_url} 
               alt={establishment?.name || "Estabelecimento"} 
@@ -97,7 +100,11 @@ export function DashboardSidebar() {
             </div>
           )}
           <span className="font-semibold text-foreground truncate text-sm">
-            {establishment?.name || "TáVindo"}
+            {isLoadingEstablishment ? (
+              <span className="inline-block h-4 w-24 bg-muted animate-pulse rounded" />
+            ) : (
+              establishment?.name || "TáVindo"
+            )}
           </span>
         </div>
       </SidebarHeader>
