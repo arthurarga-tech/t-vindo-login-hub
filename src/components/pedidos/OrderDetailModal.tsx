@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Clock, User, MapPin, Phone, CreditCard, MessageSquare, X, Printer } from "lucide-react";
+import { Clock, User, MapPin, Phone, CreditCard, MessageSquare, X, Printer, Pencil, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Order, useUpdateOrderStatus } from "@/hooks/useOrders";
+import { Order, OrderItem, useUpdateOrderStatus } from "@/hooks/useOrders";
 import { 
   OrderStatus, 
   OrderType, 
@@ -31,6 +31,8 @@ import { usePrintOrder } from "@/hooks/usePrintOrder";
 import { useWhatsAppNotification } from "@/hooks/useWhatsAppNotification";
 import { formatInSaoPaulo } from "@/lib/dateUtils";
 import { formatPrice } from "@/lib/formatters";
+import { OrderItemEditModal } from "./OrderItemEditModal";
+import { OrderAddItemModal } from "./OrderAddItemModal";
 
 // WhatsApp Icon Component
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -58,9 +60,14 @@ interface OrderDetailModalProps {
 
 export function OrderDetailModal({ order, open, onClose, establishmentName, logoUrl, printMode = "none", printFontSize = 12, printMarginLeft = 0, printMarginRight = 0, printFontBold = true, printLineHeight = 1.4, printContrastHigh = false }: OrderDetailModalProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [editingItem, setEditingItem] = useState<OrderItem | null>(null);
+  const [showAddItemModal, setShowAddItemModal] = useState(false);
   const updateStatus = useUpdateOrderStatus();
   const { printOrder } = usePrintOrder();
   const { openWhatsApp } = useWhatsAppNotification();
+  
+  // Check if order can be edited (not cancelled, delivered, picked_up, or served)
+  const canEditOrder = order && !["cancelled", "delivered", "picked_up", "served"].includes(order.status);
 
   if (!order) return null;
 
@@ -223,13 +230,40 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
 
           {/* Items */}
           <div className="space-y-2" data-testid="order-detail-items">
-            <h4 className="font-semibold">Itens</h4>
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold">Itens</h4>
+              {canEditOrder && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAddItemModal(true)}
+                  className="h-7 text-xs gap-1"
+                  data-testid="order-detail-add-item-button"
+                >
+                  <Plus className="h-3 w-3" />
+                  Adicionar
+                </Button>
+              )}
+            </div>
             <div className="space-y-3">
               {order.items?.map((item) => (
-                <div key={item.id} className="space-y-1" data-testid={`order-detail-item-${item.id}`}>
-                  <div className="flex justify-between text-sm">
-                    <span data-testid={`order-detail-item-${item.id}-name`}>{item.quantity}x {item.product_name}</span>
-                    <span className="font-medium" data-testid={`order-detail-item-${item.id}-total`}>{formatPrice(item.total)}</span>
+                <div key={item.id} className="space-y-1 group" data-testid={`order-detail-item-${item.id}`}>
+                  <div className="flex justify-between text-sm items-start">
+                    <div className="flex items-start gap-2 flex-1">
+                      <span data-testid={`order-detail-item-${item.id}-name`}>{item.quantity}x {item.product_name}</span>
+                      {canEditOrder && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                          onClick={() => setEditingItem(item)}
+                          data-testid={`order-detail-item-${item.id}-edit`}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                    <span className="font-medium shrink-0" data-testid={`order-detail-item-${item.id}-total`}>{formatPrice(item.total)}</span>
                   </div>
                   {item.addons && item.addons.length > 0 && (
                     <div className="pl-4 space-y-0.5" data-testid={`order-detail-item-${item.id}-addons`}>
@@ -239,6 +273,11 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
                         </p>
                       ))}
                     </div>
+                  )}
+                  {item.observation && (
+                    <p className="text-xs text-muted-foreground pl-4 italic">
+                      Obs: {item.observation}
+                    </p>
                   )}
                 </div>
               ))}
@@ -383,6 +422,21 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Item Modal */}
+      <OrderItemEditModal
+        item={editingItem}
+        orderId={order.id}
+        open={!!editingItem}
+        onClose={() => setEditingItem(null)}
+      />
+
+      {/* Add Item Modal */}
+      <OrderAddItemModal
+        orderId={order.id}
+        open={showAddItemModal}
+        onClose={() => setShowAddItemModal(false)}
+      />
     </Dialog>
   );
 }
