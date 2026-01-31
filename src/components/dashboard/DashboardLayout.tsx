@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "./DashboardSidebar";
+import { SubscriptionBanner } from "@/components/subscription/SubscriptionBanner";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { useMemo } from "react";
 import { hexToHSL } from "@/lib/formatters";
@@ -86,6 +87,7 @@ export function DashboardLayout() {
         <main className="flex-1 flex flex-col min-w-0">
           <DashboardHeader />
           <div className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto">
+            <SubscriptionBanner />
             <Outlet />
           </div>
         </main>

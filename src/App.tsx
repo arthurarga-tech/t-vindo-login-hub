@@ -16,6 +16,7 @@ import Estoque from "./pages/dashboard/Estoque";
 import Delivery from "./pages/dashboard/Delivery";
 import Usuarios from "./pages/dashboard/Usuarios";
 import Configuracoes from "./pages/dashboard/Configuracoes";
+import MeuPlano from "./pages/dashboard/MeuPlano";
 import StorePage from "./pages/loja/StorePage";
 import CheckoutPage from "./pages/loja/CheckoutPage";
 import OrderConfirmationPage from "./pages/loja/OrderConfirmationPage";
@@ -49,6 +50,7 @@ const App = () => (
               <Route path="estoque" element={<Estoque />} />
               <Route path="delivery" element={<Delivery />} />
               <Route path="usuarios" element={<Usuarios />} />
+              <Route path="meu-plano" element={<MeuPlano />} />
               <Route path="configuracoes" element={<Configuracoes />} />
             </Route>
             <Route path="/loja/:slug" element={<StorePage />} />

@@ -9,6 +9,7 @@ import {
   LogOut,
   Link2,
   Check,
+  CreditCard,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,6 +38,7 @@ const menuItems = [
   { title: "Meu Negócio", url: "/dashboard/meu-negocio", icon: Building2, testId: "meu-negocio" },
   { title: "Clientes", url: "/dashboard/clientes", icon: Users, testId: "clientes" },
   { title: "Usuários", url: "/dashboard/usuarios", icon: UserCog, testId: "usuarios" },
+  { title: "Meu Plano", url: "/dashboard/meu-plano", icon: CreditCard, testId: "meu-plano" },
   { title: "Configurações", url: "/dashboard/configuracoes", icon: Settings, testId: "configuracoes" },
 ];
 
