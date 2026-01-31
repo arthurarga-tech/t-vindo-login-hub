@@ -1,1 +1,10 @@
 project_id = "ipxzkihkcsenytxrsjka"
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.stripe-create-checkout]
+verify_jwt = false
+
+[functions.stripe-portal]
+verify_jwt = false

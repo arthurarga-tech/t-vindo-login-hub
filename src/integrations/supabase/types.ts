@@ -899,6 +899,127 @@ export type Database = {
           },
         ]
       }
+      subscription_plans: {
+        Row: {
+          active: boolean | null
+          created_at: string
+          description: string | null
+          features: Json | null
+          id: string
+          name: string
+          price_annual: number
+          price_monthly: number
+          price_semiannual: number
+          stripe_price_id_annual: string | null
+          stripe_price_id_monthly: string | null
+          stripe_price_id_semiannual: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          name: string
+          price_annual?: number
+          price_monthly?: number
+          price_semiannual?: number
+          stripe_price_id_annual?: string | null
+          stripe_price_id_monthly?: string | null
+          stripe_price_id_semiannual?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          name?: string
+          price_annual?: number
+          price_monthly?: number
+          price_semiannual?: number
+          stripe_price_id_annual?: string | null
+          stripe_price_id_monthly?: string | null
+          stripe_price_id_semiannual?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          billing_cycle: Database["public"]["Enums"]["billing_cycle"] | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          establishment_id: string
+          grace_period_ends_at: string | null
+          id: string
+          plan_id: string | null
+          status: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          trial_ends_at: string | null
+          trial_starts_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          billing_cycle?: Database["public"]["Enums"]["billing_cycle"] | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          establishment_id: string
+          grace_period_ends_at?: string | null
+          id?: string
+          plan_id?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string | null
+          trial_starts_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          billing_cycle?: Database["public"]["Enums"]["billing_cycle"] | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          establishment_id?: string
+          grace_period_ends_at?: string | null
+          id?: string
+          plan_id?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string | null
+          trial_starts_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "establishments_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       establishments_public: {
@@ -1094,7 +1215,14 @@ export type Database = {
       }
     }
     Enums: {
+      billing_cycle: "monthly" | "semiannual" | "annual"
       establishment_role: "owner" | "manager" | "employee"
+      subscription_status:
+        | "trialing"
+        | "active"
+        | "past_due"
+        | "canceled"
+        | "expired"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1222,7 +1350,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      billing_cycle: ["monthly", "semiannual", "annual"],
       establishment_role: ["owner", "manager", "employee"],
+      subscription_status: [
+        "trialing",
+        "active",
+        "past_due",
+        "canceled",
+        "expired",
+      ],
     },
   },
 } as const
