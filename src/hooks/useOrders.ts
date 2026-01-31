@@ -21,6 +21,7 @@ export interface OrderItem {
   product_price: number;
   quantity: number;
   total: number;
+  observation?: string | null;
   addons?: {
     id: string;
     addon_name: string;
