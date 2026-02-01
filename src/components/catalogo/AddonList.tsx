@@ -1,7 +1,13 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   useAddons,
   useCreateAddon,
@@ -77,6 +83,13 @@ export function AddonList({ addonGroupId }: AddonListProps) {
     }
   };
 
+  const handleToggleActive = async (addon: Addon) => {
+    await updateAddon.mutateAsync({
+      id: addon.id,
+      data: { active: !addon.active },
+    });
+  };
+
   if (isLoading) {
     return (
       <div 
@@ -118,57 +131,106 @@ export function AddonList({ addonGroupId }: AddonListProps) {
           Nenhum adicional cadastrado
         </p>
       ) : (
-        <div className="space-y-1" role="list" aria-label="Lista de adicionais">
-          {addons.map((addon) => (
-            <div
-              key={addon.id}
-              className="flex items-center justify-between py-2 px-3 rounded-md bg-muted/50"
-              data-testid={`addon-item-${addon.id}`}
-              role="listitem"
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-sm" data-testid={`addon-name-${addon.id}`}>{addon.name}</span>
-                {!addon.active && (
-                  <Badge 
-                    variant="outline" 
-                    className="text-xs"
-                    data-testid={`addon-inactive-badge-${addon.id}`}
+        <TooltipProvider delayDuration={300}>
+          <div className="space-y-1" role="list" aria-label="Lista de adicionais">
+            {addons.map((addon) => (
+              <div
+                key={addon.id}
+                className={`flex items-center justify-between py-2 px-3 rounded-md transition-opacity ${
+                  addon.active 
+                    ? "bg-muted/50" 
+                    : "bg-muted/30 opacity-60"
+                }`}
+                data-testid={`addon-item-${addon.id}`}
+                role="listitem"
+              >
+                <div className="flex items-center gap-2">
+                  <span 
+                    className={`text-sm ${!addon.active ? "text-muted-foreground" : ""}`}
+                    data-testid={`addon-name-${addon.id}`}
                   >
-                    Inativo
-                  </Badge>
-                )}
+                    {addon.name}
+                  </span>
+                  {!addon.active && (
+                    <Badge 
+                      variant="outline" 
+                      className="text-xs"
+                      data-testid={`addon-inactive-badge-${addon.id}`}
+                    >
+                      Inativo
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span 
+                    className="text-sm font-medium text-primary"
+                    data-testid={`addon-price-${addon.id}`}
+                  >
+                    +{formatPrice(addon.price)}
+                  </span>
+                  
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6 hover:bg-muted"
+                        onClick={() => handleToggleActive(addon)}
+                        data-testid={`addon-toggle-button-${addon.id}`}
+                        aria-label={addon.active ? `Ocultar adicional ${addon.name}` : `Mostrar adicional ${addon.name}`}
+                      >
+                        {addon.active ? (
+                          <Eye className="h-3 w-3" aria-hidden="true" />
+                        ) : (
+                          <EyeOff className="h-3 w-3" aria-hidden="true" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p>{addon.active ? "Ocultar adicional" : "Mostrar adicional"}</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6 hover:bg-primary/10 hover:text-primary"
+                        onClick={() => handleEdit(addon)}
+                        data-testid={`addon-edit-button-${addon.id}`}
+                        aria-label={`Editar adicional ${addon.name}`}
+                      >
+                        <Pencil className="h-3 w-3" aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p>Editar adicional</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6 hover:bg-destructive/10 text-destructive"
+                        onClick={() => handleDeleteClick(addon)}
+                        data-testid={`addon-delete-button-${addon.id}`}
+                        aria-label={`Excluir adicional ${addon.name}`}
+                      >
+                        <Trash2 className="h-3 w-3" aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p>Excluir adicional</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span 
-                  className="text-sm font-medium text-primary"
-                  data-testid={`addon-price-${addon.id}`}
-                >
-                  +{formatPrice(addon.price)}
-                </span>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-6 w-6"
-                  onClick={() => handleEdit(addon)}
-                  data-testid={`addon-edit-button-${addon.id}`}
-                  aria-label={`Editar adicional ${addon.name}`}
-                >
-                  <Pencil className="h-3 w-3" aria-hidden="true" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-6 w-6 text-destructive"
-                  onClick={() => handleDeleteClick(addon)}
-                  data-testid={`addon-delete-button-${addon.id}`}
-                  aria-label={`Excluir adicional ${addon.name}`}
-                >
-                  <Trash2 className="h-3 w-3" aria-hidden="true" />
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </TooltipProvider>
       )}
 
       <AddonForm
