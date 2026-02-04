@@ -181,7 +181,8 @@ export type Database = {
           id: string
           name: string
           neighborhood: string | null
-          phone: string
+          order_origin: string | null
+          phone: string | null
           updated_at: string
         }
         Insert: {
@@ -194,7 +195,8 @@ export type Database = {
           id?: string
           name: string
           neighborhood?: string | null
-          phone: string
+          order_origin?: string | null
+          phone?: string | null
           updated_at?: string
         }
         Update: {
@@ -207,7 +209,8 @@ export type Database = {
           id?: string
           name?: string
           neighborhood?: string | null
-          phone?: string
+          order_origin?: string | null
+          phone?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -312,6 +315,7 @@ export type Database = {
           service_delivery: boolean
           service_dine_in: boolean
           service_pickup: boolean
+          service_table: boolean | null
           slug: string | null
           temporary_closed: boolean | null
           theme_primary_color: string | null
@@ -362,6 +366,7 @@ export type Database = {
           service_delivery?: boolean
           service_dine_in?: boolean
           service_pickup?: boolean
+          service_table?: boolean | null
           slug?: string | null
           temporary_closed?: boolean | null
           theme_primary_color?: string | null
@@ -412,6 +417,7 @@ export type Database = {
           service_delivery?: boolean
           service_dine_in?: boolean
           service_pickup?: boolean
+          service_table?: boolean | null
           slug?: string | null
           temporary_closed?: boolean | null
           theme_primary_color?: string | null
@@ -683,13 +689,16 @@ export type Database = {
           delivery_fee: number
           establishment_id: string
           id: string
+          is_open_tab: boolean | null
           notes: string | null
           order_number: number
+          order_subtype: string | null
           order_type: string
           payment_method: string
           scheduled_for: string | null
           status: string
           subtotal: number
+          table_number: string | null
           total: number
           updated_at: string
         }
@@ -700,13 +709,16 @@ export type Database = {
           delivery_fee?: number
           establishment_id: string
           id?: string
+          is_open_tab?: boolean | null
           notes?: string | null
           order_number?: number
+          order_subtype?: string | null
           order_type?: string
           payment_method: string
           scheduled_for?: string | null
           status?: string
           subtotal?: number
+          table_number?: string | null
           total?: number
           updated_at?: string
         }
@@ -717,13 +729,16 @@ export type Database = {
           delivery_fee?: number
           establishment_id?: string
           id?: string
+          is_open_tab?: boolean | null
           notes?: string | null
           order_number?: number
+          order_subtype?: string | null
           order_type?: string
           payment_method?: string
           scheduled_for?: string | null
           status?: string
           subtotal?: number
+          table_number?: string | null
           total?: number
           updated_at?: string
         }
