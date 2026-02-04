@@ -1,4 +1,4 @@
-import { Building2, Link2, Check, Copy, Clock, MapPin, Phone, FileText, Truck, Package, Store, UtensilsCrossed, CalendarClock, CreditCard, Wallet, QrCode, Banknote } from "lucide-react";
+import { Building2, Link2, Check, Copy, Clock, MapPin, Phone, FileText, Truck, Package, Store, UtensilsCrossed, CalendarClock, CreditCard, Wallet, QrCode, Banknote, Armchair } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -85,6 +85,7 @@ export default function MeuNegocio() {
   const [serviceDelivery, setServiceDelivery] = useState(true);
   const [servicePickup, setServicePickup] = useState(false);
   const [serviceDineIn, setServiceDineIn] = useState(false);
+  const [serviceTable, setServiceTable] = useState(false);
   
   // Scheduling
   const [allowScheduling, setAllowScheduling] = useState(false);
@@ -128,6 +129,7 @@ export default function MeuNegocio() {
       setServiceDelivery((establishment as any).service_delivery ?? true);
       setServicePickup((establishment as any).service_pickup ?? false);
       setServiceDineIn((establishment as any).service_dine_in ?? false);
+      setServiceTable((establishment as any).service_table ?? false);
       
       // Scheduling
       setAllowScheduling((establishment as any).allow_scheduling ?? false);
@@ -246,6 +248,7 @@ export default function MeuNegocio() {
           service_delivery: serviceDelivery,
           service_pickup: servicePickup,
           service_dine_in: serviceDineIn,
+          service_table: serviceTable,
           allow_scheduling: allowScheduling,
           location_sharing_enabled: locationSharingEnabled,
           payment_pix_enabled: paymentPixEnabled,
@@ -597,6 +600,21 @@ export default function MeuNegocio() {
                 checked={serviceDineIn}
                 onCheckedChange={setServiceDineIn}
                 data-testid="meu-negocio-service-dinein-switch"
+              />
+            </div>
+            
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-3">
+                <Armchair className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium">Atendimento em Mesa</p>
+                  <p className="text-sm text-muted-foreground">Permite criar pedidos por mesa/comanda</p>
+                </div>
+              </div>
+              <Switch
+                checked={serviceTable}
+                onCheckedChange={setServiceTable}
+                data-testid="meu-negocio-service-table-switch"
               />
             </div>
           </div>
