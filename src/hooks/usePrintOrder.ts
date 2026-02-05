@@ -242,7 +242,8 @@ ${formatInSaoPaulo((order as any).scheduled_for, "dd/MM 'às' HH:mm", { locale: 
 <div class="header">${logoHtml}
 <div class="store-name">${establishmentName}</div>
 <div class="order-number">PEDIDO #${safeOrder.order_number}</div>
-<div class="order-type">${orderTypeLabels[safeOrder.order_type] || safeOrder.order_type}</div>
+<div class="order-type">${orderTypeLabels[safeOrder.order_type] || safeOrder.order_type}</div>${(order as any).table_number ? `
+<div style="font-size: ${Math.round(fontSize * 1.3)}px; font-weight: 900; margin-top: 4px; border: ${highContrast ? '2px' : '1px'} solid #000; padding: 4px;">MESA ${(order as any).table_number}</div>` : ''}
 <div>${formatInSaoPaulo(safeOrder.created_at, "dd/MM/yyyy HH:mm", { locale: ptBR })}</div>
 </div>
 <div class="section">
