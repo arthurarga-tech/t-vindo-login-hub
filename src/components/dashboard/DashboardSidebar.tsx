@@ -10,11 +10,14 @@ import {
   Link2,
   Check,
   CreditCard,
+  UtensilsCrossed,
+  LockKeyhole,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Sidebar,
@@ -29,6 +32,12 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import tavindoLogo from "@/assets/tavindo-logo.png";
 
 const menuItems = [
@@ -47,6 +56,8 @@ export function DashboardSidebar() {
   const { data: establishment, isLoading: isLoadingEstablishment } = useEstablishment();
   const { setOpenMobile, isMobile } = useSidebar();
   const [copied, setCopied] = useState(false);
+  const navigate = useNavigate();
+  const isTableEnabled = (establishment as any)?.service_table ?? false;
 
   const handleMenuItemClick = () => {
     if (isMobile) {
@@ -133,22 +144,65 @@ export function DashboardSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title} role="menuitem">
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-secondary/10 transition-colors text-foreground/80"
-                      activeClassName="bg-primary/10 text-primary font-medium border-l-2 border-primary"
-                      data-testid={`sidebar-nav-${item.testId}`}
-                      aria-label={item.title}
-                      onClick={handleMenuItemClick}
-                    >
-                      <item.icon className="h-5 w-5" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+              {menuItems.map((item, index) => (
+                <>
+                  <SidebarMenuItem key={item.title} role="menuitem">
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-secondary/10 transition-colors text-foreground/80"
+                        activeClassName="bg-primary/10 text-primary font-medium border-l-2 border-primary"
+                        data-testid={`sidebar-nav-${item.testId}`}
+                        aria-label={item.title}
+                        onClick={handleMenuItemClick}
+                      >
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  {index === 0 && (
+                    <SidebarMenuItem key="mesas" role="menuitem">
+                      <SidebarMenuButton asChild>
+                        {isTableEnabled ? (
+                          <NavLink
+                            to="/dashboard/mesas"
+                            className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-secondary/10 transition-colors text-foreground/80"
+                            activeClassName="bg-primary/10 text-primary font-medium border-l-2 border-primary"
+                            data-testid="sidebar-nav-mesas"
+                            aria-label="Mesas/Comandas"
+                            onClick={handleMenuItemClick}
+                          >
+                            <UtensilsCrossed className="h-5 w-5" />
+                            <span>Mesas/Comandas</span>
+                          </NavLink>
+                        ) : (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  className="flex items-center gap-3 px-3 py-2 rounded-md w-full text-left text-muted-foreground/50 cursor-not-allowed"
+                                  data-testid="sidebar-nav-mesas-locked"
+                                  aria-label="Mesas/Comandas (desativado)"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    toast.info("Ative 'Atendimento em Mesa' em Meu Negócio → Modalidades de Atendimento");
+                                  }}
+                                >
+                                  <LockKeyhole className="h-5 w-5" />
+                                  <span>Mesas/Comandas</span>
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="right">
+                                Ative em Meu Negócio → Modalidades de Atendimento
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
+                </>
               ))}
             </SidebarMenu>
           </SidebarGroupContent>

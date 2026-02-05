@@ -17,6 +17,7 @@ import Delivery from "./pages/dashboard/Delivery";
 import Usuarios from "./pages/dashboard/Usuarios";
 import Configuracoes from "./pages/dashboard/Configuracoes";
 import MeuPlano from "./pages/dashboard/MeuPlano";
+import Mesas from "./pages/dashboard/Mesas";
 import StorePage from "./pages/loja/StorePage";
 import CheckoutPage from "./pages/loja/CheckoutPage";
 import OrderConfirmationPage from "./pages/loja/OrderConfirmationPage";
@@ -43,6 +44,7 @@ const App = () => (
             }>
               <Route index element={<Navigate to="/dashboard/pedidos" replace />} />
               <Route path="pedidos" element={<Pedidos />} />
+              <Route path="mesas" element={<Mesas />} />
               <Route path="financeiro" element={<Financeiro />} />
               <Route path="catalogo" element={<Catalogo />} />
               <Route path="meu-negocio" element={<MeuNegocio />} />
