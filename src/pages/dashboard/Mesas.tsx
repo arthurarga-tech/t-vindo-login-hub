@@ -41,6 +41,7 @@ export default function Mesas() {
               order={order}
               onClick={() => setSelectedOrder(order)}
               onCloseTab={() => setClosingOrder(order)}
+              onAddItem={() => setSelectedOrder(order)}
             />
           ))}
         </div>
@@ -85,6 +86,10 @@ export default function Mesas() {
             order={closingOrder}
             open={!!closingOrder}
             onClose={() => setClosingOrder(null)}
+            paymentPixEnabled={establishment.payment_pix_enabled ?? false}
+            paymentCreditEnabled={establishment.payment_credit_enabled ?? false}
+            paymentDebitEnabled={establishment.payment_debit_enabled ?? false}
+            paymentCashEnabled={establishment.payment_cash_enabled ?? false}
           />
         </>
       )}

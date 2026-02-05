@@ -246,17 +246,23 @@ function CategorySection({
   category,
   establishmentId,
   onAddItem,
+  searchFilter,
 }: {
   category: Category;
   establishmentId: string;
   onAddItem: QuickOrderProductListProps["onAddItem"];
+  searchFilter?: string;
 }) {
   const [isOpen, setIsOpen] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { data: products, isLoading } = useProducts(establishmentId, category.id);
   const { data: addonGroups } = useAddonGroups(category.id);
 
-  const activeProducts = products?.filter((p) => p.active) || [];
+  const activeProducts = (products?.filter((p) => p.active) || []).filter((p) => {
+    if (!searchFilter) return true;
+    const term = searchFilter.toLowerCase();
+    return p.name.toLowerCase().includes(term) || p.description?.toLowerCase().includes(term);
+  });
   const activeGroupIds = addonGroups?.filter((g) => g.active).map((g) => g.id) || [];
   const { data: addons } = useAddonsForGroups(activeGroupIds);
   const activeAddons = addons?.filter((a) => a.active) || [];
@@ -395,6 +401,7 @@ export function QuickOrderProductList({ establishmentId, onAddItem }: QuickOrder
                 category={category}
                 establishmentId={establishmentId}
                 onAddItem={onAddItem}
+                searchFilter={search}
               />
             ))
           )}

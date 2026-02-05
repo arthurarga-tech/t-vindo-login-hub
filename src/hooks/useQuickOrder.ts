@@ -40,6 +40,24 @@ export function useCreateQuickOrder() {
       const subtype = data.orderSubtype || "counter";
       const isTable = subtype === "table";
 
+      // 0. Validate duplicate table number
+      if (isTable && data.tableNumber) {
+        const { data: existingTables, error: tableCheckError } = await supabase
+          .from("orders")
+          .select("id, order_number")
+          .eq("establishment_id", data.establishmentId)
+          .eq("order_subtype", "table")
+          .eq("is_open_tab", true)
+          .eq("table_number", data.tableNumber.trim())
+          .not("status", "eq", "cancelled");
+
+        if (tableCheckError) throw tableCheckError;
+
+        if (existingTables && existingTables.length > 0) {
+          throw new Error(`DUPLICATE_TABLE:${data.tableNumber.trim()}`);
+        }
+      }
+
       // 1. Create or update customer
       const { data: customerId, error: customerError } = await supabase.rpc(
         "create_or_update_public_customer",
@@ -175,7 +193,12 @@ export function useCreateQuickOrder() {
     },
     onError: (error) => {
       console.error("Error creating quick order:", error);
-      toast.error("Erro ao criar pedido");
+      if (error.message?.startsWith("DUPLICATE_TABLE:")) {
+        const tableNum = error.message.split(":")[1];
+        toast.error(`Já existe uma comanda aberta para Mesa ${tableNum}`);
+      } else {
+        toast.error("Erro ao criar pedido");
+      }
     },
   });
 }

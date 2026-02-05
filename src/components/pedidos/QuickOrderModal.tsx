@@ -7,12 +7,65 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { formatPrice, formatPhone, extractPhoneDigits } from "@/lib/formatters";
 import { QuickOrderProductList } from "./QuickOrderProductList";
 import { QuickOrderCart, QuickOrderCartItem } from "./QuickOrderCart";
 import { QuickOrderEditItemModal } from "./QuickOrderEditItemModal";
 import { useCreateQuickOrder } from "@/hooks/useQuickOrder";
 import { toast } from "sonner";
+
+function MobileProductsStep({
+  establishmentId,
+  cartItems,
+  onAddItem,
+  onUpdateQuantity,
+  onRemoveItem,
+  onEditItem,
+}: {
+  establishmentId: string;
+  cartItems: QuickOrderCartItem[];
+  onAddItem: (item: any) => void;
+  onUpdateQuantity: (id: string, qty: number) => void;
+  onRemoveItem: (id: string) => void;
+  onEditItem: (item: QuickOrderCartItem) => void;
+}) {
+  const isMobile = useIsMobile();
+  const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  if (!isMobile) {
+    return (
+      <div className="grid grid-cols-2 gap-4" data-testid="quick-order-products-step">
+        <QuickOrderProductList establishmentId={establishmentId} onAddItem={onAddItem} />
+        <QuickOrderCart items={cartItems} onUpdateQuantity={onUpdateQuantity} onRemoveItem={onRemoveItem} onEditItem={onEditItem} />
+      </div>
+    );
+  }
+
+  return (
+    <Tabs defaultValue="products" className="w-full" data-testid="quick-order-products-step">
+      <TabsList className="w-full grid grid-cols-2">
+        <TabsTrigger value="products">Produtos</TabsTrigger>
+        <TabsTrigger value="cart" className="gap-1.5">
+          Carrinho
+          {itemCount > 0 && (
+            <Badge variant="destructive" className="h-5 min-w-[20px] px-1 text-xs">
+              {itemCount}
+            </Badge>
+          )}
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="products">
+        <QuickOrderProductList establishmentId={establishmentId} onAddItem={onAddItem} />
+      </TabsContent>
+      <TabsContent value="cart">
+        <QuickOrderCart items={cartItems} onUpdateQuantity={onUpdateQuantity} onRemoveItem={onRemoveItem} onEditItem={onEditItem} />
+      </TabsContent>
+    </Tabs>
+  );
+}
 
 type OrderSubtype = "counter" | "table";
 type Step = "type" | "customer" | "products" | "payment";
@@ -276,7 +329,7 @@ export function QuickOrderModal({
                   data-testid={`quick-order-step-${s.key}`}
                 >
                   <Icon className="h-4 w-4" />
-                  <span className="hidden sm:inline">{s.label}</span>
+                  <span className={isActive ? "inline" : "hidden sm:inline"}>{s.label}</span>
                 </button>
                 {i < stepConfig.length - 1 && (
                   <ChevronRight className="h-4 w-4 mx-1 text-muted-foreground" />
@@ -381,18 +434,14 @@ export function QuickOrderModal({
           )}
 
           {step === "products" && (
-            <div
-              className="grid grid-cols-1 md:grid-cols-2 gap-4"
-              data-testid="quick-order-products-step"
-            >
-              <QuickOrderProductList establishmentId={establishmentId} onAddItem={handleAddItem} />
-              <QuickOrderCart
-                items={cartItems}
-                onUpdateQuantity={handleUpdateQuantity}
-                onRemoveItem={handleRemoveItem}
-                onEditItem={setEditingItem}
-              />
-            </div>
+            <MobileProductsStep
+              establishmentId={establishmentId}
+              cartItems={cartItems}
+              onAddItem={handleAddItem}
+              onUpdateQuantity={handleUpdateQuantity}
+              onRemoveItem={handleRemoveItem}
+              onEditItem={setEditingItem}
+            />
           )}
 
           {step === "payment" && (

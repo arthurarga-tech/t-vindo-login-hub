@@ -20,16 +20,20 @@ interface CloseTabModalProps {
   order: Order | null;
   open: boolean;
   onClose: () => void;
+  paymentCashEnabled?: boolean;
+  paymentPixEnabled?: boolean;
+  paymentCreditEnabled?: boolean;
+  paymentDebitEnabled?: boolean;
 }
 
-const paymentOptions = [
+const allPaymentOptions = [
   { value: "cash", label: "Dinheiro", icon: Banknote },
   { value: "pix", label: "Pix", icon: QrCode },
   { value: "credit", label: "Crédito", icon: CreditCard },
   { value: "debit", label: "Débito", icon: Wallet },
 ] as const;
 
-export function CloseTabModal({ order, open, onClose }: CloseTabModalProps) {
+export function CloseTabModal({ order, open, onClose, paymentCashEnabled = true, paymentPixEnabled = true, paymentCreditEnabled = true, paymentDebitEnabled = true }: CloseTabModalProps) {
   const [selectedMethod, setSelectedMethod] = useState<string>("");
   const closeTab = useCloseTab();
 
@@ -84,7 +88,13 @@ export function CloseTabModal({ order, open, onClose }: CloseTabModalProps) {
                   Forma de pagamento:
                 </p>
                 <div className="grid grid-cols-2 gap-2">
-                  {paymentOptions.map((option) => {
+                  {allPaymentOptions.filter((o) => {
+                    if (o.value === "cash") return paymentCashEnabled;
+                    if (o.value === "pix") return paymentPixEnabled;
+                    if (o.value === "credit") return paymentCreditEnabled;
+                    if (o.value === "debit") return paymentDebitEnabled;
+                    return true;
+                  }).map((option) => {
                     const Icon = option.icon;
                     const isSelected = selectedMethod === option.value;
                     return (
