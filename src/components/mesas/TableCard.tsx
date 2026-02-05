@@ -1,4 +1,4 @@
-import { Clock, User, UtensilsCrossed, ShoppingBag, Receipt } from "lucide-react";
+import { Clock, User, UtensilsCrossed, ShoppingBag, Receipt, Plus } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,10 @@ interface TableCardProps {
   order: Order;
   onClick: () => void;
   onCloseTab: () => void;
+  onAddItem?: () => void;
 }
 
-export function TableCard({ order, onClick, onCloseTab }: TableCardProps) {
+export function TableCard({ order, onClick, onCloseTab, onAddItem }: TableCardProps) {
   const status = statusDisplayConfig[order.status as OrderStatus] || statusDisplayConfig.pending;
   const tableNumber = (order as any).table_number;
   const timeAgo = formatDistanceToNow(toSaoPauloTime(order.created_at), {
@@ -67,18 +68,34 @@ export function TableCard({ order, onClick, onCloseTab }: TableCardProps) {
           </span>
         </div>
 
-        <Button
-          variant="default"
-          size="sm"
-          className="w-full gap-2"
-          onClick={(e) => {
-            e.stopPropagation();
-            onCloseTab();
-          }}
-        >
-          <Receipt className="h-4 w-4" />
-          Fechar Comanda
-        </Button>
+        <div className="flex gap-2">
+          {onAddItem && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 gap-1.5"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddItem();
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              Adicionar
+            </Button>
+          )}
+          <Button
+            variant="default"
+            size="sm"
+            className="flex-1 gap-1.5"
+            onClick={(e) => {
+              e.stopPropagation();
+              onCloseTab();
+            }}
+          >
+            <Receipt className="h-4 w-4" />
+            Fechar
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

@@ -86,41 +86,41 @@ export function QuickOrderCart({ items, onUpdateQuantity, onRemoveItem, onEditIt
                   <Button
                     size="icon"
                     variant="outline"
-                    className="h-8 w-8"
+                    className="h-10 w-10 min-h-[44px] min-w-[44px]"
                     onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
                     disabled={item.quantity <= 1}
                     data-testid={`quick-order-cart-item-decrease-${item.id}`}
                   >
-                    <Minus className="h-3 w-3" />
+                    <Minus className="h-4 w-4" />
                   </Button>
-                  <span className="w-6 text-center text-sm">{item.quantity}</span>
+                  <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
                   <Button
                     size="icon"
                     variant="outline"
-                    className="h-8 w-8"
+                    className="h-10 w-10 min-h-[44px] min-w-[44px]"
                     onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
                     data-testid={`quick-order-cart-item-increase-${item.id}`}
                   >
-                    <Plus className="h-3 w-3" />
+                    <Plus className="h-4 w-4" />
                   </Button>
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-8 w-8"
+                    className="h-10 w-10 min-h-[44px] min-w-[44px]"
                     onClick={() => onEditItem(item)}
                     data-testid={`quick-order-cart-item-edit-${item.id}`}
                     aria-label="Editar item"
                   >
-                    <Pencil className="h-3 w-3" />
+                    <Pencil className="h-4 w-4" />
                   </Button>
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    className="h-10 w-10 min-h-[44px] min-w-[44px] text-destructive hover:text-destructive"
                     onClick={() => onRemoveItem(item.id)}
                     data-testid={`quick-order-cart-item-remove-${item.id}`}
                   >
-                    <Trash2 className="h-3 w-3" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>

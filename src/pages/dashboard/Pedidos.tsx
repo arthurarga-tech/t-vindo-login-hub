@@ -436,7 +436,8 @@ export default function Pedidos() {
           open={showQuickOrderModal}
           onClose={() => setShowQuickOrderModal(false)}
           establishmentId={establishment.id}
-          serviceTableEnabled={(establishment as any)?.service_table ?? false}
+          serviceTableEnabled={false}
+          defaultSubtype="counter"
           paymentPixEnabled={paymentPixEnabled}
           paymentCreditEnabled={paymentCreditEnabled}
           paymentDebitEnabled={paymentDebitEnabled}
