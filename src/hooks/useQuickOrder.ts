@@ -100,21 +100,9 @@ export function useCreateQuickOrder() {
       if (isTable) {
         orderUpdate.table_number = data.tableNumber || null;
         orderUpdate.is_open_tab = true;
-        // Table orders stay as 'pending'
-      } else {
-        // Counter orders go straight to ready_to_serve
-        orderUpdate.status = "ready_to_serve";
       }
       
       await supabase.from("orders").update(orderUpdate).eq("id", orderId);
-
-      // If counter, add status history entry for ready_to_serve
-      if (!isTable) {
-        await supabase.from("order_status_history").insert({
-          order_id: orderId,
-          status: "ready_to_serve",
-        });
-      }
 
       // 5. Create order items
       const orderItemsData = data.items.map((item, index) => {
