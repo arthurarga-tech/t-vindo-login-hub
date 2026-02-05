@@ -28,6 +28,8 @@ interface QuickOrderData {
   paymentMethod: string;
   notes?: string;
   changeFor?: number;
+  orderSubtype?: "counter" | "table";
+  tableNumber?: string;
 }
 
 export function useCreateQuickOrder() {
@@ -35,13 +37,16 @@ export function useCreateQuickOrder() {
 
   return useMutation({
     mutationFn: async (data: QuickOrderData) => {
+      const subtype = data.orderSubtype || "counter";
+      const isTable = subtype === "table";
+
       // 1. Create or update customer
       const { data: customerId, error: customerError } = await supabase.rpc(
         "create_or_update_public_customer",
         {
           p_establishment_id: data.establishmentId,
           p_name: data.customer.name,
-          p_phone: data.customer.phone,
+          p_phone: data.customer.phone || "",
           p_address: null,
           p_address_number: null,
           p_address_complement: null,
@@ -52,13 +57,21 @@ export function useCreateQuickOrder() {
 
       if (customerError) throw customerError;
 
+      // Update customer order_origin
+      if (customerId) {
+        await supabase
+          .from("customers")
+          .update({ order_origin: subtype === "table" ? "table" : "counter" })
+          .eq("id", customerId);
+      }
+
       // 2. Calculate totals
       const subtotal = data.items.reduce((sum, item) => {
         const addonsTotal = item.addons.reduce((a, addon) => a + addon.price * addon.quantity, 0);
         return sum + (item.productPrice + addonsTotal) * item.quantity;
       }, 0);
 
-      // 3. Create order (dine_in type, no delivery fee)
+      // 3. Create order
       const { data: orderResult, error: orderError } = await supabase.rpc(
         "create_public_order",
         {
@@ -80,7 +93,30 @@ export function useCreateQuickOrder() {
       const orderId = (orderResult as any).id;
       const orderNumber = (orderResult as any).order_number;
 
-      // 4. Create order items
+      // 4. Update order with subtype-specific fields
+      const orderUpdate: Record<string, any> = {
+        order_subtype: subtype,
+      };
+      if (isTable) {
+        orderUpdate.table_number = data.tableNumber || null;
+        orderUpdate.is_open_tab = true;
+        // Table orders stay as 'pending'
+      } else {
+        // Counter orders go straight to ready_to_serve
+        orderUpdate.status = "ready_to_serve";
+      }
+      
+      await supabase.from("orders").update(orderUpdate).eq("id", orderId);
+
+      // If counter, add status history entry for ready_to_serve
+      if (!isTable) {
+        await supabase.from("order_status_history").insert({
+          order_id: orderId,
+          status: "ready_to_serve",
+        });
+      }
+
+      // 5. Create order items
       const orderItemsData = data.items.map((item, index) => {
         const addonsTotal = item.addons.reduce((a, addon) => a + addon.price * addon.quantity, 0);
         return {
@@ -102,7 +138,7 @@ export function useCreateQuickOrder() {
 
       if (itemsError) throw itemsError;
 
-      // 5. Map inserted items by index
+      // 6. Map inserted items by index
       const insertedItemsMap = new Map<string, string>();
       if (Array.isArray(insertedItemsResult)) {
         insertedItemsResult.forEach((item: any) => {
@@ -110,7 +146,7 @@ export function useCreateQuickOrder() {
         });
       }
 
-      // 6. Create order item addons
+      // 7. Create order item addons
       const orderItemAddonsData: any[] = [];
 
       data.items.forEach((item, index) => {
@@ -139,10 +175,14 @@ export function useCreateQuickOrder() {
         if (addonsError) throw addonsError;
       }
 
-      return { orderId, orderNumber };
+      return { orderId, orderNumber, isTable };
     },
     onSuccess: (result, variables) => {
-      toast.success(`Pedido #${result.orderNumber} criado com sucesso!`);
+      if (result.isTable) {
+        toast.success(`Comanda #${result.orderNumber} aberta - Mesa ${variables.tableNumber}`);
+      } else {
+        toast.success(`Pedido #${result.orderNumber} criado com sucesso!`);
+      }
       queryClient.invalidateQueries({ queryKey: ["orders", variables.establishmentId] });
     },
     onError: (error) => {

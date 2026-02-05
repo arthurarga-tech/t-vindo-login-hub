@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { User, ShoppingCart, CreditCard, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { User, ShoppingCart, CreditCard, ChevronLeft, ChevronRight, Loader2, UtensilsCrossed, ShoppingBag, Armchair } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,37 +14,39 @@ import { QuickOrderEditItemModal } from "./QuickOrderEditItemModal";
 import { useCreateQuickOrder } from "@/hooks/useQuickOrder";
 import { toast } from "sonner";
 
-type Step = "customer" | "products" | "payment";
+type OrderSubtype = "counter" | "table";
+type Step = "type" | "customer" | "products" | "payment";
 type PaymentMethod = "pix" | "credit" | "debit" | "cash";
 
 interface QuickOrderModalProps {
   open: boolean;
   onClose: () => void;
   establishmentId: string;
+  serviceTableEnabled?: boolean;
   paymentPixEnabled?: boolean;
   paymentCreditEnabled?: boolean;
   paymentDebitEnabled?: boolean;
   paymentCashEnabled?: boolean;
+  /** Pre-select table mode (used from Mesas page) */
+  defaultSubtype?: OrderSubtype;
 }
-
-const stepConfig: { key: Step; label: string; icon: typeof User }[] = [
-  { key: "customer", label: "Cliente", icon: User },
-  { key: "products", label: "Produtos", icon: ShoppingCart },
-  { key: "payment", label: "Pagamento", icon: CreditCard },
-];
 
 export function QuickOrderModal({
   open,
   onClose,
   establishmentId,
+  serviceTableEnabled = false,
   paymentPixEnabled = true,
   paymentCreditEnabled = true,
   paymentDebitEnabled = true,
   paymentCashEnabled = true,
+  defaultSubtype,
 }: QuickOrderModalProps) {
-  const [step, setStep] = useState<Step>("customer");
+  const [orderSubtype, setOrderSubtype] = useState<OrderSubtype>(defaultSubtype || "counter");
+  const [step, setStep] = useState<Step>(serviceTableEnabled && !defaultSubtype ? "type" : "customer");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [tableNumber, setTableNumber] = useState("");
   const [cartItems, setCartItems] = useState<QuickOrderCartItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">("");
   const [changeFor, setChangeFor] = useState("");
@@ -53,16 +55,34 @@ export function QuickOrderModal({
 
   const createQuickOrder = useCreateQuickOrder();
 
+  // Build steps dynamically based on subtype
+  const getSteps = useCallback((): { key: Step; label: string; icon: typeof User }[] => {
+    const steps: { key: Step; label: string; icon: typeof User }[] = [];
+    if (serviceTableEnabled && !defaultSubtype) {
+      steps.push({ key: "type", label: "Tipo", icon: UtensilsCrossed });
+    }
+    steps.push({ key: "customer", label: "Cliente", icon: User });
+    steps.push({ key: "products", label: "Produtos", icon: ShoppingCart });
+    if (orderSubtype === "counter") {
+      steps.push({ key: "payment", label: "Pagamento", icon: CreditCard });
+    }
+    return steps;
+  }, [orderSubtype, serviceTableEnabled, defaultSubtype]);
+
+  const stepConfig = getSteps();
+
   const resetForm = useCallback(() => {
-    setStep("customer");
+    setStep(serviceTableEnabled && !defaultSubtype ? "type" : "customer");
+    setOrderSubtype(defaultSubtype || "counter");
     setCustomerName("");
     setCustomerPhone("");
+    setTableNumber("");
     setCartItems([]);
     setPaymentMethod("");
     setChangeFor("");
     setNotes("");
     setEditingItem(null);
-  }, []);
+  }, [serviceTableEnabled, defaultSubtype]);
 
   const handleClose = () => {
     resetForm();
@@ -117,15 +137,18 @@ export function QuickOrderModal({
 
   const validateStep = (currentStep: Step): boolean => {
     switch (currentStep) {
+      case "type":
+        if (orderSubtype === "table" && !tableNumber.trim()) {
+          toast.error("Informe o número da mesa");
+          return false;
+        }
+        return true;
       case "customer":
         if (!customerName.trim()) {
           toast.error("Informe o nome do cliente");
           return false;
         }
-        if (customerPhone.length < 10) {
-          toast.error("Telefone inválido");
-          return false;
-        }
+        // Phone is optional for counter/table
         return true;
       case "products":
         if (cartItems.length === 0) {
@@ -161,7 +184,9 @@ export function QuickOrderModal({
   };
 
   const handleSubmit = async () => {
-    if (!validateStep("payment")) return;
+    // For table orders, last step is "products"
+    if (orderSubtype === "counter" && !validateStep("payment")) return;
+    if (orderSubtype === "table" && !validateStep("products")) return;
 
     const changeForValue = paymentMethod === "cash" ? parseFloat(changeFor.replace(",", ".")) || 0 : 0;
 
@@ -169,7 +194,7 @@ export function QuickOrderModal({
       establishmentId,
       customer: {
         name: customerName.trim(),
-        phone: customerPhone,
+        phone: customerPhone || "",
       },
       items: cartItems.map((item) => ({
         productId: item.productId,
@@ -179,9 +204,11 @@ export function QuickOrderModal({
         observation: item.observation,
         addons: item.addons,
       })),
-      paymentMethod,
+      paymentMethod: orderSubtype === "table" ? "pending" : (paymentMethod as string),
       notes: notes.trim() || undefined,
       changeFor: changeForValue > 0 ? changeForValue : undefined,
+      orderSubtype,
+      tableNumber: orderSubtype === "table" ? tableNumber.trim() : undefined,
     });
 
     handleClose();
@@ -191,14 +218,22 @@ export function QuickOrderModal({
   const total = calculateTotal();
   const changeForValue = parseFloat(changeFor.replace(",", ".")) || 0;
   const changeAmount = changeForValue > total ? changeForValue - total : 0;
+  const isLastStep = currentStepIndex === stepConfig.length - 1;
 
   // Set default payment method
-  if (!paymentMethod) {
+  if (!paymentMethod && orderSubtype === "counter") {
     if (paymentPixEnabled) setPaymentMethod("pix");
     else if (paymentCreditEnabled) setPaymentMethod("credit");
     else if (paymentDebitEnabled) setPaymentMethod("debit");
     else if (paymentCashEnabled) setPaymentMethod("cash");
   }
+
+  const handleSelectSubtype = (subtype: OrderSubtype) => {
+    setOrderSubtype(subtype);
+    if (subtype === "counter") {
+      setTableNumber("");
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
@@ -209,7 +244,7 @@ export function QuickOrderModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
-            Novo Pedido - Balcão
+            Novo Pedido
           </DialogTitle>
         </DialogHeader>
 
@@ -251,6 +286,58 @@ export function QuickOrderModal({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto py-4">
+          {step === "type" && (
+            <div className="max-w-md mx-auto space-y-4" data-testid="quick-order-type-step">
+              <p className="text-sm text-muted-foreground text-center">Selecione o tipo de pedido</p>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => handleSelectSubtype("counter")}
+                  className={`flex flex-col items-center gap-3 p-6 rounded-lg border-2 transition-all ${
+                    orderSubtype === "counter"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                  data-testid="quick-order-type-counter"
+                >
+                  <ShoppingBag className="h-10 w-10 text-primary" />
+                  <div className="text-center">
+                    <p className="font-semibold">Balcão</p>
+                    <p className="text-xs text-muted-foreground mt-1">Paga no ato</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => handleSelectSubtype("table")}
+                  className={`flex flex-col items-center gap-3 p-6 rounded-lg border-2 transition-all ${
+                    orderSubtype === "table"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                  data-testid="quick-order-type-table"
+                >
+                  <Armchair className="h-10 w-10 text-primary" />
+                  <div className="text-center">
+                    <p className="font-semibold">Mesa</p>
+                    <p className="text-xs text-muted-foreground mt-1">Paga no final</p>
+                  </div>
+                </button>
+              </div>
+
+              {orderSubtype === "table" && (
+                <div className="space-y-2 pt-2">
+                  <Label htmlFor="table-number">Número da Mesa *</Label>
+                  <Input
+                    id="table-number"
+                    value={tableNumber}
+                    onChange={(e) => setTableNumber(e.target.value)}
+                    placeholder="Ex: 1, 2, 3..."
+                    autoFocus
+                    data-testid="quick-order-table-number"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
           {step === "customer" && (
             <div className="space-y-4 max-w-md mx-auto" data-testid="quick-order-customer-step">
               <div className="space-y-2">
@@ -265,7 +352,7 @@ export function QuickOrderModal({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="customer-phone">Telefone *</Label>
+                <Label htmlFor="customer-phone">Telefone (opcional)</Label>
                 <Input
                   id="customer-phone"
                   value={formatPhone(customerPhone)}
@@ -303,64 +390,32 @@ export function QuickOrderModal({
                 >
                   {paymentPixEnabled && (
                     <div>
-                      <RadioGroupItem
-                        value="pix"
-                        id="pix"
-                        className="peer sr-only"
-                        data-testid="quick-order-payment-pix"
-                      />
-                      <Label
-                        htmlFor="pix"
-                        className="flex items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
-                      >
+                      <RadioGroupItem value="pix" id="pix" className="peer sr-only" data-testid="quick-order-payment-pix" />
+                      <Label htmlFor="pix" className="flex items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer">
                         Pix
                       </Label>
                     </div>
                   )}
                   {paymentCreditEnabled && (
                     <div>
-                      <RadioGroupItem
-                        value="credit"
-                        id="credit"
-                        className="peer sr-only"
-                        data-testid="quick-order-payment-credit"
-                      />
-                      <Label
-                        htmlFor="credit"
-                        className="flex items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
-                      >
+                      <RadioGroupItem value="credit" id="credit" className="peer sr-only" data-testid="quick-order-payment-credit" />
+                      <Label htmlFor="credit" className="flex items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer">
                         Crédito
                       </Label>
                     </div>
                   )}
                   {paymentDebitEnabled && (
                     <div>
-                      <RadioGroupItem
-                        value="debit"
-                        id="debit"
-                        className="peer sr-only"
-                        data-testid="quick-order-payment-debit"
-                      />
-                      <Label
-                        htmlFor="debit"
-                        className="flex items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
-                      >
+                      <RadioGroupItem value="debit" id="debit" className="peer sr-only" data-testid="quick-order-payment-debit" />
+                      <Label htmlFor="debit" className="flex items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer">
                         Débito
                       </Label>
                     </div>
                   )}
                   {paymentCashEnabled && (
                     <div>
-                      <RadioGroupItem
-                        value="cash"
-                        id="cash"
-                        className="peer sr-only"
-                        data-testid="quick-order-payment-cash"
-                      />
-                      <Label
-                        htmlFor="cash"
-                        className="flex items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
-                      >
+                      <RadioGroupItem value="cash" id="cash" className="peer sr-only" data-testid="quick-order-payment-cash" />
+                      <Label htmlFor="cash" className="flex items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer">
                         Dinheiro
                       </Label>
                     </div>
@@ -412,6 +467,14 @@ export function QuickOrderModal({
 
         <Separator />
 
+        {/* Show total in products step for table orders (since there's no payment step) */}
+        {step === "products" && orderSubtype === "table" && cartItems.length > 0 && (
+          <div className="flex justify-between items-center px-1 pb-2 text-lg font-semibold">
+            <span>Total:</span>
+            <span className="text-primary">{formatPrice(total)}</span>
+          </div>
+        )}
+
         {/* Footer */}
         <div className="flex justify-between items-center pt-2">
           <Button
@@ -423,7 +486,7 @@ export function QuickOrderModal({
             {currentStepIndex === 0 ? "Cancelar" : "Voltar"}
           </Button>
 
-          {step === "payment" ? (
+          {isLastStep ? (
             <Button
               onClick={handleSubmit}
               disabled={createQuickOrder.isPending || cartItems.length === 0}
@@ -432,8 +495,10 @@ export function QuickOrderModal({
               {createQuickOrder.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Criando...
+                  {orderSubtype === "table" ? "Abrindo..." : "Criando..."}
                 </>
+              ) : orderSubtype === "table" ? (
+                "Abrir Comanda"
               ) : (
                 "Criar Pedido"
               )}
