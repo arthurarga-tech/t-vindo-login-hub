@@ -148,7 +148,11 @@ export function QuickOrderModal({
           toast.error("Informe o nome do cliente");
           return false;
         }
-        // Phone is optional for counter/table
+        // When defaultSubtype is table, table number is in customer step
+        if (defaultSubtype === "table" && !tableNumber.trim()) {
+          toast.error("Informe o número da mesa");
+          return false;
+        }
         return true;
       case "products":
         if (cartItems.length === 0) {
@@ -361,6 +365,18 @@ export function QuickOrderModal({
                   data-testid="quick-order-customer-phone"
                 />
               </div>
+              {defaultSubtype === "table" && (
+                <div className="space-y-2">
+                  <Label htmlFor="table-number-customer">Número da Mesa *</Label>
+                  <Input
+                    id="table-number-customer"
+                    value={tableNumber}
+                    onChange={(e) => setTableNumber(e.target.value)}
+                    placeholder="Ex: 1, 2, 3..."
+                    data-testid="quick-order-table-number-customer"
+                  />
+                </div>
+              )}
             </div>
           )}
 
