@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { QuickOrderModal } from "@/components/pedidos/QuickOrderModal";
 import { OrderDetailModal } from "@/components/pedidos/OrderDetailModal";
 import { TableCard } from "@/components/mesas/TableCard";
+import { CloseTabModal } from "@/components/mesas/CloseTabModal";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { useOpenTables } from "@/hooks/useOpenTables";
 import type { Order } from "@/hooks/useOrders";
@@ -13,6 +14,7 @@ export default function Mesas() {
   const { data: openTables, isLoading } = useOpenTables();
   const [quickOrderOpen, setQuickOrderOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [closingOrder, setClosingOrder] = useState<Order | null>(null);
 
   return (
     <div className="space-y-6" data-testid="mesas-page">
@@ -38,6 +40,7 @@ export default function Mesas() {
               key={order.id}
               order={order}
               onClick={() => setSelectedOrder(order)}
+              onCloseTab={() => setClosingOrder(order)}
             />
           ))}
         </div>
@@ -77,6 +80,11 @@ export default function Mesas() {
             printFontBold={establishment.print_font_bold ?? true}
             printLineHeight={establishment.print_line_height ?? 1.4}
             printContrastHigh={establishment.print_contrast_high ?? false}
+          />
+          <CloseTabModal
+            order={closingOrder}
+            open={!!closingOrder}
+            onClose={() => setClosingOrder(null)}
           />
         </>
       )}
