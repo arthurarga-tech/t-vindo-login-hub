@@ -223,7 +223,7 @@ export function OrderItemEditModal({
             </DialogTitle>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 max-h-[50vh]">
+          <div className="flex-1 overflow-y-auto max-h-[50vh] pr-1">
             <div className="space-y-4 pr-2">
               {/* Quantity selector */}
               <div className="flex items-center justify-between">
@@ -342,7 +342,7 @@ export function OrderItemEditModal({
                 Preço unitário: {formatPrice(item.product_price)}
               </div>
             </div>
-          </ScrollArea>
+          </div>
 
           <DialogFooter className="gap-2 sm:gap-0 pt-4">
             <Button
