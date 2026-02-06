@@ -132,7 +132,7 @@ export function QuickOrderEditItemModal({
           <DialogTitle className="pr-8 text-base">{item.productName}</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 max-h-[50vh]">
+        <div className="flex-1 overflow-y-auto max-h-[50vh] pr-1">
           <div className="space-y-4 pr-2">
             {/* Quantity selector */}
             <div className="flex items-center justify-between">
@@ -249,7 +249,7 @@ export function QuickOrderEditItemModal({
               />
             </div>
           </div>
-        </ScrollArea>
+        </div>
 
         <DialogFooter className="gap-2 sm:gap-0 pt-4">
           <Button
