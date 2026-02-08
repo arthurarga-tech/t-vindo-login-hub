@@ -3,6 +3,7 @@ import { UtensilsCrossed, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuickOrderModal } from "@/components/pedidos/QuickOrderModal";
 import { OrderDetailModal } from "@/components/pedidos/OrderDetailModal";
+import { OrderAddItemModal } from "@/components/pedidos/OrderAddItemModal";
 import { TableCard } from "@/components/mesas/TableCard";
 import { CloseTabModal } from "@/components/mesas/CloseTabModal";
 import { useEstablishment } from "@/hooks/useEstablishment";
@@ -15,6 +16,7 @@ export default function Mesas() {
   const [quickOrderOpen, setQuickOrderOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [closingOrder, setClosingOrder] = useState<Order | null>(null);
+  const [addingItemOrder, setAddingItemOrder] = useState<Order | null>(null);
 
   return (
     <div className="space-y-6" data-testid="mesas-page">
@@ -41,7 +43,7 @@ export default function Mesas() {
               order={order}
               onClick={() => setSelectedOrder(order)}
               onCloseTab={() => setClosingOrder(order)}
-              onAddItem={() => setSelectedOrder(order)}
+              onAddItem={() => setAddingItemOrder(order)}
             />
           ))}
         </div>
@@ -91,6 +93,13 @@ export default function Mesas() {
             paymentDebitEnabled={establishment.payment_debit_enabled ?? false}
             paymentCashEnabled={establishment.payment_cash_enabled ?? false}
           />
+          {addingItemOrder && (
+            <OrderAddItemModal
+              orderId={addingItemOrder.id}
+              open={!!addingItemOrder}
+              onClose={() => setAddingItemOrder(null)}
+            />
+          )}
         </>
       )}
     </div>
