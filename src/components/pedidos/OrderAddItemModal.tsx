@@ -12,9 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatPrice } from "@/lib/formatters";
 import { useProducts, Product } from "@/hooks/useProducts";
 import { useCategories } from "@/hooks/useCategories";
@@ -40,11 +38,17 @@ export function OrderAddItemModal({
   const [observation, setObservation] = useState("");
   const [selectedAddons, setSelectedAddons] = useState<Map<string, number>>(new Map());
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const { data: establishment } = useEstablishment();
   const { data: categories } = useCategories(establishment?.id);
   const { data: products } = useProducts(establishment?.id);
   const addItem = useAddOrderItem();
+
+  const activeCategories = useMemo(
+    () => categories?.filter((c) => c.active) || [],
+    [categories]
+  );
 
   const activeProducts = useMemo(
     () => products?.filter((p) => p.active) || [],
@@ -52,14 +56,25 @@ export function OrderAddItemModal({
   );
 
   const filteredProducts = useMemo(() => {
-    if (!searchTerm.trim()) return activeProducts;
-    const term = searchTerm.toLowerCase();
-    return activeProducts.filter(
-      (p) =>
-        p.name.toLowerCase().includes(term) ||
-        p.description?.toLowerCase().includes(term)
-    );
-  }, [activeProducts, searchTerm]);
+    let filtered = activeProducts;
+
+    // Filter by category
+    if (selectedCategory) {
+      filtered = filtered.filter((p) => p.category_id === selectedCategory);
+    }
+
+    // Filter by search
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (p) =>
+          p.name.toLowerCase().includes(term) ||
+          p.description?.toLowerCase().includes(term)
+      );
+    }
+
+    return filtered;
+  }, [activeProducts, searchTerm, selectedCategory]);
 
   const productsByCategory = useMemo(() => {
     const grouped = new Map<string, Product[]>();
@@ -168,6 +183,7 @@ export function OrderAddItemModal({
     setObservation("");
     setSelectedAddons(new Map());
     setSearchTerm("");
+    setSelectedCategory(null);
     onClose();
   };
 
@@ -193,7 +209,7 @@ export function OrderAddItemModal({
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
       <DialogContent
-        className="max-w-lg max-h-[90vh] flex flex-col"
+        className="w-full h-full sm:max-w-lg sm:max-h-[90vh] flex flex-col p-4 sm:p-6"
         data-testid="order-add-item-modal"
       >
         <DialogHeader>
@@ -203,9 +219,40 @@ export function OrderAddItemModal({
         </DialogHeader>
 
         {step === "select" ? (
-          <>
+          <div className="flex flex-col flex-1 min-h-0 gap-3">
+            {/* Category filter chips */}
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 shrink-0">
+              <button
+                onClick={() => setSelectedCategory(null)}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors min-h-[36px] ${
+                  selectedCategory === null
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-accent"
+                }`}
+              >
+                Todos
+              </button>
+              {activeCategories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() =>
+                    setSelectedCategory(
+                      selectedCategory === category.id ? null : category.id
+                    )
+                  }
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors min-h-[36px] ${
+                    selectedCategory === category.id
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-accent"
+                  }`}
+                >
+                  {category.name}
+                </button>
+              ))}
+            </div>
+
             {/* Search */}
-            <div className="relative">
+            <div className="relative shrink-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar produto..."
@@ -216,33 +263,33 @@ export function OrderAddItemModal({
               />
             </div>
 
-            {/* Products list */}
-            <ScrollArea className="flex-1 max-h-[50vh]">
-              <div className="space-y-4 pr-2">
+            {/* Products list - native scroll for mobile */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+              <div className="space-y-4 pr-1">
                 {Array.from(productsByCategory.entries()).map(([categoryId, categoryProducts]) => {
                   const category = categories?.find((c) => c.id === categoryId);
                   return (
-                    <div key={categoryId} className="space-y-2">
-                      <h4 className="font-medium text-sm text-muted-foreground">
+                    <div key={categoryId} className="space-y-1">
+                      <h4 className="font-medium text-sm text-muted-foreground sticky top-0 bg-background py-1 z-10">
                         {category?.name || "Sem categoria"}
                       </h4>
-                      <div className="space-y-1">
+                      <div className="space-y-0.5">
                         {categoryProducts.map((product) => (
                           <button
                             key={product.id}
                             onClick={() => handleProductSelect(product)}
-                            className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-accent/50 transition-colors text-left"
+                            className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-accent/50 active:bg-accent transition-colors text-left min-h-[48px]"
                             data-testid={`order-add-item-product-${product.id}`}
                           >
-                            <div className="flex-1">
-                              <p className="font-medium text-sm">{product.name}</p>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{product.name}</p>
                               {product.description && (
                                 <p className="text-xs text-muted-foreground line-clamp-1">
                                   {product.description}
                                 </p>
                               )}
                             </div>
-                            <span className="font-medium text-sm text-primary">
+                            <span className="font-medium text-sm text-primary ml-2 shrink-0">
                               {formatPrice(product.price)}
                             </span>
                           </button>
@@ -257,18 +304,18 @@ export function OrderAddItemModal({
                   </p>
                 )}
               </div>
-            </ScrollArea>
+            </div>
 
-            <DialogFooter>
-              <Button variant="outline" onClick={handleClose}>
+            <DialogFooter className="shrink-0 pt-2">
+              <Button variant="outline" onClick={handleClose} className="min-h-[44px]">
                 Cancelar
               </Button>
             </DialogFooter>
-          </>
+          </div>
         ) : (
           <>
-            <ScrollArea className="flex-1 max-h-[50vh]">
-              <div className="space-y-4 pr-2">
+            <div className="flex-1 overflow-y-auto min-h-0">
+              <div className="space-y-4 pr-1">
                 {/* Quantity selector */}
                 <div className="flex items-center justify-between">
                   <Label>Quantidade</Label>
@@ -276,7 +323,7 @@ export function OrderAddItemModal({
                     <Button
                       size="icon"
                       variant="outline"
-                      className="h-10 w-10"
+                      className="h-11 w-11"
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
                       data-testid="order-add-item-qty-decrease"
                     >
@@ -286,7 +333,7 @@ export function OrderAddItemModal({
                     <Button
                       size="icon"
                       variant="outline"
-                      className="h-10 w-10"
+                      className="h-11 w-11"
                       onClick={() => setQuantity(quantity + 1)}
                       data-testid="order-add-item-qty-increase"
                     >
@@ -320,7 +367,7 @@ export function OrderAddItemModal({
                           return (
                             <div
                               key={addon.id}
-                              className="flex items-center justify-between py-2 min-h-[44px]"
+                              className="flex items-center justify-between py-2 min-h-[48px]"
                             >
                               <div className="flex items-center gap-3">
                                 <Checkbox
@@ -342,7 +389,7 @@ export function OrderAddItemModal({
                                   <Button
                                     size="icon"
                                     variant="ghost"
-                                    className="h-8 w-8"
+                                    className="h-9 w-9"
                                     onClick={() => handleAddonQuantityChange(addon.id, -1)}
                                   >
                                     <Minus className="h-3 w-3" />
@@ -351,7 +398,7 @@ export function OrderAddItemModal({
                                   <Button
                                     size="icon"
                                     variant="ghost"
-                                    className="h-8 w-8"
+                                    className="h-9 w-9"
                                     onClick={() => handleAddonQuantityChange(addon.id, 1)}
                                   >
                                     <Plus className="h-3 w-3" />
@@ -386,9 +433,9 @@ export function OrderAddItemModal({
                   </div>
                 )}
               </div>
-            </ScrollArea>
+            </div>
 
-            <DialogFooter className="gap-2 sm:gap-0 pt-4">
+            <DialogFooter className="gap-2 sm:gap-0 pt-4 shrink-0">
               <Button variant="outline" onClick={handleBack} className="min-h-[44px]">
                 Voltar
               </Button>

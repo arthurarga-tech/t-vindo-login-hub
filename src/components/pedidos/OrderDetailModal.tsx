@@ -139,7 +139,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent 
-        className="max-w-lg max-h-[90vh] overflow-y-auto"
+        className="w-full h-full sm:max-w-lg sm:max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6"
         data-testid="order-detail-modal"
         role="dialog"
         aria-labelledby="order-detail-title"
@@ -150,10 +150,10 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
           className="flex items-center justify-between"
           data-testid="order-detail-title"
         >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span data-testid="order-detail-number">Pedido #{order.order_number}</span>
               <Badge variant={status.variant} data-testid="order-detail-status">{status.label}</Badge>
-              <Badge variant="outline" className="ml-1" data-testid="order-detail-type">
+              <Badge variant="outline" data-testid="order-detail-type">
                 {typeInfo.icon} {typeInfo.label}
               </Badge>
             </div>
@@ -342,11 +342,12 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
           <Separator />
 
           {/* Actions */}
-          <div className="flex gap-2" data-testid="order-detail-actions">
+          <div className="flex flex-wrap gap-2" data-testid="order-detail-actions">
             <Button
               variant="outline"
               onClick={handlePrint}
               title="Imprimir pedido"
+              className="min-h-[44px]"
               data-testid="order-detail-print-button"
               aria-label="Imprimir pedido"
             >
@@ -356,7 +357,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
               variant="outline"
               onClick={handleWhatsAppClick}
               title="Conversar com cliente"
-              className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30"
+              className="min-h-[44px] text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30"
               data-testid="order-detail-whatsapp-button"
               aria-label="Conversar com cliente via WhatsApp"
             >
@@ -367,6 +368,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
                 {previousStatus && (
                   <Button 
                     variant="outline"
+                    className="min-h-[44px]"
                     onClick={() => handleStatusChange(previousStatus)}
                     disabled={updateStatus.isPending}
                     data-testid="order-detail-previous-status-button"
@@ -376,7 +378,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
                 )}
                 {nextStatus && (
                   <Button 
-                    className="flex-1"
+                    className="flex-1 min-h-[44px]"
                     onClick={() => handleStatusChange(nextStatus)}
                     disabled={updateStatus.isPending}
                     data-testid="order-detail-next-status-button"
@@ -386,6 +388,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
                 )}
                 <Button 
                   variant="destructive" 
+                  className="min-h-[44px]"
                   onClick={() => setShowCancelConfirm(true)}
                   disabled={updateStatus.isPending}
                   data-testid="order-detail-cancel-button"
