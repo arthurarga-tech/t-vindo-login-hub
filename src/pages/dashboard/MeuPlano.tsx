@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlanCard } from "@/components/subscription/PlanCard";
 import { SubscriptionStatus } from "@/components/subscription/SubscriptionStatus";
+import { ChangePasswordCard } from "@/components/perfil/ChangePasswordCard";
 import { useSubscription, useSubscriptionPlans, BillingCycle } from "@/hooks/useSubscription";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { supabase } from "@/integrations/supabase/client";
@@ -84,9 +85,9 @@ export default function MeuPlano() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold">Meu Plano</h1>
+        <h1 className="text-2xl font-bold">Meu Perfil</h1>
         <p className="text-muted-foreground">
-          Gerencie sua assinatura e escolha o melhor plano para seu negócio
+          Gerencie sua conta, assinatura e segurança
         </p>
       </div>
 
@@ -172,6 +173,8 @@ export default function MeuPlano() {
           </CardHeader>
         </Card>
       )}
+
+      <ChangePasswordCard />
     </div>
   );
 }
