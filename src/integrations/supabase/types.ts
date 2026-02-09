@@ -1138,6 +1138,7 @@ export type Database = {
       }
     }
     Functions: {
+      auto_finalize_old_orders: { Args: never; Returns: number }
       create_default_financial_categories: {
         Args: { est_id: string }
         Returns: undefined
