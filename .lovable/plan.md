@@ -1,184 +1,114 @@
 
 
-# 1. Unificar Seletor de Produtos + Filtro de Categorias no Novo Pedido
+# Plano de Implementacao - 3 Melhorias
 
-## Problema Atual
+## 1. Impressao Automatica via QZ Tray
 
-Existem **dois componentes diferentes** que fazem a mesma coisa (selecionar produto com addons):
+### O que e o QZ Tray
+QZ Tray e um software instalado no computador que permite imprimir diretamente pela web sem o dialogo do navegador. Ele se comunica via WebSocket local.
 
-1. **`QuickOrderProductList.tsx`** - usado no "Novo Pedido" (Balcao/Mesa) - tem busca mas **sem filtro de categorias**, usa layout Collapsible por categoria, cada categoria faz queries separadas
-2. **`OrderAddItemModal.tsx`** - usado em Mesas "+ Adicionar" e no detalhe do pedido - tem busca **com filtro de categorias** (chips), layout flat com scroll
+### Implementacao
 
-Ambos fazem: exibir produtos, buscar, selecionar, customizar addons (quantidade, observacao).
+**Novo arquivo: `src/lib/qzTrayService.ts`**
+- Servico singleton para gerenciar conexao com QZ Tray
+- Importa `qz-tray` via CDN (script dinamico) ou npm
+- Funcoes: `connect()`, `disconnect()`, `isConnected()`, `getPrinters()`, `print(html)`
+- Assinatura digital: implementar funcao de signing usando uma chave publica/privada. Para o dominio ficar "Verified" (como no print do cardapioweb.com), sera necessario gerar um certificado QZ Tray. Inicialmente, o sistema funcionara como "Untrusted" (o usuario clica "Allow" e marca "Remember") - mesma abordagem do print enviado
+- Funcao `setCertificate(cert)` e `setSignature(signFn)` para quando o usuario tiver certificado proprio
 
-## Solucao: Componente Unificado `ProductSelector`
+**Novo arquivo: `src/hooks/useQzTray.ts`**
+- Hook React que encapsula o servico
+- States: `isConnected`, `printers`, `selectedPrinter`, `isConnecting`
+- Auto-connect ao montar (se QZ Tray estiver instalado)
+- Persistir impressora selecionada no localStorage
+- Funcao `printRaw(html)` que envia para impressora selecionada
 
-Criar um componente reutilizavel `ProductSelector` que sera usado nos dois contextos. Ele contera:
-- Filtro horizontal de categorias (chips)
-- Campo de busca
-- Lista de produtos agrupada por categoria com scroll nativo
-- Dialog de customizacao de addons (quantidade, observacao, extras)
+**Modificar: `src/pages/dashboard/Configuracoes.tsx`**
+- Adicionar nova opcao no RadioGroup de modo de impressao:
+  - `qz_on_order` - QZ Tray automatico ao receber pedido
+  - `qz_on_confirm` - QZ Tray automatico ao confirmar pedido
+- Quando modo QZ selecionado, exibir:
+  - Status de conexao com QZ Tray (conectado/desconectado)
+  - Botao "Conectar ao QZ Tray"
+  - Dropdown com lista de impressoras detectadas
+  - Botao "Imprimir Teste" via QZ Tray
+  - Link para download do QZ Tray (qz.io)
 
-### Diferenca entre contextos
+**Modificar: `src/hooks/usePrintOrder.ts`**
+- Adicionar modo QZ Tray: quando ativo, enviar HTML para o QZ Tray ao inves de abrir dialogo do navegador
+- O QZ Tray imprime silenciosamente (sem dialogo)
 
-| Aspecto | Novo Pedido (QuickOrder) | Adicionar Item (OrderAdd) |
-|---------|--------------------------|---------------------------|
-| Output | Retorna item para cart local | Salva direto no banco |
-| Callback | `onSelectProduct(product, qty, obs, addons)` | `onSelectProduct(product, qty, obs, addons)` |
+**Modificar: `src/pages/dashboard/Pedidos.tsx`**
+- Detectar modo `qz_on_order` / `qz_on_confirm` e usar o hook `useQzTray` para impressao silenciosa
 
-A unica diferenca e **o que acontece depois** da selecao. O componente `ProductSelector` e identico nos dois casos.
+**Sobre o certificado/assinatura:**
+- O QZ Tray exige que mensagens sejam assinadas digitalmente para suprimir o popup "Untrusted"
+- Para isso, e necessario comprar uma licenca do QZ Tray e gerar certificado no painel deles
+- Inicialmente, o sistema funcionara sem certificado (popup "Allow" aparece na primeira vez, usuario marca "Remember this decision")
+- Futuramente, pode-se adicionar um campo nas configuracoes para o usuario colar seu certificado e chave privada
 
-## Arquivos a Modificar
-
-| Arquivo | Acao |
-|---------|------|
-| `src/components/pedidos/ProductSelector.tsx` | **NOVO** - componente unificado de selecao de produto |
-| `src/components/pedidos/QuickOrderProductList.tsx` | Refatorar para usar `ProductSelector` |
-| `src/components/pedidos/OrderAddItemModal.tsx` | Refatorar para usar `ProductSelector` (remover logica duplicada) |
-
-## Detalhes do ProductSelector
-
-O componente recebera:
-- `establishmentId: string`
-- `onSelectProduct: (data: { product, quantity, observation, addons }) => void`
-
-Internamente tera:
-1. Busca de categorias e produtos via hooks existentes
-2. Chips de filtro horizontal (Todos + categorias ativas)
-3. Input de busca com icone
-4. Lista de produtos agrupada por categoria, com headers sticky
-5. Ao clicar em produto: abre dialog interno de customizacao (addons, quantidade, observacao)
-6. Touch targets de 48px para mobile
-7. Scroll vertical nativo (sem ScrollArea do Radix)
-
-O `QuickOrderProductList` passara a ser um wrapper fino que importa `ProductSelector` e repassa o callback `onAddItem`.
-
-O `OrderAddItemModal` usara `ProductSelector` no step "select" e mantendo apenas o wrapper do Dialog.
+### Dependencia
+- Pacote npm `qz-tray` sera adicionado ao projeto
 
 ---
 
-# 2. Descricao Completa das Funcionalidades do Sistema Tavindo
+## 2. Corrigir Cor da Barra de Navegacao Mobile no Dashboard
 
-## Modulos do Sistema
+### Problema
+O print mostra a barra do navegador mobile na cor laranja padrao (#ea580c) ao inves da cor primaria configurada pelo estabelecimento. O hook `useThemeColor` ja existe mas so e usado nas paginas publicas da loja, nao no dashboard.
 
-### Loja Online (Cardapio Digital)
-- Pagina publica acessivel por link compartilhavel (ex: tavindo.app/loja/slug)
-- Catalogo de produtos organizado por categorias com imagens
-- Sistema de adicionais/extras configuravel por categoria (ex: "Toppings", "Proteinas extras") com selecao multipla e quantidade
-- Carrinho de compras com edicao de itens, addons e observacoes
-- Checkout com formulario de dados do cliente (nome, telefone, endereco)
-- Agendamento de pedidos para data/hora futura
-- Horario de funcionamento automatico (abre/fecha conforme configurado)
-- Fechamento temporario da loja com um clique
-- Temas personalizaveis (cores primaria e secundaria)
-- Pagina de confirmacao de pedido
-- Rastreamento de pedido em tempo real pelo cliente
+### Solucao
 
-### Gestao de Pedidos (Painel Administrativo)
-- Visualizacao Kanban com colunas de status (Pendente, Confirmado, Preparando, Pronto, Saiu para Entrega, Entregue)
-- Visualizacao em lista alternativa
-- Atualizacao de status com drag-and-drop no Kanban
-- Notificacao sonora para novos pedidos
-- Filtros por status, data (hoje, ontem, semana, mes), busca por cliente/numero
-- Filtro de pedidos agendados
-- Detalhamento completo do pedido (itens, addons, observacoes, dados do cliente)
-- Edicao de pedidos existentes (adicionar/remover itens, alterar quantidades e addons)
-- Impressao termica automatica (ao receber pedido ou ao confirmar)
-- Personalizacao do recibo (tamanho de fonte, margens, negrito, contraste, altura de linha)
-- Tempo de preparo configuravel exibido ao cliente
-- Criacao rapida de pedidos pelo balcao (Novo Pedido)
+**Modificar: `src/components/dashboard/DashboardLayout.tsx`**
+- Importar e usar o hook `useThemeColor` passando `(establishment as any)?.theme_primary_color`
+- Isso vai atualizar a meta tag `theme-color` com a cor primaria do estabelecimento quando o dono estiver no painel
 
-### Mesas e Comandas
-- Criacao de mesas com numero e nome do cliente
-- Cards visuais de mesas abertas com numero, cliente, itens, total e tempo decorrido
-- Adicao rapida de itens diretamente do card da mesa
-- Fechamento de comanda com selecao de forma de pagamento
-- Validacao contra mesas duplicadas
-- Suporte a comanda aberta (pedidos incrementais na mesma mesa)
-- Receita financeira registrada na data de fechamento (nao de abertura)
+Mudanca simples de 2 linhas:
+```
+import { useThemeColor } from "@/hooks/useThemeColor";
+// dentro de DashboardLayout:
+useThemeColor((establishment as any)?.theme_primary_color);
+```
 
-### Catalogo de Produtos
-- Categorias com ordenacao drag-and-drop
-- Produtos com nome, descricao, preco, imagem, ativo/inativo
-- Upload de imagem com recorte (crop) integrado
-- Reordenacao de produtos por arraste
-- Sistema de adicionais por categoria (grupos de extras com min/max selecoes, obrigatorio/opcional)
+---
 
-### Modalidades de Atendimento
-- Delivery (entrega) com rastreamento de status
-- Retirada no local
-- Comer no local
-- Atendimento em mesa (comanda)
-- Cada modalidade habilitada/desabilitada independentemente
+## 3. Corrigir Duplicidade de Carregamento na Pagina de Login
 
-### Gestao de Clientes
-- Listagem de clientes com filtros
-- Historico de pedidos por cliente
-- Origem do cliente (delivery, balcao, mesa)
-- Dados de contato (nome, telefone, endereco)
+### Problema
+Ao acessar a pagina de login ou ao efetuar login, ha uma sensacao de "carregamento duplo" - possivelmente o `ProtectedRoute` e o `LoginCard` competindo por redirecionamento.
 
-### Financeiro
-- Resumo financeiro (receita bruta, despesas, saldo)
-- Grafico de receitas e despesas por periodo
-- Listagem de transacoes (entradas e saidas)
-- Cadastro de despesas manuais
-- Categorias de despesas personalizaveis
-- Filtros por periodo (hoje, ontem, semana, mes, trimestre, customizado)
-- Desconto automatico de taxas de cartao de credito/debito
-- Receitas geradas automaticamente a partir de pedidos
+### Causa Raiz
+1. O `LoginCard` tem um `useEffect` que redireciona para `/dashboard` quando `user` existe
+2. O `ProtectedRoute` tambem redireciona e mostra um spinner enquanto `loading` ou `isLoadingSubscription`
+3. Quando o usuario faz login, o `LoginCard` redireciona para `/dashboard`, que monta o `ProtectedRoute`, que mostra spinner enquanto carrega subscription, que depende de `useEstablishment`, que depende de `useAuth` - criando uma cadeia de loading states
 
-### Configuracoes
-- Modo de impressao (desativado, ao receber, ao confirmar)
-- Personalizacao do recibo termico (fonte, margens, negrito, contraste)
-- Cores do tema da loja
-- Taxas de cartao de credito e debito
-- Som de notificacao
-- Notificacoes WhatsApp automaticas por status do pedido com templates personalizaveis
+### Solucao
 
-### Meu Negocio
-- Dados do estabelecimento (nome, descricao, logo, banner)
-- Endereco completo
-- Telefone e WhatsApp
-- Horario de funcionamento por dia da semana
-- Modalidades de servico (delivery, retirada, comer no local, mesa)
-- Metodos de pagamento aceitos (Pix, credito, debito, dinheiro)
-- Link publico da loja (slug personalizavel)
+**Modificar: `src/components/login/LoginCard.tsx`**
+- Mostrar um estado de loading no botao "Entrar" enquanto o auth state esta sendo resolvido (apos signIn bem-sucedido)
+- Remover o `navigate('/dashboard')` duplicado no `handleLogin` (ja existe no useEffect)
+- Adicionar `if (loading) return null` ou um spinner simples para evitar flash do formulario quando usuario ja esta logado
 
-### Autenticacao e Seguranca
-- Login com email e senha
-- Recuperacao de senha por email
-- Alteracao de senha com validacao da senha atual
-- Rotas protegidas (painel administrativo)
-- Politicas de seguranca no banco de dados (RLS)
+**Modificar: `src/pages/Index.tsx`**
+- Adicionar verificacao de auth loading: se `loading` esta true, mostrar spinner centralizado ao inves de renderizar logo + LoginCard simultaneamente
+- Se `user` ja existe e `!loading`, redirecionar imediatamente sem mostrar a pagina de login
 
-### Planos e Assinatura
-- Exibicao de planos disponiveis
-- Integracao com Stripe para pagamento de assinaturas
-- Portal de gerenciamento de assinatura
-- Banner de status da assinatura
+Isso elimina o efeito de "carregar 2 coisas" porque:
+- A pagina Index nao renderiza o formulario se o usuario ja esta logado
+- O LoginCard nao tenta navegar em 2 lugares diferentes ao mesmo tempo
 
-## Diferenciais para Venda
+---
 
-1. **Sem necessidade de app** - funciona 100% no navegador, tanto para o dono quanto para o cliente
-2. **Tempo real** - pedidos aparecem instantaneamente no painel sem recarregar
-3. **Mobile-first** - otimizado para garcom com celular na mao
-4. **Impressao termica** - recibo formatado para impressoras 58mm
-5. **WhatsApp integrado** - notificacoes automaticas de status
-6. **Multi-modalidade** - delivery, balcao, mesa e retirada no mesmo sistema
-7. **Financeiro automatico** - receitas geradas automaticamente dos pedidos
-8. **Agendamento** - cliente pode agendar pedido para hora futura
-9. **Personalizavel** - cores, mensagens WhatsApp, recibo, horarios
+## Arquivos Modificados
 
-## Melhorias Futuras Sugeridas
-
-1. **Dashboard com metricas** - graficos de vendas do dia, ticket medio, produtos mais vendidos, horarios de pico
-2. **Programa de fidelidade** - pontos por pedido, cupons de desconto
-3. **Multi-usuarios** - diferentes perfis (admin, garcom, caixa, cozinha) com permissoes
-4. **Tela da Cozinha (KDS)** - monitor na cozinha mostrando pedidos em preparacao
-5. **Integracao iFood/Rappi** - receber pedidos de marketplaces no mesmo painel
-6. **Relatorios avancados** - exportar para Excel, relatorio fiscal, DRE simplificado
-7. **Cardapio com QR Code** - cliente escaneia na mesa e faz pedido pelo celular
-8. **Chat com cliente** - comunicacao direta dentro do sistema
-9. **Controle de estoque** - baixa automatica ao vender, alertas de estoque baixo
-10. **App PWA** - instalar como aplicativo no celular do dono e dos garcons
+| Arquivo | Acao |
+|---------|------|
+| `src/lib/qzTrayService.ts` | **NOVO** - servico de conexao QZ Tray |
+| `src/hooks/useQzTray.ts` | **NOVO** - hook React para QZ Tray |
+| `src/pages/dashboard/Configuracoes.tsx` | Adicionar opcoes QZ Tray |
+| `src/hooks/usePrintOrder.ts` | Adicionar modo QZ Tray |
+| `src/pages/dashboard/Pedidos.tsx` | Integrar impressao QZ Tray |
+| `src/components/dashboard/DashboardLayout.tsx` | Adicionar useThemeColor |
+| `src/components/login/LoginCard.tsx` | Corrigir redirecionamento duplo |
+| `src/pages/Index.tsx` | Adicionar loading/redirect guard |
 
