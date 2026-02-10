@@ -5,6 +5,7 @@ import { SubscriptionBanner } from "@/components/subscription/SubscriptionBanner
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { useMemo } from "react";
 import { hexToHSL } from "@/lib/formatters";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import { Menu, PanelLeftClose, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -53,6 +54,8 @@ function DashboardHeader() {
 export function DashboardLayout() {
   const { data: establishment } = useEstablishment();
   
+  // Update mobile browser theme-color with establishment's primary color
+  useThemeColor((establishment as any)?.theme_primary_color);
   // Generate custom CSS variables for theme
   const customStyles = useMemo(() => {
     const primaryColor = (establishment as any)?.theme_primary_color;

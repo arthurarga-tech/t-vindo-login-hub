@@ -16,12 +16,14 @@ import { usePrintOrder } from "@/hooks/usePrintOrder";
 import { PreparationTimeConfig } from "@/components/pedidos/PreparationTimeConfig";
 import { StoreQuickClose } from "@/components/pedidos/StoreQuickClose";
 import { QuickOrderModal } from "@/components/pedidos/QuickOrderModal";
+import { useQzTray } from "@/hooks/useQzTray";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 export default function Pedidos() {
   const { data: orders, isLoading, refetch, hasNextPage, fetchNextPage, isFetchingNextPage } = useOrders();
   const { data: establishment } = useEstablishment();
   const { printOrder } = usePrintOrder();
+  const { isConnected: qzConnected, printHtml: qzPrintHtml, connectQz } = useQzTray();
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -43,7 +45,14 @@ export default function Pedidos() {
   const printMode = ((establishment as any)?.print_mode || "none") as string;
   const isPrintOnOrder = printMode.includes("on_order");
   const isPrintOnConfirm = printMode.includes("on_confirm");
+  const isQzMode = printMode.startsWith("qz_");
   
+  // Auto-connect QZ Tray when QZ mode is selected
+  useEffect(() => {
+    if (isQzMode && !qzConnected) {
+      connectQz();
+    }
+  }, [isQzMode, qzConnected, connectQz]);
   
   const establishmentName = establishment?.name || "Estabelecimento";
   const logoUrl = establishment?.logo_url;
@@ -121,6 +130,7 @@ export default function Pedidos() {
             printFontBold,
             printLineHeight,
             printContrastHigh,
+            qzPrintHtml: isQzMode && qzConnected ? qzPrintHtml : undefined,
           });
           
           // Show toast notifications based on result
@@ -134,7 +144,7 @@ export default function Pedidos() {
     }
     
     previousPendingCountRef.current = pendingCount;
-  }, [pendingCount, soundEnabled, orders, printMode, isPrintOnOrder, establishmentName, logoUrl, printOrder]);
+  }, [pendingCount, soundEnabled, orders, printMode, isPrintOnOrder, isQzMode, qzConnected, qzPrintHtml, establishmentName, logoUrl, printOrder]);
 
   // Function to print an order from the card
   const handlePrintOrder = async (order: Order) => {
@@ -148,6 +158,7 @@ export default function Pedidos() {
       printFontBold,
       printLineHeight,
       printContrastHigh,
+      qzPrintHtml: isQzMode && qzConnected ? qzPrintHtml : undefined,
     });
     
     if (result.isMobile) {
@@ -170,6 +181,7 @@ export default function Pedidos() {
         printFontBold,
         printLineHeight,
         printContrastHigh,
+        qzPrintHtml: isQzMode && qzConnected ? qzPrintHtml : undefined,
       });
       
       if (result.isMobile) {
@@ -178,7 +190,7 @@ export default function Pedidos() {
     } catch (error) {
       toast.error("Erro ao imprimir automaticamente");
     }
-  }, [isPrintOnConfirm, printOrder, establishmentName, logoUrl, printFontSize, printMarginLeft, printMarginRight, printFontBold, printLineHeight, printContrastHigh]);
+  }, [isPrintOnConfirm, isQzMode, qzConnected, qzPrintHtml, printOrder, establishmentName, logoUrl, printFontSize, printMarginLeft, printMarginRight, printFontBold, printLineHeight, printContrastHigh]);
 
   const playNotificationSound = () => {
     try {

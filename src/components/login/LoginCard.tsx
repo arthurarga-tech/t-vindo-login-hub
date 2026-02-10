@@ -41,11 +41,7 @@ const LoginCard = () => {
   const { signIn, signUp, user, loading, resetPassword } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!loading && user) {
-      navigate('/dashboard');
-    }
-  }, [user, loading, navigate]);
+  // Redirect is now handled by Index.tsx - no useEffect needed here
 
   const resetForm = () => {
     setEmail("");
@@ -81,9 +77,9 @@ const LoginCard = () => {
           description: message,
           variant: "destructive",
         });
-      } else {
-        navigate('/dashboard');
+        setIsLoading(false);
       }
+      // Navigation happens automatically via auth state change in Index.tsx
     } catch (error) {
       toast({
         title: "Erro",
