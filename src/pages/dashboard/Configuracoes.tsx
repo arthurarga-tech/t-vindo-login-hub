@@ -1,4 +1,4 @@
-import { Settings, Printer, Palette, CreditCard, Bell, MessageCircle, ChevronDown, ChevronUp, Type } from "lucide-react";
+import { Settings, Printer, Palette, CreditCard, Bell, MessageCircle, ChevronDown, ChevronUp, Type, Wifi, WifiOff, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -15,9 +15,10 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWhatsAppNotification } from "@/hooks/useWhatsAppNotification";
 import { generateReceiptHtml } from "@/hooks/usePrintOrder";
+import { useQzTray } from "@/hooks/useQzTray";
 
-// Simplified print mode: browser only
-type PrintMode = "none" | "browser_on_order" | "browser_on_confirm";
+// Print modes including QZ Tray
+type PrintMode = "none" | "browser_on_order" | "browser_on_confirm" | "qz_on_order" | "qz_on_confirm";
 
 const templateLabels: Record<string, { label: string; description: string }> = {
   confirmed: { label: "Pedido Confirmado", description: "Quando o pedido é confirmado" },
@@ -34,6 +35,7 @@ export default function Configuracoes() {
   const { data: establishment, isLoading } = useEstablishment();
   const queryClient = useQueryClient();
   const { defaultTemplates } = useWhatsAppNotification();
+  const { isConnected: qzConnected, isConnecting: qzConnecting, printers: qzPrinters, selectedPrinter: qzSelectedPrinter, setSelectedPrinter: setQzSelectedPrinter, connectQz, error: qzError, printHtml: qzPrintHtml } = useQzTray();
   
   // Simplified print mode (browser only)
   const [printMode, setPrintMode] = useState<PrintMode>("none");
@@ -66,7 +68,6 @@ export default function Configuracoes() {
 
   useEffect(() => {
     if (establishment) {
-      // Convert legacy format to browser-only format
       const legacyPrintMode = (establishment as any).print_mode;
       
       let newPrintMode: PrintMode = "none";
@@ -74,6 +75,10 @@ export default function Configuracoes() {
         newPrintMode = "browser_on_order";
       } else if (legacyPrintMode === "on_confirm" || legacyPrintMode === "browser_on_confirm") {
         newPrintMode = "browser_on_confirm";
+      } else if (legacyPrintMode === "qz_on_order") {
+        newPrintMode = "qz_on_order";
+      } else if (legacyPrintMode === "qz_on_confirm") {
+        newPrintMode = "qz_on_confirm";
       }
       
       setPrintMode(newPrintMode);
@@ -102,10 +107,9 @@ export default function Configuracoes() {
 
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("establishments")
-        .update({
+      const updateData: Record<string, any> = {
           print_mode: printMode,
+          printer_name: printMode.startsWith("qz_") ? qzSelectedPrinter : null,
           print_font_size: printFontSize,
           print_margin_left: printMarginLeft,
           print_margin_right: printMarginRight,
@@ -119,7 +123,11 @@ export default function Configuracoes() {
           notification_sound_enabled: notificationSoundEnabled,
           whatsapp_notifications_enabled: whatsappEnabled,
           whatsapp_message_templates: whatsappTemplates,
-        })
+        };
+
+      const { error } = await supabase
+        .from("establishments")
+        .update(updateData)
         .eq("id", establishment.id);
 
       if (error) throw error;
@@ -346,7 +354,137 @@ export default function Configuracoes() {
                 </p>
               </div>
             </div>
+
+            {/* QZ Tray - Ao receber */}
+            <div className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50">
+              <RadioGroupItem value="qz_on_order" id="print-qz-on-order" className="mt-0.5" />
+              <div>
+                <Label htmlFor="print-qz-on-order" className="font-medium cursor-pointer">
+                  QZ Tray - Ao receber pedido
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Imprime automaticamente (sem diálogo) via QZ Tray ao receber novo pedido
+                </p>
+              </div>
+            </div>
+
+            {/* QZ Tray - Ao confirmar */}
+            <div className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50">
+              <RadioGroupItem value="qz_on_confirm" id="print-qz-on-confirm" className="mt-0.5" />
+              <div>
+                <Label htmlFor="print-qz-on-confirm" className="font-medium cursor-pointer">
+                  QZ Tray - Ao confirmar pedido
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Imprime automaticamente (sem diálogo) via QZ Tray ao confirmar pedido
+                </p>
+              </div>
+            </div>
           </RadioGroup>
+
+          {/* QZ Tray connection panel */}
+          {printMode.startsWith("qz_") && (
+            <div className="mt-4 p-4 rounded-lg border bg-muted/20 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {qzConnected ? (
+                    <Wifi className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <WifiOff className="h-4 w-4 text-destructive" />
+                  )}
+                  <span className="text-sm font-medium">
+                    {qzConnected ? "Conectado ao QZ Tray" : "Desconectado"}
+                  </span>
+                </div>
+                <Button
+                  variant={qzConnected ? "outline" : "default"}
+                  size="sm"
+                  onClick={connectQz}
+                  disabled={qzConnecting}
+                >
+                  {qzConnecting ? "Conectando..." : qzConnected ? "Reconectar" : "Conectar"}
+                </Button>
+              </div>
+
+              {qzError && (
+                <p className="text-sm text-destructive">{qzError}</p>
+              )}
+
+              {qzConnected && qzPrinters.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Impressora</Label>
+                  <Select value={qzSelectedPrinter} onValueChange={setQzSelectedPrinter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma impressora" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {qzPrinters.map((p) => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {qzConnected && qzSelectedPrinter && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      const html = generateReceiptHtml(
+                        {
+                          order_number: 0,
+                          order_type: "delivery",
+                          status: "confirmed",
+                          payment_method: "pix",
+                          subtotal: 25,
+                          delivery_fee: 5,
+                          total: 30,
+                          created_at: new Date().toISOString(),
+                          customer: { name: "Teste QZ", phone: "(00) 0000-0000" },
+                          items: [{ quantity: 1, product_name: "Teste", product_price: 25, total: 25, addons: [] }],
+                        } as any,
+                        establishment?.name || "Estabelecimento",
+                        establishment?.logo_url,
+                        printFontSize,
+                        printMarginLeft,
+                        printMarginRight,
+                        true,
+                        printFontBold,
+                        printLineHeight,
+                        printContrastHigh,
+                      );
+                      await qzPrintHtml(html);
+                      toast.success("Teste enviado para impressora!");
+                    } catch (err: any) {
+                      toast.error("Erro: " + (err?.message || "Falha ao imprimir"));
+                    }
+                  }}
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  Imprimir Teste via QZ Tray
+                </Button>
+              )}
+
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  💡 O QZ Tray precisa estar instalado e rodando no computador.{" "}
+                  <a
+                    href="https://qz.io/download"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    Baixar QZ Tray <ExternalLink className="h-3 w-3" />
+                  </a>
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Na primeira conexão, o QZ Tray pedirá permissão. Marque "Remember this decision" para não perguntar novamente.
+                </p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

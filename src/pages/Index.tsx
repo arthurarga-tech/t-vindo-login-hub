@@ -1,9 +1,28 @@
+import { Navigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import tavindoLogo from "@/assets/tavindodelivery.png";
 import FoodPatternBackground from "@/components/login/FoodPatternBackground";
 import LoginCard from "@/components/login/LoginCard";
 import LoginFooter from "@/components/login/LoginFooter";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
+  const { user, loading } = useAuth();
+
+  // Show spinner while auth state is resolving
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Redirect immediately if already logged in
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return (
     <div 
       className="h-screen flex flex-col bg-background relative overflow-hidden"

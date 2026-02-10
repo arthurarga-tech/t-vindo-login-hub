@@ -13,6 +13,7 @@ interface PrintOrderOptions {
   printFontBold?: boolean;
   printLineHeight?: number;
   printContrastHigh?: boolean;
+  qzPrintHtml?: (html: string) => Promise<void>;
 }
 
 export interface PrintResult {
@@ -307,6 +308,7 @@ export function usePrintOrder() {
     printFontBold = true,
     printLineHeight = 1.4,
     printContrastHigh = false,
+    qzPrintHtml,
   }: PrintOrderOptions): Promise<PrintResult> => {
     const htmlContent = generateReceiptHtml(
       order, 
@@ -323,6 +325,15 @@ export function usePrintOrder() {
 
     const mobile = isMobileDevice();
 
+    // QZ Tray mode: send HTML directly to printer (silent, no dialog)
+    if (qzPrintHtml) {
+      try {
+        await qzPrintHtml(htmlContent);
+        return { success: true, isMobile: false };
+      } catch {
+        // Fall through to browser printing as fallback
+      }
+    }
     // Helper function to wait for all images to load with improved validation
     const waitForImages = (doc: Document): Promise<void> => {
       return new Promise((resolve) => {
