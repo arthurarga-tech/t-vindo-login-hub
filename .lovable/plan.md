@@ -1,31 +1,35 @@
 
-
-# Remover Pagina Extra de Impressao no Mobile
+# Corrigir Conexao QZ Tray - "Connection blocked by client"
 
 ## Problema
 
-Quando um pedido chega e a impressao automatica esta ativada, no mobile o sistema abre uma **nova janela/aba** com um botao verde "Imprimir Pedido". Isso e a "pagina extra" indesejada. No desktop, o sistema usa um iframe invisivel e abre o dialogo de impressao diretamente.
+O erro "Connection blocked by client" ocorre porque a funcao `setSignaturePromise` esta com a sintaxe incorreta. A API do QZ Tray espera uma **factory function** que recebe `toSign` e retorna uma funcao `(resolve, reject) => ...`. O codigo atual usa uma arrow function que retorna outra arrow function, mas o formato nao corresponde ao esperado pela biblioteca.
+
+Codigo atual (errado):
+```
+qz.security.setSignaturePromise(() => (resolve, reject) => {
+  ...
+});
+```
+
+Codigo correto (conforme documentacao QZ Tray):
+```
+qz.security.setSignaturePromise(function(toSign) {
+  return function(resolve, reject) {
+    resolve(null); // untrusted mode
+  };
+});
+```
 
 ## Solucao
 
-Unificar o comportamento: usar a **mesma logica do desktop** (iframe oculto) tambem no mobile. Remover o tratamento especial que abre nova janela no mobile.
+**Arquivo: `src/lib/qzTrayService.ts`**
 
-## Mudanca
-
-**Arquivo: `src/hooks/usePrintOrder.ts`**
-
-- Remover a funcao `isMobileDevice()` e a variavel `mobile`
-- Remover o bloco `if (mobile)` que abre `window.open` com botao verde
-- Usar sempre o fluxo do iframe oculto (que ja funciona bem) para ambos desktop e mobile
-- Remover a propriedade `isMobile` do `PrintResult` (nao sera mais necessaria)
-
-**Arquivo: `src/pages/dashboard/Pedidos.tsx`**
-
-- Remover todas as verificacoes de `result.isMobile` e os `toast.info("Toque no botao verde...")` associados, ja que nao havera mais comportamento diferente por dispositivo
+Corrigir a funcao `setupSecurity`:
+1. `setSignaturePromise` deve receber uma funcao que aceita `toSign` (string) e retorna uma funcao `(resolve, reject)`
+2. No modo untrusted (sem certificado), simplesmente resolver com `null`
+3. Tambem corrigir `setCertificatePromise` para seguir o padrao exato da documentacao
 
 ## Resultado
 
-- Desktop e mobile usam o mesmo fluxo de impressao (iframe oculto + dialogo nativo do navegador)
-- Nenhuma pagina extra sera aberta no mobile
-- Todas as configuracoes de impressao (fonte, margens, negrito, contraste) se aplicam igualmente nos dois dispositivos
-
+Ao clicar "Conectar", o QZ Tray vai abrir o popup "Allow/Deny" (modo Untrusted). O usuario clica "Allow" e marca "Remember" para nao aparecer novamente. A conexao sera estabelecida e as impressoras listadas.
