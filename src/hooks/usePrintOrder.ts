@@ -18,12 +18,6 @@ interface PrintOrderOptions {
 
 export interface PrintResult {
   success: boolean;
-  isMobile?: boolean;
-}
-
-// Detect mobile devices
-function isMobileDevice(): boolean {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
 function generateReceiptHtml(
@@ -323,124 +317,74 @@ export function usePrintOrder() {
       printContrastHigh
     );
 
-    const mobile = isMobileDevice();
-
     // QZ Tray mode: send HTML directly to printer (silent, no dialog)
     if (qzPrintHtml) {
       try {
         await qzPrintHtml(htmlContent);
-        return { success: true, isMobile: false };
+        return { success: true };
       } catch {
         // Fall through to browser printing as fallback
       }
     }
-    // Helper function to wait for all images to load with improved validation
+
+    // Helper function to wait for all images to load
     const waitForImages = (doc: Document): Promise<void> => {
       return new Promise((resolve) => {
         const images = doc.querySelectorAll('img');
-        
-        if (images.length === 0) {
-          resolve();
-          return;
-        }
-
+        if (images.length === 0) { resolve(); return; }
         let loadedCount = 0;
-        const checkComplete = () => {
-          loadedCount++;
-          if (loadedCount >= images.length) {
-            resolve();
-          }
-        };
-
+        const checkComplete = () => { loadedCount++; if (loadedCount >= images.length) resolve(); };
         images.forEach((img) => {
-          if (img.complete) {
-            checkComplete();
-          } else {
-            img.onload = () => checkComplete();
-            img.onerror = () => checkComplete();
-          }
+          if (img.complete) { checkComplete(); } else { img.onload = () => checkComplete(); img.onerror = () => checkComplete(); }
         });
-
-        // Timeout fallback - don't wait more than 5 seconds
         setTimeout(() => resolve(), 5000);
       });
     };
 
-    if (mobile) {
-      // Mobile: Open new window with print button for user to tap
-      const mobileHtml = htmlContent.replace('</body>', `
-        <div id="print-button-container" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; text-align: center;">
-          <button onclick="window.print()" style="padding: 16px 32px; font-size: 18px; background: #22c55e; color: white; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); font-weight: bold;">
-            🖨️ Imprimir Pedido
-          </button>
-          <p style="margin-top: 8px; font-size: 12px; color: #666;">Toque no botão acima para imprimir</p>
-        </div>
-        <style>
-          @media print { 
-            #print-button-container { display: none !important; } 
-          }
-        </style>
-      </body>`);
-      
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(mobileHtml);
-        printWindow.document.close();
-        return { success: true, isMobile: true };
-      }
-    } else {
-      // Desktop: Use hidden iframe for more reliable printing
-      try {
-        const iframe = document.createElement('iframe');
-        iframe.style.cssText = 'position: fixed; top: 0; left: 0; width: 0; height: 0; border: none; visibility: hidden;';
-        document.body.appendChild(iframe);
+    // Use hidden iframe for printing (desktop and mobile)
+    try {
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = 'position: fixed; top: 0; left: 0; width: 0; height: 0; border: none; visibility: hidden;';
+      document.body.appendChild(iframe);
 
-        const doc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (doc) {
-          doc.open();
-          doc.write(htmlContent);
-          doc.close();
-          
-          // Wait for all images to load before printing
-          await waitForImages(doc);
-          
-          // Small additional delay for rendering
-          await new Promise(resolve => setTimeout(resolve, 200));
-          
-          try {
-            iframe.contentWindow?.focus();
-            iframe.contentWindow?.print();
-          } catch {
-            // Print dialog may have been cancelled
-          }
-          
-          // Remove iframe after printing
-          setTimeout(() => {
-            iframe.remove();
-          }, 2000);
-          
-          return { success: true, isMobile: false };
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (doc) {
+        doc.open();
+        doc.write(htmlContent);
+        doc.close();
+        
+        await waitForImages(doc);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } catch {
+          // Print dialog may have been cancelled
         }
         
-        iframe.remove();
-      } catch {
-        // Fallback to window.open below
+        setTimeout(() => { iframe.remove(); }, 2000);
+        return { success: true };
       }
       
-      // Fallback: Use window.open if iframe fails
-      const printWindow = window.open("", "_blank", "width=300,height=600");
-      if (printWindow) {
-        printWindow.document.write(htmlContent);
-        printWindow.document.close();
-        printWindow.onload = () => {
-          printWindow.print();
-          printWindow.onafterprint = () => printWindow.close();
-        };
-        return { success: true, isMobile: false };
-      }
+      iframe.remove();
+    } catch {
+      // Fallback to window.open
     }
     
-    return { success: false, isMobile: mobile };
+    // Fallback: Use window.open if iframe fails
+    const printWindow = window.open("", "_blank", "width=300,height=600");
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.onload = () => {
+        printWindow.print();
+        printWindow.onafterprint = () => printWindow.close();
+      };
+      return { success: true };
+    }
+    
+    return { success: false };
   }, []);
 
   return { printOrder };

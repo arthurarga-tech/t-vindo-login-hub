@@ -97,11 +97,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
       printContrastHigh,
     });
     
-    if (result.isMobile) {
-      toast.info("Toque no botão verde para imprimir", {
-        description: "Dispositivo móvel detectado - toque em 'Imprimir Pedido' na nova janela",
-      });
-    } else if (result.success) {
+    if (result.success) {
       toast.success("Pedido enviado para impressão");
     }
   };
