@@ -312,6 +312,25 @@ export default function MeuNegocio() {
     );
   }
 
+  if (!establishment) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <Building2 className="h-8 w-8 text-primary" />
+          <h1 className="text-2xl font-bold text-foreground">Meu Negócio</h1>
+        </div>
+        <Card>
+          <CardContent className="p-6 text-center space-y-2">
+            <p className="text-muted-foreground">Estabelecimento não encontrado.</p>
+            <p className="text-sm text-muted-foreground">
+              Tente sair e entrar novamente. Se o problema persistir, entre em contato com o suporte.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div 
       className="space-y-6"
