@@ -15,7 +15,7 @@ export function useEstablishment() {
         .from("establishments")
         .select("*")
         .eq("owner_id", user.id)
-        .single();
+        .maybeSingle();
 
       if (ownedEstablishment) return ownedEstablishment;
 
@@ -24,14 +24,14 @@ export function useEstablishment() {
         .from("establishment_members")
         .select("establishment_id")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       if (membership) {
         const { data: establishment } = await supabase
           .from("establishments")
           .select("*")
           .eq("id", membership.establishment_id)
-          .single();
+          .maybeSingle();
         return establishment;
       }
 
