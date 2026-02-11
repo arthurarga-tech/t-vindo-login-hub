@@ -10,20 +10,20 @@ let connected = false;
 
 // Setup certificate and signature (initially returns null = untrusted)
 export function setupSecurity(certificate?: string, privateKey?: string) {
-  qz.security.setCertificatePromise((resolve) => {
+  qz.security.setCertificatePromise(function(resolve: (cert: string | null) => void) {
     resolve(certificate || null);
   });
 
   qz.security.setSignatureAlgorithm("SHA512");
 
-  qz.security.setSignaturePromise(() => (resolve, reject) => {
-    if (privateKey) {
-      // Future: implement signing with privateKey via SubtleCrypto or backend
-      reject(new Error("Client-side signing not yet implemented"));
-    } else {
-      // Untrusted mode - QZ Tray will show "Allow" popup
-      resolve(null);
-    }
+  qz.security.setSignaturePromise(function(toSign: string) {
+    return function(resolve: (sig: string | null) => void, reject: (err: Error) => void) {
+      if (privateKey) {
+        reject(new Error("Client-side signing not yet implemented"));
+      } else {
+        resolve(null);
+      }
+    };
   });
 }
 
