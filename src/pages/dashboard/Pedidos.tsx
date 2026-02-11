@@ -120,7 +120,7 @@ export default function Pedidos() {
             return;
           }
           
-          const result = await printOrder({
+          await printOrder({
             order: freshOrder as Order,
             establishmentName,
             logoUrl,
@@ -132,13 +132,6 @@ export default function Pedidos() {
             printContrastHigh,
             qzPrintHtml: isQzMode && qzConnected ? qzPrintHtml : undefined,
           });
-          
-          // Show toast notifications based on result
-          if (result.isMobile) {
-            toast.info("Toque no botão verde para imprimir", {
-              description: "Dispositivo móvel detectado - toque em 'Imprimir Pedido' na nova janela",
-            });
-          }
         });
       }
     }
@@ -148,7 +141,7 @@ export default function Pedidos() {
 
   // Function to print an order from the card
   const handlePrintOrder = async (order: Order) => {
-    const result = await printOrder({
+    await printOrder({
       order,
       establishmentName,
       logoUrl,
@@ -160,10 +153,6 @@ export default function Pedidos() {
       printContrastHigh,
       qzPrintHtml: isQzMode && qzConnected ? qzPrintHtml : undefined,
     });
-    
-    if (result.isMobile) {
-      toast.info("Toque no botão verde para imprimir");
-    }
   };
 
   // Function to print on quick confirm (from OrderCard button)
@@ -171,7 +160,7 @@ export default function Pedidos() {
     if (!isPrintOnConfirm) return;
     
     try {
-      const result = await printOrder({
+      await printOrder({
         order,
         establishmentName,
         logoUrl,
@@ -183,10 +172,6 @@ export default function Pedidos() {
         printContrastHigh,
         qzPrintHtml: isQzMode && qzConnected ? qzPrintHtml : undefined,
       });
-      
-      if (result.isMobile) {
-        toast.info("Toque no botão verde para imprimir");
-      }
     } catch (error) {
       toast.error("Erro ao imprimir automaticamente");
     }
