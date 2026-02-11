@@ -315,24 +315,47 @@ export function usePrintOrder() {
       printContrastHigh
     );
 
-    // Helper function to wait for all images to load
-    const waitForImages = (doc: Document): Promise<void> => {
-      return new Promise((resolve) => {
-        const images = doc.querySelectorAll('img');
-        if (images.length === 0) { resolve(); return; }
-        let loadedCount = 0;
-        const checkComplete = () => { loadedCount++; if (loadedCount >= images.length) resolve(); };
-        images.forEach((img) => {
-          if (img.complete) { checkComplete(); } else { img.onload = () => checkComplete(); img.onerror = () => checkComplete(); }
-        });
-        setTimeout(() => resolve(), 5000);
-      });
-    };
+    // Use window.open as the primary method — works reliably on both desktop and mobile
+    // Hidden iframe print does NOT work on mobile Android (Chrome prints the parent page instead)
+    try {
+      const printWindow = window.open("", "_blank");
+      if (printWindow) {
+        printWindow.document.open();
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
 
-    // Use hidden iframe for printing (desktop and mobile)
+        // Wait for images to load
+        await new Promise<void>((resolve) => {
+          const images = printWindow.document.querySelectorAll('img');
+          if (images.length === 0) { resolve(); return; }
+          let loadedCount = 0;
+          const checkComplete = () => { loadedCount++; if (loadedCount >= images.length) resolve(); };
+          images.forEach((img) => {
+            if (img.complete) { checkComplete(); } else { img.onload = () => checkComplete(); img.onerror = () => checkComplete(); }
+          });
+          setTimeout(() => resolve(), 5000);
+        });
+
+        await new Promise(resolve => setTimeout(resolve, 300));
+        printWindow.focus();
+        printWindow.print();
+        
+        // Close after printing (with fallback timeout for browsers that don't support onafterprint)
+        printWindow.onafterprint = () => printWindow.close();
+        setTimeout(() => {
+          try { if (!printWindow.closed) printWindow.close(); } catch { /* window may already be closed */ }
+        }, 60000);
+
+        return { success: true };
+      }
+    } catch {
+      // window.open blocked — try iframe fallback for desktop
+    }
+
+    // Fallback: hidden iframe (works on desktop browsers where popups may be blocked)
     try {
       const iframe = document.createElement('iframe');
-      iframe.style.cssText = 'position: fixed; top: 0; left: 0; width: 0; height: 0; border: none; visibility: hidden;';
+      iframe.style.cssText = 'position: fixed; top: 0; left: 0; width: 58mm; height: 100vh; border: none; opacity: 0; pointer-events: none;';
       document.body.appendChild(iframe);
 
       const doc = iframe.contentDocument || iframe.contentWindow?.document;
@@ -341,35 +364,18 @@ export function usePrintOrder() {
         doc.write(htmlContent);
         doc.close();
         
-        await waitForImages(doc);
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        try {
-          iframe.contentWindow?.focus();
-          iframe.contentWindow?.print();
-        } catch {
-          // Print dialog may have been cancelled
-        }
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
         
-        setTimeout(() => { iframe.remove(); }, 2000);
+        setTimeout(() => { iframe.remove(); }, 3000);
         return { success: true };
       }
       
       iframe.remove();
     } catch {
-      // Fallback to window.open
-    }
-    
-    // Fallback: Use window.open if iframe fails
-    const printWindow = window.open("", "_blank", "width=300,height=600");
-    if (printWindow) {
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-      printWindow.onload = () => {
-        printWindow.print();
-        printWindow.onafterprint = () => printWindow.close();
-      };
-      return { success: true };
+      // Both methods failed
     }
     
     return { success: false };
