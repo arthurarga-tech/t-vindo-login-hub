@@ -24,13 +24,20 @@ import OrderConfirmationPage from "./pages/loja/OrderConfirmationPage";
 import OrderTrackingPage from "./pages/loja/OrderTrackingPage";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
+import { usePWAUpdate } from "@/hooks/usePWAUpdate";
 
 const queryClient = new QueryClient();
+
+function PWAUpdateHandler() {
+  usePWAUpdate();
+  return null;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
+        <PWAUpdateHandler />
         <Toaster />
         <Sonner />
         <BrowserRouter>
