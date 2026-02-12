@@ -9,6 +9,7 @@ interface OrderKanbanProps {
   orders: Order[];
   onOrderClick: (order: Order) => void;
   onPrint?: (order: Order) => void;
+  onQuickConfirmPrint?: (preOpenedWindow: Window | null, order: Order) => void;
 }
 
 interface KanbanColumn {
@@ -28,11 +29,7 @@ const columns: KanbanColumn[] = [
   { id: "completed", statuses: ["delivered", "picked_up", "served"], label: "Finalizados", color: "bg-green-500" },
 ];
 
-interface OrderKanbanPropsExtended extends OrderKanbanProps {
-  onQuickConfirmPrint?: (order: Order) => Promise<void>;
-}
-
-export function OrderKanban({ orders, onOrderClick, onPrint, onQuickConfirmPrint }: OrderKanbanPropsExtended) {
+export function OrderKanban({ orders, onOrderClick, onPrint, onQuickConfirmPrint }: OrderKanbanProps) {
   const updateStatus = useUpdateOrderStatus();
 
   const getOrdersByStatuses = (statuses: OrderStatus[]) => {
@@ -40,15 +37,21 @@ export function OrderKanban({ orders, onOrderClick, onPrint, onQuickConfirmPrint
   };
 
   const handleQuickStatusChange = async (order: Order, newStatus: OrderStatus) => {
+    // Pre-open print window IMMEDIATELY on user gesture before any await
+    let printWin: Window | null = null;
+    if (newStatus === "confirmed" && onQuickConfirmPrint) {
+      printWin = window.open("", "_blank");
+    }
+
     try {
       await updateStatus.mutateAsync({ orderId: order.id, status: newStatus });
       toast.success(`Pedido #${order.order_number} atualizado`);
       
-      // Auto print on confirm if callback provided
       if (newStatus === "confirmed" && onQuickConfirmPrint) {
-        await onQuickConfirmPrint(order);
+        onQuickConfirmPrint(printWin, order);
       }
     } catch (error) {
+      try { printWin?.close(); } catch { /* ignore */ }
       toast.error("Erro ao atualizar status");
     }
   };

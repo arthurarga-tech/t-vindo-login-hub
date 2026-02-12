@@ -21,7 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 export default function Pedidos() {
   const { data: orders, isLoading, refetch, hasNextPage, fetchNextPage, isFetchingNextPage } = useOrders();
   const { data: establishment } = useEstablishment();
-  const { printOrder } = usePrintOrder();
+  const { printOrder, printInWindow } = usePrintOrder();
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -61,12 +61,11 @@ export default function Pedidos() {
   const paymentCreditEnabled = (establishment as any)?.payment_credit_enabled ?? true;
   const paymentDebitEnabled = (establishment as any)?.payment_debit_enabled ?? true;
   const paymentCashEnabled = (establishment as any)?.payment_cash_enabled ?? true;
-  // Play notification sound and auto-print when new pending orders arrive
+  // Play notification sound and show print toast when new pending orders arrive
   useEffect(() => {
-    // Skip first load - don't print existing orders
+    // Skip first load
     if (previousPendingCountRef.current === null) {
       previousPendingCountRef.current = pendingCount;
-      // Mark existing pending orders as "already seen"
       if (orders) {
         orders.filter(o => o.status === "pending").forEach(o => {
           printedOrdersRef.current.add(o.id);
@@ -80,57 +79,63 @@ export default function Pedidos() {
       playNotificationSound();
     }
     
-    // Auto print on new order if configured (browser_on_order)
+    // Auto print on new order: show toast with print button (mobile requires user gesture)
     if (isPrintOnOrder && orders) {
       const newPendingOrders = orders.filter(
         (o) => o.status === "pending" && !printedOrdersRef.current.has(o.id)
       );
       
       if (newPendingOrders.length > 0) {
-        newPendingOrders.forEach(async (order) => {
+        newPendingOrders.forEach((order) => {
           printedOrdersRef.current.add(order.id);
           
-          // Delay para garantir que items e addons foram inseridos no banco
-          // O realtime dispara antes das inserções de items/addons serem concluídas
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          
-          // Buscar pedido atualizado com items e addons completos
-          const { data: freshOrder, error } = await supabase
-            .from("orders")
-            .select(`
-              *,
-              customer:customers(*),
-              items:order_items(*, addons:order_item_addons(*))
-            `)
-            .eq("id", order.id)
-            .single();
-          
-          if (error || !freshOrder) {
-            console.error("Erro ao buscar pedido para impressão:", error);
-            return;
-          }
-          
-          await printOrder({
-            order: freshOrder as Order,
-            establishmentName,
-            logoUrl,
-            printFontSize,
-            printMarginLeft,
-            printMarginRight,
-            printFontBold,
-            printLineHeight,
-            printContrastHigh,
+          // Show interactive toast — user clicks "Imprimir" which provides the gesture
+          toast(`🖨️ Novo pedido #${order.order_number}`, {
+            description: "Clique para imprimir",
+            duration: 15000,
+            action: {
+              label: "Imprimir",
+              onClick: async () => {
+                // Fetch fresh order with items/addons
+                const { data: freshOrder, error } = await supabase
+                  .from("orders")
+                  .select(`
+                    *,
+                    customer:customers(*),
+                    items:order_items(*, addons:order_item_addons(*))
+                  `)
+                  .eq("id", order.id)
+                  .single();
+                
+                if (error || !freshOrder) {
+                  toast.error("Erro ao buscar pedido para impressão");
+                  return;
+                }
+                
+                printOrder({
+                  order: freshOrder as Order,
+                  establishmentName,
+                  logoUrl,
+                  printFontSize,
+                  printMarginLeft,
+                  printMarginRight,
+                  printFontBold,
+                  printLineHeight,
+                  printContrastHigh,
+                });
+              },
+            },
           });
         });
       }
     }
     
     previousPendingCountRef.current = pendingCount;
-  }, [pendingCount, soundEnabled, orders, printMode, isPrintOnOrder, establishmentName, logoUrl, printOrder]);
+  }, [pendingCount, soundEnabled, orders, printMode, isPrintOnOrder, establishmentName, logoUrl, printOrder, printFontSize, printMarginLeft, printMarginRight, printFontBold, printLineHeight, printContrastHigh]);
 
-  // Function to print an order from the card
-  const handlePrintOrder = async (order: Order) => {
-    await printOrder({
+  // Function to print an order from the card (direct user click)
+  const handlePrintOrder = (order: Order) => {
+    printOrder({
       order,
       establishmentName,
       logoUrl,
@@ -143,26 +148,26 @@ export default function Pedidos() {
     });
   };
 
-  // Function to print on quick confirm (from OrderCard button)
-  const handleQuickConfirmPrint = useCallback(async (order: Order) => {
-    if (!isPrintOnConfirm) return;
-    
-    try {
-      await printOrder({
-        order,
-        establishmentName,
-        logoUrl,
-        printFontSize,
-        printMarginLeft,
-        printMarginRight,
-        printFontBold,
-        printLineHeight,
-        printContrastHigh,
-      });
-    } catch (error) {
-      toast.error("Erro ao imprimir automaticamente");
+  // Function to print on quick confirm using pre-opened window
+  const handleQuickConfirmPrint = useCallback((preOpenedWindow: Window | null, order: Order) => {
+    if (!isPrintOnConfirm) {
+      // Close the pre-opened window if print is not configured
+      try { preOpenedWindow?.close(); } catch { /* ignore */ }
+      return;
     }
-  }, [isPrintOnConfirm, printOrder, establishmentName, logoUrl, printFontSize, printMarginLeft, printMarginRight, printFontBold, printLineHeight, printContrastHigh]);
+    
+    printInWindow(preOpenedWindow, {
+      order,
+      establishmentName,
+      logoUrl,
+      printFontSize,
+      printMarginLeft,
+      printMarginRight,
+      printFontBold,
+      printLineHeight,
+      printContrastHigh,
+    });
+  }, [isPrintOnConfirm, printInWindow, establishmentName, logoUrl, printFontSize, printMarginLeft, printMarginRight, printFontBold, printLineHeight, printContrastHigh]);
 
   const playNotificationSound = () => {
     try {

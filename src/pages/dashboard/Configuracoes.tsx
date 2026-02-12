@@ -379,19 +379,28 @@ export default function Configuracoes() {
                 printLineHeight,
                 printContrastHigh,
               );
-              const iframe = document.createElement('iframe');
-              iframe.style.cssText = 'position: fixed; top: 0; left: 0; width: 0; height: 0; border: none; visibility: hidden;';
-              document.body.appendChild(iframe);
-              const doc = iframe.contentDocument || iframe.contentWindow?.document;
-              if (doc) {
-                doc.open();
-                doc.write(html);
-                doc.close();
-                setTimeout(() => {
-                  iframe.contentWindow?.focus();
-                  iframe.contentWindow?.print();
-                  setTimeout(() => iframe.remove(), 2000);
-                }, 300);
+              // Use window.open (same method as real printing) — works on mobile/Rawbt
+              const printWindow = window.open("", "_blank");
+              if (printWindow) {
+                printWindow.document.open();
+                printWindow.document.write(html);
+                printWindow.document.close();
+                const triggerPrint = () => {
+                  printWindow.focus();
+                  printWindow.print();
+                  printWindow.onafterprint = () => printWindow.close();
+                  setTimeout(() => { try { if (!printWindow.closed) printWindow.close(); } catch {} }, 60000);
+                };
+                const imgs = printWindow.document.querySelectorAll('img');
+                if (imgs.length === 0) { triggerPrint(); }
+                else {
+                  let cnt = 0;
+                  const done = () => { cnt++; if (cnt >= imgs.length) triggerPrint(); };
+                  imgs.forEach(img => img.complete ? done() : (img.onload = done, img.onerror = done));
+                  setTimeout(triggerPrint, 3000);
+                }
+              } else {
+                toast.error("Popup bloqueado. Permita popups para imprimir.");
               }
             }}
           >

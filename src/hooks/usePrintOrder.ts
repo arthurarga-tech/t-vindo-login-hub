@@ -26,12 +26,11 @@ function generateReceiptHtml(
   fontSize: number = 12, 
   marginLeft: number = 0, 
   marginRight: number = 0, 
-  _applyPrinterOffset: boolean = true, // kept for API compatibility, not used anymore
+  _applyPrinterOffset: boolean = true,
   fontBold: boolean = true,
   lineHeight: number = 1.4,
   highContrast: boolean = false
 ): string {
-  // Validate order data
   const safeOrder = {
     ...order,
     items: order.items || [],
@@ -44,7 +43,6 @@ function generateReceiptHtml(
     payment_method: order.payment_method || 'cash',
     created_at: order.created_at || new Date().toISOString(),
   };
-
 
   const orderTypeLabels: Record<string, string> = {
     delivery: "Entrega",
@@ -64,17 +62,14 @@ function generateReceiptHtml(
   const borderStyle = highContrast ? '2px dashed #000' : '1px dashed #000';
   const solidBorderStyle = highContrast ? '2px solid #000' : '1px solid #000';
 
-  // Centralizar: calcular padding esquerdo e direito baseado nas configurações
-  // marginLeft/Right positivo = mais padding, negativo = menos padding
-  const basePadding = 3; // 3mm base padding
+  const basePadding = 3;
   const finalPaddingLeft = Math.max(1, basePadding + marginLeft);
   const finalPaddingRight = Math.max(1, basePadding + marginRight);
 
-  // Validate logo URL and create logo HTML
   const hasValidLogo = logoUrl && logoUrl.trim() !== '';
   const logoHtml = hasValidLogo 
-    ? `<img src="${logoUrl}" alt="${establishmentName}" class="store-logo" onerror="console.error('[Print] Erro ao carregar logo:', this.src); this.style.display='none';" />`
-    : `<!-- Logo não definida -->`;
+    ? `<img src="${logoUrl}" alt="${establishmentName}" class="store-logo" onerror="this.style.display='none';" />`
+    : ``;
 
   return `<!DOCTYPE html>
 <html>
@@ -290,99 +285,120 @@ ${formatInSaoPaulo((order as any).scheduled_for, "dd/MM 'às' HH:mm", { locale: 
 </html>`;
 }
 
-export function usePrintOrder() {
-  const printOrder = useCallback(async ({
-    order,
-    establishmentName,
-    logoUrl,
-    printFontSize = 12,
-    printMarginLeft = 0,
-    printMarginRight = 0,
-    printFontBold = true,
-    printLineHeight = 1.4,
-    printContrastHigh = false,
-  }: PrintOrderOptions): Promise<PrintResult> => {
-    const htmlContent = generateReceiptHtml(
-      order, 
-      establishmentName, 
-      logoUrl, 
-      printFontSize, 
-      printMarginLeft, 
-      printMarginRight, 
-      true,
-      printFontBold,
-      printLineHeight,
-      printContrastHigh
-    );
+/**
+ * Write receipt HTML to a window and trigger print.
+ * The window MUST already be open (opened synchronously on user gesture).
+ */
+function writeAndPrint(win: Window, htmlContent: string) {
+  win.document.open();
+  win.document.write(htmlContent);
+  win.document.close();
 
-    // Use window.open as the primary method — works reliably on both desktop and mobile
-    // Hidden iframe print does NOT work on mobile Android (Chrome prints the parent page instead)
+  // Use onload to wait for images, then print
+  const triggerPrint = () => {
+    win.focus();
+    win.print();
+    win.onafterprint = () => win.close();
+    setTimeout(() => {
+      try { if (!win.closed) win.close(); } catch { /* already closed */ }
+    }, 60000);
+  };
+
+  // Check if images need loading
+  const images = win.document.querySelectorAll('img');
+  if (images.length === 0) {
+    triggerPrint();
+    return;
+  }
+
+  let loaded = 0;
+  const onImgReady = () => {
+    loaded++;
+    if (loaded >= images.length) triggerPrint();
+  };
+  images.forEach((img) => {
+    if (img.complete) onImgReady();
+    else { img.onload = onImgReady; img.onerror = onImgReady; }
+  });
+  // Fallback timeout
+  setTimeout(triggerPrint, 3000);
+}
+
+export function usePrintOrder() {
+  /**
+   * Generate receipt HTML from order options.
+   */
+  const buildHtml = useCallback((opts: PrintOrderOptions): string => {
+    return generateReceiptHtml(
+      opts.order,
+      opts.establishmentName,
+      opts.logoUrl,
+      opts.printFontSize ?? 12,
+      opts.printMarginLeft ?? 0,
+      opts.printMarginRight ?? 0,
+      true,
+      opts.printFontBold ?? true,
+      opts.printLineHeight ?? 1.4,
+      opts.printContrastHigh ?? false
+    );
+  }, []);
+
+  /**
+   * Print an order — opens window.open() immediately.
+   * MUST be called directly from a user gesture (click handler) with NO awaits before it.
+   */
+  const printOrder = useCallback((opts: PrintOrderOptions): PrintResult => {
+    const htmlContent = buildHtml(opts);
+
     try {
       const printWindow = window.open("", "_blank");
       if (printWindow) {
-        printWindow.document.open();
-        printWindow.document.write(htmlContent);
-        printWindow.document.close();
-
-        // Wait for images to load
-        await new Promise<void>((resolve) => {
-          const images = printWindow.document.querySelectorAll('img');
-          if (images.length === 0) { resolve(); return; }
-          let loadedCount = 0;
-          const checkComplete = () => { loadedCount++; if (loadedCount >= images.length) resolve(); };
-          images.forEach((img) => {
-            if (img.complete) { checkComplete(); } else { img.onload = () => checkComplete(); img.onerror = () => checkComplete(); }
-          });
-          setTimeout(() => resolve(), 5000);
-        });
-
-        await new Promise(resolve => setTimeout(resolve, 300));
-        printWindow.focus();
-        printWindow.print();
-        
-        // Close after printing (with fallback timeout for browsers that don't support onafterprint)
-        printWindow.onafterprint = () => printWindow.close();
-        setTimeout(() => {
-          try { if (!printWindow.closed) printWindow.close(); } catch { /* window may already be closed */ }
-        }, 60000);
-
+        writeAndPrint(printWindow, htmlContent);
         return { success: true };
       }
     } catch {
-      // window.open blocked — try iframe fallback for desktop
+      // popup blocked
     }
 
-    // Fallback: hidden iframe (works on desktop browsers where popups may be blocked)
+    // Desktop fallback: iframe (won't work on mobile but better than nothing)
     try {
       const iframe = document.createElement('iframe');
       iframe.style.cssText = 'position: fixed; top: 0; left: 0; width: 58mm; height: 100vh; border: none; opacity: 0; pointer-events: none;';
       document.body.appendChild(iframe);
-
       const doc = iframe.contentDocument || iframe.contentWindow?.document;
       if (doc) {
         doc.open();
         doc.write(htmlContent);
         doc.close();
-        
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-        
-        setTimeout(() => { iframe.remove(); }, 3000);
+        setTimeout(() => {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+          setTimeout(() => iframe.remove(), 3000);
+        }, 300);
         return { success: true };
       }
-      
       iframe.remove();
-    } catch {
-      // Both methods failed
-    }
-    
-    return { success: false };
-  }, []);
+    } catch { /* both failed */ }
 
-  return { printOrder };
+    return { success: false };
+  }, [buildHtml]);
+
+  /**
+   * Print into a pre-opened window. Use this when you need to await something
+   * between the user gesture and the actual print.
+   * 
+   * Pattern:
+   *   const win = window.open("", "_blank"); // on user click, synchronous
+   *   await someAsyncWork();
+   *   printInWindow(win, opts);
+   */
+  const printInWindow = useCallback((win: Window | null, opts: PrintOrderOptions) => {
+    if (!win || win.closed) return;
+    const htmlContent = buildHtml(opts);
+    writeAndPrint(win, htmlContent);
+  }, [buildHtml]);
+
+  return { printOrder, printInWindow, buildHtml };
 }
 
-// Export HTML generator for use in settings test
 export { generateReceiptHtml };
