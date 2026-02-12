@@ -7,22 +7,28 @@ interface OrderListProps {
   orders: Order[];
   onOrderClick: (order: Order) => void;
   onPrint?: (order: Order) => void;
-  onQuickConfirmPrint?: (order: Order) => Promise<void>;
+  onQuickConfirmPrint?: (preOpenedWindow: Window | null, order: Order) => void;
 }
 
 export function OrderList({ orders, onOrderClick, onPrint, onQuickConfirmPrint }: OrderListProps) {
   const updateStatus = useUpdateOrderStatus();
 
   const handleQuickStatusChange = async (order: Order, newStatus: OrderStatus) => {
+    // Pre-open print window IMMEDIATELY on user gesture before any await
+    let printWin: Window | null = null;
+    if (newStatus === "confirmed" && onQuickConfirmPrint) {
+      printWin = window.open("", "_blank");
+    }
+
     try {
       await updateStatus.mutateAsync({ orderId: order.id, status: newStatus });
       toast.success(`Pedido #${order.order_number} atualizado`);
       
-      // Auto print on confirm if callback provided
       if (newStatus === "confirmed" && onQuickConfirmPrint) {
-        await onQuickConfirmPrint(order);
+        onQuickConfirmPrint(printWin, order);
       }
     } catch (error) {
+      try { printWin?.close(); } catch { /* ignore */ }
       toast.error("Erro ao atualizar status");
     }
   };

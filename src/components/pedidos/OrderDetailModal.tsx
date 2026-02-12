@@ -63,7 +63,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
   const [editingItem, setEditingItem] = useState<OrderItem | null>(null);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const updateStatus = useUpdateOrderStatus();
-  const { printOrder } = usePrintOrder();
+  const { printOrder, printInWindow } = usePrintOrder();
   const { openWhatsApp } = useWhatsAppNotification();
   
   // Check if order can be edited (not cancelled, delivered, picked_up, or served)
@@ -84,8 +84,8 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
     ? statusFlow[currentStatusIndex - 1] 
     : null;
 
-  const handlePrint = async () => {
-    const result = await printOrder({
+  const handlePrint = () => {
+    const result = printOrder({
       order,
       establishmentName,
       logoUrl,
@@ -108,22 +108,38 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
       return;
     }
 
+    const isPrintOnConfirm = printMode && printMode.includes("on_confirm");
+    
+    // Pre-open print window IMMEDIATELY on user gesture (before any await)
+    // This preserves the user gesture context for mobile browsers / Rawbt
+    let printWin: Window | null = null;
+    if (isPrintOnConfirm && newStatus === "confirmed") {
+      printWin = window.open("", "_blank");
+    }
+
     try {
       await updateStatus.mutateAsync({ orderId: order.id, status: newStatus });
       toast.success(`Status atualizado para: ${statusDisplayConfig[newStatus].label}`);
       
-      const isPrintOnConfirm = printMode && printMode.includes("on_confirm");
-      
-      if (isPrintOnConfirm && newStatus === "confirmed") {
-        try {
-          await handlePrint();
-        } catch (printError) {
-          toast.error("Erro ao imprimir automaticamente");
-        }
+      // Print in pre-opened window after status update
+      if (printWin && !printWin.closed) {
+        printInWindow(printWin, {
+          order,
+          establishmentName,
+          logoUrl,
+          printFontSize,
+          printMarginLeft,
+          printMarginRight,
+          printFontBold,
+          printLineHeight,
+          printContrastHigh,
+        });
       }
       
       onClose();
     } catch (error) {
+      // Close pre-opened window on error
+      try { printWin?.close(); } catch { /* ignore */ }
       toast.error("Erro ao atualizar status");
     }
   };
