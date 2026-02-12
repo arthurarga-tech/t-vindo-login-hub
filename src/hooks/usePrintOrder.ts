@@ -294,11 +294,12 @@ function writeAndPrint(win: Window, htmlContent: string) {
   win.document.write(htmlContent);
   win.document.close();
 
-  // Use onload to wait for images, then print
   const triggerPrint = () => {
-    win.focus();
-    win.print();
-    // Do NOT auto-close — let user handle the window after printing
+    // Small delay to let mobile browser fully render the content
+    setTimeout(() => {
+      win.focus();
+      win.print();
+    }, 500);
   };
 
   // Check if images need loading
@@ -309,16 +310,21 @@ function writeAndPrint(win: Window, htmlContent: string) {
   }
 
   let loaded = 0;
+  const total = images.length;
+  let triggered = false;
   const onImgReady = () => {
     loaded++;
-    if (loaded >= images.length) triggerPrint();
+    if (loaded >= total && !triggered) {
+      triggered = true;
+      triggerPrint();
+    }
   };
   images.forEach((img) => {
     if (img.complete) onImgReady();
     else { img.onload = onImgReady; img.onerror = onImgReady; }
   });
-  // Fallback timeout
-  setTimeout(triggerPrint, 3000);
+  // Fallback if images take too long
+  setTimeout(() => { if (!triggered) { triggered = true; triggerPrint(); } }, 3000);
 }
 
 export function usePrintOrder() {
