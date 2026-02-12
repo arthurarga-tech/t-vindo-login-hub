@@ -79,53 +79,47 @@ export default function Pedidos() {
       playNotificationSound();
     }
     
-    // Auto print on new order: show toast with print button (mobile requires user gesture)
+    // Auto print on new order: open print page automatically
     if (isPrintOnOrder && orders) {
       const newPendingOrders = orders.filter(
         (o) => o.status === "pending" && !printedOrdersRef.current.has(o.id)
       );
       
       if (newPendingOrders.length > 0) {
-        newPendingOrders.forEach((order) => {
+        newPendingOrders.forEach(async (order) => {
           printedOrdersRef.current.add(order.id);
           
-          // Show interactive toast — user clicks "Imprimir" which provides the gesture
-          toast(`🖨️ Novo pedido #${order.order_number}`, {
-            description: "Clique para imprimir",
-            duration: 15000,
-            action: {
-              label: "Imprimir",
-              onClick: async () => {
-                // Fetch fresh order with items/addons
-                const { data: freshOrder, error } = await supabase
-                  .from("orders")
-                  .select(`
-                    *,
-                    customer:customers(*),
-                    items:order_items(*, addons:order_item_addons(*))
-                  `)
-                  .eq("id", order.id)
-                  .single();
-                
-                if (error || !freshOrder) {
-                  toast.error("Erro ao buscar pedido para impressão");
-                  return;
-                }
-                
-                printOrder({
-                  order: freshOrder as Order,
-                  establishmentName,
-                  logoUrl,
-                  printFontSize,
-                  printMarginLeft,
-                  printMarginRight,
-                  printFontBold,
-                  printLineHeight,
-                  printContrastHigh,
-                });
-              },
-            },
-          });
+          // Fetch fresh order with items/addons then open print window
+          try {
+            const { data: freshOrder, error } = await supabase
+              .from("orders")
+              .select(`
+                *,
+                customer:customers(*),
+                items:order_items(*, addons:order_item_addons(*))
+              `)
+              .eq("id", order.id)
+              .single();
+            
+            if (error || !freshOrder) {
+              toast.error("Erro ao buscar pedido para impressão");
+              return;
+            }
+            
+            printOrder({
+              order: freshOrder as Order,
+              establishmentName,
+              logoUrl,
+              printFontSize,
+              printMarginLeft,
+              printMarginRight,
+              printFontBold,
+              printLineHeight,
+              printContrastHigh,
+            });
+          } catch {
+            toast.error("Erro ao imprimir pedido automaticamente");
+          }
         });
       }
     }
