@@ -298,10 +298,7 @@ function writeAndPrint(win: Window, htmlContent: string) {
   const triggerPrint = () => {
     win.focus();
     win.print();
-    win.onafterprint = () => win.close();
-    setTimeout(() => {
-      try { if (!win.closed) win.close(); } catch { /* already closed */ }
-    }, 60000);
+    // Do NOT auto-close — let user handle the window after printing
   };
 
   // Check if images need loading
