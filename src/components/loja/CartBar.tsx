@@ -43,7 +43,7 @@ export function CartBar({ isStoreOpen = true, allowScheduling = false }: CartBar
     >
       <div className="max-w-4xl mx-auto">
         <Button 
-          className={`w-full h-12 sm:h-14 text-sm sm:text-base font-semibold ${!isStoreOpen && !allowScheduling ? 'opacity-70' : ''}`}
+          className={`w-full h-14 text-sm sm:text-base font-semibold ${!isStoreOpen && !allowScheduling ? 'opacity-70' : ''}`}
           size="lg"
           onClick={handleClick}
           style={{ 

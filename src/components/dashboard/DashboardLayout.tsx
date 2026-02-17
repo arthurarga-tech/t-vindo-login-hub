@@ -55,11 +55,11 @@ export function DashboardLayout() {
   const { data: establishment } = useEstablishment();
   
   // Update mobile browser theme-color with establishment's primary color
-  useThemeColor((establishment as any)?.theme_primary_color);
+  useThemeColor(establishment?.theme_primary_color);
   // Generate custom CSS variables for theme
   const customStyles = useMemo(() => {
-    const primaryColor = (establishment as any)?.theme_primary_color;
-    const secondaryColor = (establishment as any)?.theme_secondary_color;
+    const primaryColor = establishment?.theme_primary_color;
+    const secondaryColor = establishment?.theme_secondary_color;
     
     const styles: React.CSSProperties & { [key: string]: string } = {};
     

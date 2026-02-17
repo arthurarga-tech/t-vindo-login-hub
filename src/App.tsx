@@ -12,8 +12,8 @@ import Financeiro from "./pages/dashboard/Financeiro";
 import Catalogo from "./pages/dashboard/Catalogo";
 import MeuNegocio from "./pages/dashboard/MeuNegocio";
 import Clientes from "./pages/dashboard/Clientes";
-import Estoque from "./pages/dashboard/Estoque";
-import Delivery from "./pages/dashboard/Delivery";
+
+
 import Usuarios from "./pages/dashboard/Usuarios";
 import Configuracoes from "./pages/dashboard/Configuracoes";
 import MeuPlano from "./pages/dashboard/MeuPlano";
@@ -56,8 +56,8 @@ const App = () => (
               <Route path="catalogo" element={<Catalogo />} />
               <Route path="meu-negocio" element={<MeuNegocio />} />
               <Route path="clientes" element={<Clientes />} />
-              <Route path="estoque" element={<Estoque />} />
-              <Route path="delivery" element={<Delivery />} />
+
+
               <Route path="usuarios" element={<Usuarios />} />
               <Route path="meu-plano" element={<MeuPlano />} />
               <Route path="configuracoes" element={<Configuracoes />} />

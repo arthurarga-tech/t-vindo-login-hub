@@ -21,9 +21,9 @@ export function usePreparationTime() {
     queryFn: async (): Promise<PreparationTimeResult | null> => {
       if (!establishment?.id) return null;
 
-      const mode = ((establishment as any).preparation_time_mode || "auto_daily") as "auto_daily" | "manual";
-      const manualPrepTime = (establishment as any).manual_preparation_time || 30;
-      const manualDeliveryTime = (establishment as any).manual_delivery_time || 30;
+      const mode = (establishment.preparation_time_mode || "auto_daily") as "auto_daily" | "manual";
+      const manualPrepTime = establishment.manual_preparation_time || 30;
+      const manualDeliveryTime = establishment.manual_delivery_time || 30;
 
       // If manual mode, return configured values
       if (mode === "manual") {

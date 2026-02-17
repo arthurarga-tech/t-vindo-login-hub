@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useEstablishment } from "@/hooks/useEstablishment";
-import { useUserRole, AppRole } from "@/hooks/useUserRole";
+import { useUserRole, AppRole, roleLabels } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,12 +52,10 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { UserPlus, Pencil, Trash2, Users, Loader2, Eye, EyeOff } from "lucide-react";
 
-type MemberRole = AppRole;
-
 interface EstablishmentMember {
   id: string;
   user_id: string;
-  role: MemberRole;
+  role: AppRole;
   created_at: string;
   email?: string;
   profile?: {
@@ -66,16 +64,7 @@ interface EstablishmentMember {
   };
 }
 
-const roleLabels: Record<MemberRole, string> = {
-  owner: "Proprietário",
-  manager: "Gerente",
-  attendant: "Atendente",
-  kitchen: "Cozinha",
-  waiter: "Garçom",
-  employee: "Funcionário",
-};
-
-const roleBadgeVariants: Record<MemberRole, "default" | "secondary" | "outline"> = {
+const roleBadgeVariants: Record<AppRole, "default" | "secondary" | "outline"> = {
   owner: "default",
   manager: "secondary",
   attendant: "outline",
@@ -84,7 +73,7 @@ const roleBadgeVariants: Record<MemberRole, "default" | "secondary" | "outline">
   employee: "outline",
 };
 
-const assignableRoles: { value: MemberRole; label: string }[] = [
+const assignableRoles: { value: AppRole; label: string }[] = [
   { value: "manager", label: "Gerente" },
   { value: "attendant", label: "Atendente" },
   { value: "kitchen", label: "Cozinha" },
@@ -107,7 +96,7 @@ export default function Usuarios() {
   const [newPhone, setNewPhone] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [newRole, setNewRole] = useState<MemberRole>("attendant");
+  const [newRole, setNewRole] = useState<AppRole>("attendant");
   const [showPassword, setShowPassword] = useState(false);
 
   // Edit form state
@@ -115,7 +104,7 @@ export default function Usuarios() {
   const [editPhone, setEditPhone] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPassword, setEditPassword] = useState("");
-  const [editRole, setEditRole] = useState<MemberRole>("attendant");
+  const [editRole, setEditRole] = useState<AppRole>("attendant");
   const [showEditPassword, setShowEditPassword] = useState(false);
 
   useEffect(() => {
@@ -363,7 +352,7 @@ export default function Usuarios() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="add-role">Função</Label>
-                  <Select value={newRole} onValueChange={(v) => setNewRole(v as MemberRole)}>
+                  <Select value={newRole} onValueChange={(v) => setNewRole(v as AppRole)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -559,7 +548,7 @@ export default function Usuarios() {
             </div>
             <div className="space-y-2">
               <Label>Função</Label>
-              <Select value={editRole} onValueChange={(v) => setEditRole(v as MemberRole)}>
+              <Select value={editRole} onValueChange={(v) => setEditRole(v as AppRole)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

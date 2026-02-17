@@ -23,14 +23,14 @@ export function ProductCard({ product }: ProductCardProps) {
         aria-label={`Produto ${product.name}`}
       >
         <CardContent className="p-0">
-          <div className="flex flex-col sm:flex-row">
-            {/* Image first on mobile, right side on desktop */}
-            <div className="w-full h-32 sm:w-24 sm:h-24 sm:order-2 flex-shrink-0">
+          <div className="flex flex-row">
+            {/* Image on the right side */}
+            <div className="w-24 h-24 sm:w-28 sm:h-28 order-2 flex-shrink-0">
               {product.image_url ? (
                 <img
                   src={product.image_url}
                   alt={product.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover rounded-r-lg"
                   data-testid="product-card-image"
                 />
               ) : (
@@ -43,7 +43,7 @@ export function ProductCard({ product }: ProductCardProps) {
               )}
             </div>
             
-            <div className="flex-1 p-3 sm:p-4 sm:order-1">
+            <div className="flex-1 p-3 sm:p-4 order-1">
               <h3 
                 className="font-medium text-foreground line-clamp-2 text-sm sm:text-base"
                 data-testid="product-card-name"

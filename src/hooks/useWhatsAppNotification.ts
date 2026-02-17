@@ -43,13 +43,13 @@ export function useWhatsAppNotification() {
   const { data: establishment } = useEstablishment();
 
   const isEnabled = (): boolean => {
-    return (establishment as any)?.whatsapp_notifications_enabled === true;
+    return establishment?.whatsapp_notifications_enabled === true;
   };
 
   const getTemplates = (): Record<string, string> => {
-    const templates = (establishment as any)?.whatsapp_message_templates;
+    const templates = establishment?.whatsapp_message_templates;
     if (templates && typeof templates === "object") {
-      return { ...defaultTemplates, ...templates };
+      return { ...defaultTemplates, ...(templates as Record<string, string>) };
     }
     return defaultTemplates;
   };
