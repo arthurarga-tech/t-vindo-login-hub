@@ -119,26 +119,34 @@ export default function Usuarios() {
   const fetchMembers = async (establishmentId: string) => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      // Fetch members
+      const { data: membersData, error: membersError } = await supabase
         .from("establishment_members")
-        .select(`
-          id,
-          user_id,
-          role,
-          created_at,
-          profiles:user_id (
-            establishment_name,
-            phone
-          )
-        `)
+        .select("id, user_id, role, created_at")
         .eq("establishment_id", establishmentId)
         .order("created_at", { ascending: true });
 
-      if (error) throw error;
+      if (membersError) throw membersError;
 
-      const membersWithProfile = (data || []).map((member: any) => ({
+      if (!membersData || membersData.length === 0) {
+        setMembers([]);
+        return;
+      }
+
+      // Fetch profiles for all member user_ids
+      const userIds = membersData.map((m) => m.user_id);
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("user_id, establishment_name, phone")
+        .in("user_id", userIds);
+
+      const profileMap = new Map(
+        (profilesData || []).map((p) => [p.user_id, p])
+      );
+
+      const membersWithProfile = membersData.map((member) => ({
         ...member,
-        profile: member.profiles,
+        profile: profileMap.get(member.user_id) || null,
       }));
 
       setMembers(membersWithProfile);
