@@ -59,6 +59,7 @@ interface EstablishmentMember {
   user_id: string;
   role: MemberRole;
   created_at: string;
+  email?: string;
   profile?: {
     establishment_name: string | null;
     phone: string | null;
@@ -110,7 +111,12 @@ export default function Usuarios() {
   const [showPassword, setShowPassword] = useState(false);
 
   // Edit form state
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPassword, setEditPassword] = useState("");
   const [editRole, setEditRole] = useState<MemberRole>("attendant");
+  const [showEditPassword, setShowEditPassword] = useState(false);
 
   useEffect(() => {
     if (establishment?.id) {
@@ -121,7 +127,6 @@ export default function Usuarios() {
   const fetchMembers = async (establishmentId: string) => {
     try {
       setIsLoading(true);
-      // Fetch members
       const { data: membersData, error: membersError } = await supabase
         .from("establishment_members")
         .select("id, user_id, role, created_at")
@@ -135,7 +140,6 @@ export default function Usuarios() {
         return;
       }
 
-      // Fetch profiles for all member user_ids
       const userIds = membersData.map((m) => m.user_id);
       const { data: profilesData } = await supabase
         .from("profiles")
@@ -146,8 +150,22 @@ export default function Usuarios() {
         (profilesData || []).map((p) => [p.user_id, p])
       );
 
+      // Fetch emails via edge function (only for owners)
+      let emailMap: Record<string, string> = {};
+      if (isOwner) {
+        try {
+          const { data: emailData } = await supabase.functions.invoke("get-team-emails", {
+            body: { establishment_id: establishmentId, user_ids: userIds },
+          });
+          if (emailData?.emails) emailMap = emailData.emails;
+        } catch {
+          // non-critical, continue without emails
+        }
+      }
+
       const membersWithProfile = membersData.map((member) => ({
         ...member,
+        email: emailMap[member.user_id] || undefined,
         profile: profileMap.get(member.user_id) || null,
       }));
 
@@ -196,24 +214,33 @@ export default function Usuarios() {
   };
 
   const handleEditMember = async () => {
-    if (!selectedMember || !establishment?.id) return;
+    if (!selectedMember || !establishment?.id || !editName.trim()) return;
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from("establishment_members")
-        .update({ role: editRole })
-        .eq("id", selectedMember.id);
+      const { data, error } = await supabase.functions.invoke("update-team-member", {
+        body: {
+          member_id: selectedMember.id,
+          user_id: selectedMember.user_id,
+          establishment_id: establishment.id,
+          name: editName.trim(),
+          phone: editPhone.trim() || null,
+          role: editRole,
+          email: editEmail.trim() || undefined,
+          password: editPassword || undefined,
+        },
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-      toast.success("Função atualizada com sucesso!");
+      toast.success("Membro atualizado com sucesso!");
       await fetchMembers(establishment.id);
       setIsEditDialogOpen(false);
       setSelectedMember(null);
     } catch (error: any) {
       console.error("Error updating member:", error);
-      toast.error("Erro ao atualizar função");
+      toast.error(error.message || "Erro ao atualizar membro");
     } finally {
       setIsSubmitting(false);
     }
@@ -240,7 +267,12 @@ export default function Usuarios() {
 
   const openEditDialog = (member: EstablishmentMember) => {
     setSelectedMember(member);
+    setEditName(member.profile?.establishment_name || "");
+    setEditPhone(member.profile?.phone || "");
+    setEditEmail(member.email || "");
+    setEditPassword("");
     setEditRole(member.role);
+    setShowEditPassword(false);
     setIsEditDialogOpen(true);
   };
 
@@ -400,6 +432,9 @@ export default function Usuarios() {
                             <span className="text-xs text-muted-foreground ml-2">(você)</span>
                           )}
                         </p>
+                        {member.email && (
+                          <p className="text-sm text-muted-foreground">{member.email}</p>
+                        )}
                         <p className="text-sm text-muted-foreground">
                           {member.profile?.phone || "Sem telefone"}
                         </p>
@@ -461,16 +496,67 @@ export default function Usuarios() {
         </CardContent>
       </Card>
 
-      {/* Edit Role Dialog */}
+      {/* Edit Member Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar Função</DialogTitle>
+            <DialogTitle>Editar Membro</DialogTitle>
             <DialogDescription>
-              Altere a função do membro no estabelecimento.
+              Altere os dados do membro da equipe.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Nome</Label>
+              <Input
+                id="edit-name"
+                type="text"
+                placeholder="Nome do membro"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-phone">Telefone</Label>
+              <Input
+                id="edit-phone"
+                type="tel"
+                placeholder="(00) 00000-0000"
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">Email</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                placeholder="membro@email.com"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-password">Nova senha (deixe vazio para manter)</Label>
+              <div className="relative">
+                <Input
+                  id="edit-password"
+                  type={showEditPassword ? "text" : "password"}
+                  placeholder="Mínimo 6 caracteres"
+                  value={editPassword}
+                  onChange={(e) => setEditPassword(e.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full"
+                  onClick={() => setShowEditPassword(!showEditPassword)}
+                >
+                  {showEditPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
             <div className="space-y-2">
               <Label>Função</Label>
               <Select value={editRole} onValueChange={(v) => setEditRole(v as MemberRole)}>
@@ -491,7 +577,10 @@ export default function Usuarios() {
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleEditMember} disabled={isSubmitting}>
+            <Button
+              onClick={handleEditMember}
+              disabled={isSubmitting || !editName.trim() || (editPassword.length > 0 && editPassword.length < 6)}
+            >
               {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               Salvar
             </Button>
