@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useUserRole } from "@/hooks/useUserRole";
 import { ClipboardList, LayoutGrid, List, Volume2, VolumeX, RefreshCw, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 export default function Pedidos() {
   const { data: orders, isLoading, refetch, hasNextPage, fetchNextPage, isFetchingNextPage } = useOrders();
   const { data: establishment } = useEstablishment();
+  const { role } = useUserRole();
   const { printOrder, printInWindow } = usePrintOrder();
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -373,6 +375,7 @@ export default function Pedidos() {
           onOrderClick={setSelectedOrder}
           onPrint={handlePrintOrder}
           onQuickConfirmPrint={handleQuickConfirmPrint}
+          hideValues={role === "kitchen"}
         />
       ) : (
         <OrderList 
@@ -380,6 +383,7 @@ export default function Pedidos() {
           onOrderClick={setSelectedOrder}
           onPrint={handlePrintOrder}
           onQuickConfirmPrint={handleQuickConfirmPrint}
+          hideValues={role === "kitchen"}
         />
       )}
 

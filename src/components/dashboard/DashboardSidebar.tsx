@@ -16,6 +16,7 @@ import {
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import { useEstablishment } from "@/hooks/useEstablishment";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -41,23 +42,26 @@ import {
 import tavindoLogo from "@/assets/tavindo-logo.png";
 
 const menuItems = [
-  { title: "Gestão de Pedidos", url: "/dashboard/pedidos", icon: ClipboardList, testId: "pedidos" },
-  { title: "Financeiro", url: "/dashboard/financeiro", icon: DollarSign, testId: "financeiro" },
-  { title: "Catálogo", url: "/dashboard/catalogo", icon: BookOpen, testId: "catalogo" },
-  { title: "Meu Negócio", url: "/dashboard/meu-negocio", icon: Building2, testId: "meu-negocio" },
-  { title: "Clientes", url: "/dashboard/clientes", icon: Users, testId: "clientes" },
-  { title: "Usuários", url: "/dashboard/usuarios", icon: UserCog, testId: "usuarios" },
-  { title: "Meu Perfil", url: "/dashboard/meu-plano", icon: CreditCard, testId: "meu-plano" },
-  { title: "Configurações", url: "/dashboard/configuracoes", icon: Settings, testId: "configuracoes" },
+  { title: "Gestão de Pedidos", url: "/dashboard/pedidos", icon: ClipboardList, testId: "pedidos", permission: "pedidos" },
+  { title: "Financeiro", url: "/dashboard/financeiro", icon: DollarSign, testId: "financeiro", permission: "financeiro" },
+  { title: "Catálogo", url: "/dashboard/catalogo", icon: BookOpen, testId: "catalogo", permission: "catalogo" },
+  { title: "Meu Negócio", url: "/dashboard/meu-negocio", icon: Building2, testId: "meu-negocio", permission: "meu-negocio" },
+  { title: "Clientes", url: "/dashboard/clientes", icon: Users, testId: "clientes", permission: "clientes" },
+  { title: "Usuários", url: "/dashboard/usuarios", icon: UserCog, testId: "usuarios", permission: "usuarios" },
+  { title: "Meu Perfil", url: "/dashboard/meu-plano", icon: CreditCard, testId: "meu-plano", permission: "meu-plano" },
+  { title: "Configurações", url: "/dashboard/configuracoes", icon: Settings, testId: "configuracoes", permission: "configuracoes" },
 ];
 
 export function DashboardSidebar() {
   const { signOut } = useAuth();
   const { data: establishment, isLoading: isLoadingEstablishment } = useEstablishment();
+  const { canAccess } = useUserRole();
   const { setOpenMobile, isMobile } = useSidebar();
   const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
   const isTableEnabled = (establishment as any)?.service_table ?? false;
+
+  const filteredMenuItems = menuItems.filter((item) => canAccess(item.permission));
 
   const handleMenuItemClick = () => {
     if (isMobile) {
@@ -144,7 +148,7 @@ export function DashboardSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {menuItems.map((item, index) => (
+              {filteredMenuItems.map((item, index) => (
                 <>
                   <SidebarMenuItem key={item.title} role="menuitem">
                     <SidebarMenuButton asChild>
@@ -161,7 +165,7 @@ export function DashboardSidebar() {
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                  {index === 0 && (
+                  {index === 0 && canAccess("mesas") && (
                     <SidebarMenuItem key="mesas" role="menuitem">
                       <SidebarMenuButton asChild>
                         {isTableEnabled ? (
