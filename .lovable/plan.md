@@ -1,112 +1,133 @@
 
+# Auditoria Completa do Sistema Tavindo
 
-# Implementar Sistema de Usuarios com Funcoes e Permissoes
+## 1. BUGS ENCONTRADOS
 
-## Visao Geral
+### 1.1 Bug: `roleLabels` duplicado em `Usuarios.tsx` e `useUserRole.ts`
+O arquivo `Usuarios.tsx` define seu proprio `roleLabels` (linha 69-76) identico ao que ja existe em `useUserRole.ts` (linha 16-23). Alem de duplicacao, se alguem atualizar um e esquecer o outro, os labels ficam inconsistentes.
 
-Criar um sistema completo de gerenciamento de usuarios onde o proprietario pode adicionar membros com funcoes especificas (Gerente, Atendente, Cozinha, Garcom), cada um com acesso limitado a areas especificas do dashboard. O convite sera feito por email + senha temporaria.
+**Correcao**: Remover o `roleLabels` local de `Usuarios.tsx` e usar o exportado por `useUserRole`.
 
-## Funcoes e Permissoes de Acesso
+### 1.2 Bug: `formatPrice` duplicado em `StoreInfo.tsx`
+O arquivo `StoreInfo.tsx` (linha 58-63) define uma funcao `formatPrice` local identica a que existe em `src/lib/formatters.ts`. Isso viola a centralizacao feita na refatoracao anterior.
 
-```text
-+-------------+--------+-----------+----------+---------+---------+--------+----------+--------+-------+
-| Pagina      | Owner  | Gerente   | Atendente| Cozinha | Garcom  |
-+-------------+--------+-----------+----------+---------+---------+
-| Pedidos     |   X    |     X     |    X     |  X(*)   |   X     |
-| Mesas       |   X    |     X     |    X     |         |   X     |
-| Financeiro  |   X    |     X     |          |         |         |
-| Catalogo    |   X    |     X     |    X     |         |         |
-| Meu Negocio |   X    |     X     |          |         |         |
-| Clientes    |   X    |     X     |    X     |         |         |
-| Usuarios    |   X    |           |          |         |         |
-| Meu Plano   |   X    |           |          |         |         |
-| Configuracoes|  X    |     X     |          |         |         |
-+-------------+--------+-----------+----------+---------+---------+
+**Correcao**: Remover a funcao local e importar de `@/lib/formatters`.
 
-(*) Cozinha: acesso somente ao Kanban de pedidos, sem valores
-```
+### 1.3 Bug: Configuracoes.tsx - Loading state renderiza conteudo do WhatsApp
+No `Configuracoes.tsx`, o bloco de loading (linhas 144-246) renderiza acidentalmente o card de WhatsApp completo (com switches e campos funcionais) dentro do skeleton de carregamento. Isso acontece porque o JSX do card esta dentro do `return` do `if (isLoading)`.
 
-## Etapas de Implementacao
+**Correcao**: O loading state deve exibir apenas skeletons, sem cards interativos.
 
-### Etapa 1: Banco de Dados
+### 1.4 Bug: Warning de ref no `DialogFooter` em `Usuarios.tsx`
+O console mostra `Function components cannot be given refs` vindo de `DialogFooter` em `Usuarios.tsx`. Isso acontece porque o Radix Dialog tenta passar ref para `DialogFooter` que nao usa `forwardRef`.
 
-- Adicionar novos valores ao enum `establishment_role`: `attendant`, `kitchen`, `waiter`
-- Criar uma edge function `create-team-member` que:
-  - Recebe email, senha temporaria e role
-  - Cria o usuario via Supabase Admin API (`supabase.auth.admin.createUser`)
-  - Vincula ao estabelecimento na tabela `establishment_members`
-  - Cria o perfil na tabela `profiles`
-- Atualizar a RLS policy de `profiles` para permitir que owners vejam perfis dos membros do seu estabelecimento (necessario para exibir nomes na tabela de usuarios)
+**Correcao**: Garantir que DialogFooter nao receba ref indevido ou envolver em `<div>`.
 
-### Etapa 2: Hook de Permissoes (`useUserRole`)
+### 1.5 Bug: `DashboardSidebar` - Fragment sem `key` no map
+No `DashboardSidebar.tsx` (linha 152), o `<>` fragment dentro do `.map()` nao tem `key`. O `key` esta no `SidebarMenuItem` filho (linha 153), mas deveria estar no fragment.
 
-Criar um hook `useUserRole` que:
-- Busca o role do usuario logado na tabela `establishment_members`
-- Retorna o role e funcoes auxiliares como `canAccess(page)` e `isOwner`
-- Define o mapeamento de quais paginas cada role pode acessar
+**Correcao**: Usar `<Fragment key={item.title}>` ao inves de `<>`.
 
-### Etapa 3: Controle de Acesso no Sidebar
+### 1.6 Bug: `useOrderNotification` hook nao e utilizado no `Pedidos.tsx`
+O `Pedidos.tsx` tem sua propria implementacao de `playNotificationSound` inline (linhas 168-198), enquanto existe o hook `useOrderNotification.ts` com uma versao mais robusta (com AudioContext reutilizado e tratamento de suspend). A implementacao inline do Pedidos cria um novo AudioContext a cada chamada, o que pode causar problemas de memoria.
 
-- Filtrar os itens do menu com base no role do usuario
-- Cozinha ve apenas "Gestao de Pedidos"
-- Garcom ve "Gestao de Pedidos" e "Mesas"
-- Atendente ve Pedidos, Mesas, Catalogo, Clientes
-- Gerente ve tudo exceto Usuarios e Meu Plano
-- Owner ve tudo
+**Correcao**: Usar o hook `useOrderNotification` no `Pedidos.tsx`.
 
-### Etapa 4: Protecao de Rotas
+## 2. CODIGOS DUPLICADOS PARA UNIFICAR
 
-- Atualizar o `ProtectedRoute` ou criar um wrapper que redireciona para a primeira pagina permitida caso o usuario tente acessar uma rota nao autorizada
+### 2.1 Interface `DayHours` / `OpeningHours` duplicada em 4+ arquivos
+A mesma interface esta definida em: `StoreHeader.tsx`, `StoreInfo.tsx`, `useStoreOpeningHours.ts`, `ScheduleSelector.tsx`, `CheckoutForm.tsx`, e outros.
 
-### Etapa 5: Pagina de Usuarios (refatorar `Usuarios.tsx`)
+**Correcao**: Criar um arquivo `src/types/establishment.ts` e exportar as interfaces compartilhadas.
 
-- Formulario de adicao com campos: Email, Senha temporaria, Funcao (select com Gerente/Atendente/Cozinha/Garcom)
-- Chamar a edge function `create-team-member` ao submeter
-- Tabela com lista de membros mostrando nome, email, funcao, data de entrada
-- Botao de editar funcao (apenas owner)
-- Botao de remover membro (apenas owner)
-- Indicacao visual do proprietario (sem botoes de acao)
+### 2.2 Uso massivo de `(establishment as any)` - 358 ocorrencias em 18 arquivos
+O `useEstablishment` retorna dados sem tipagem, forcando `as any` em todo lugar. Isso ja foi identificado na auditoria anterior mas permanece.
 
-### Etapa 6: Ajuste no Kanban para Cozinha
+**Correcao**: Tipar o retorno de `useEstablishment` com a interface do Supabase `Tables<"establishments">`, eliminando todos os casts.
 
-- Quando o role for `kitchen`, ocultar valores monetarios nos cards de pedido
-- Mostrar apenas nome dos itens, quantidades e observacoes
+### 2.3 Logica de notificacao sonora duplicada
+`Pedidos.tsx` (linhas 168-198) e `useOrderNotification.ts` fazem a mesma coisa. O hook e mais robusto.
 
-## Detalhes Tecnicos
+**Correcao**: Remover a funcao inline de `Pedidos.tsx` e usar `useOrderNotification`.
 
-### Edge Function `create-team-member`
+### 2.4 Parametros de impressao repetidos em todo lugar
+Em `Pedidos.tsx`, as variaveis `printFontSize`, `printMarginLeft`, `printMarginRight`, `printFontBold`, `printLineHeight`, `printContrastHigh` sao extraidas com `as any` e passadas manualmente para varios componentes.
 
-```text
-POST /create-team-member
-Body: { email, password, role, establishment_id }
-Auth: Bearer token do owner
+**Correcao**: Criar um hook `usePrintSettings()` que retorna esses valores tipados do establishment.
 
-1. Verifica se o caller e owner do establishment
-2. Cria usuario via supabase.auth.admin.createUser()
-3. Insere em establishment_members (establishment_id, user_id, role)
-4. Insere em profiles (user_id, establishment_name, establishment_id)
-5. Retorna o novo membro criado
-```
+## 3. CODIGO MORTO / NAO UTILIZADO
 
-### Mapeamento de permissoes (useUserRole)
+### 3.1 Paginas placeholder sem funcionalidade
+- `src/pages/dashboard/Estoque.tsx` - apenas exibe "Em breve"
+- `src/pages/dashboard/Delivery.tsx` - apenas exibe "Em breve"
 
-```text
-const rolePermissions = {
-  owner:     ["pedidos","mesas","financeiro","catalogo","meu-negocio","clientes","usuarios","meu-plano","configuracoes"],
-  manager:   ["pedidos","mesas","financeiro","catalogo","meu-negocio","clientes","configuracoes"],
-  attendant: ["pedidos","mesas","catalogo","clientes"],
-  kitchen:   ["pedidos"],
-  waiter:    ["pedidos","mesas"],
-}
-```
+Essas paginas existem no roteamento mas nao tem funcionalidade. Nao estao no mapa de permissoes do `useUserRole` e nao aparecem no sidebar.
 
-### Arquivos a criar/modificar
+**Correcao**: Remover as rotas e arquivos, ou mantelos se houver planos de implementacao futura. Se mantidos, adicionar ao `ProtectedRoute` para evitar acesso direto via URL.
 
-1. **Criar** `supabase/functions/create-team-member/index.ts` -- edge function
-2. **Criar** `src/hooks/useUserRole.ts` -- hook de permissoes
-3. **Modificar** `src/components/dashboard/DashboardSidebar.tsx` -- filtrar menu por role
-4. **Modificar** `src/components/auth/ProtectedRoute.tsx` -- verificar permissao de rota
-5. **Modificar** `src/pages/dashboard/Usuarios.tsx` -- refatorar formulario e tabela
-6. **Modificar** `src/components/pedidos/OrderCard.tsx` -- ocultar valores para cozinha
-7. **Migrar** banco: adicionar valores ao enum `establishment_role`
+### 3.2 `src/components/ui/use-toast.ts` - re-export desnecessario
+O arquivo `src/components/ui/use-toast.ts` apenas re-exporta `useToast` e `toast` do `src/hooks/use-toast.ts`. Os importadores poderiam importar diretamente.
 
+**Correcao**: Manter como esta (padrao do shadcn/ui) para compatibilidade, pois e usado em `LoginCard.tsx`, `ResetPassword.tsx` e `toaster.tsx`.
+
+### 3.3 `type MemberRole = AppRole` alias desnecessario
+Em `Usuarios.tsx` (linha 55), `type MemberRole = AppRole` e um alias sem adicionar valor.
+
+**Correcao**: Usar `AppRole` diretamente.
+
+## 4. MELHORIAS DE UX MOBILE NA LOJA PUBLICA
+
+### 4.1 ProductCard - Imagem ocupa muito espaco no mobile
+No `ProductCard.tsx`, a imagem ocupa `h-32` (128px) de altura no mobile com largura total. Isso empurra o conteudo para baixo e reduz a quantidade de produtos visiveis "above the fold".
+
+**Correcao**: Usar layout horizontal (imagem menor ao lado) no mobile, similar ao iFood/Rappi. Exemplo: `flex-row` com imagem de `w-24 h-24`.
+
+### 4.2 CartBar - Area de toque pequena no mobile
+O `CartBar.tsx` tem `h-12` no mobile (`sm:h-14`), que esta no limite minimo de 44px recomendado para alvos de toque.
+
+**Correcao**: Aumentar para `h-14` no mobile para melhor acessibilidade.
+
+### 4.3 ProductDetailModal - Scroll pode ser dificil em telas pequenas
+O modal usa `max-h-[90vh]` mas nao tem scroll suave no iOS.
+
+**Correcao**: Adicionar `-webkit-overflow-scrolling: touch` e considerar usar `Drawer` (vaul) no mobile ao inves de `Dialog`.
+
+## 5. RESUMO DAS ACOES
+
+### Prioridade Alta (Bugs)
+1. Corrigir loading state do `Configuracoes.tsx` que renderiza cards interativos
+2. Corrigir Fragment sem key no `DashboardSidebar.tsx`
+3. Substituir `playNotificationSound` inline por `useOrderNotification` hook
+
+### Prioridade Media (Duplicacao)
+4. Remover `roleLabels` duplicado de `Usuarios.tsx`
+5. Remover `formatPrice` duplicado de `StoreInfo.tsx`
+6. Criar tipos compartilhados `DayHours`/`OpeningHours` em `src/types/establishment.ts`
+7. Tipar `useEstablishment` para eliminar `as any`
+8. Criar hook `usePrintSettings` para centralizar parametros de impressao
+9. Remover alias `MemberRole`
+
+### Prioridade Baixa (UX Mobile)
+10. Melhorar layout do `ProductCard` no mobile (horizontal)
+11. Aumentar area de toque do `CartBar`
+12. Considerar Drawer no mobile para `ProductDetailModal`
+
+### Detalhes Tecnicos
+
+**Arquivos a modificar:**
+- `src/pages/dashboard/Configuracoes.tsx` - corrigir loading state
+- `src/components/dashboard/DashboardSidebar.tsx` - Fragment key
+- `src/pages/dashboard/Pedidos.tsx` - usar useOrderNotification + usePrintSettings
+- `src/pages/dashboard/Usuarios.tsx` - remover duplicacoes
+- `src/components/loja/StoreInfo.tsx` - remover formatPrice local
+- `src/components/loja/ProductCard.tsx` - layout mobile horizontal
+- `src/components/loja/CartBar.tsx` - area de toque
+- `src/hooks/useEstablishment.ts` - adicionar tipagem
+
+**Arquivos a criar:**
+- `src/types/establishment.ts` - tipos compartilhados
+- `src/hooks/usePrintSettings.ts` - hook de configuracoes de impressao
+
+**Arquivos candidatos a remocao (se nao houver planos):**
+- `src/pages/dashboard/Estoque.tsx`
+- `src/pages/dashboard/Delivery.tsx`
