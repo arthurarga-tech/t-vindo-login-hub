@@ -1,123 +1,112 @@
 
 
-# Corrigir Impressao Mobile (Rawbt) - Plano por Etapas
+# Implementar Sistema de Usuarios com Funcoes e Permissoes
 
-## Problema
+## Visao Geral
 
-No mobile Android com Rawbt, a impressao nao funciona em nenhuma das 3 modalidades:
-1. Clique manual no icone de impressora -- nao imprime o recibo correto
-2. Imprimir ao receber pedido -- abre pagina errada/vazia
-3. Imprimir ao confirmar -- mesma falha
+Criar um sistema completo de gerenciamento de usuarios onde o proprietario pode adicionar membros com funcoes especificas (Gerente, Atendente, Cozinha, Garcom), cada um com acesso limitado a areas especificas do dashboard. O convite sera feito por email + senha temporaria.
 
-A causa raiz e que o Android Chrome (e o Rawbt que intercepta o print dialog) tem restricoes rigorosas:
-- `window.print()` chamado apos `await` ou `setTimeout` perde o contexto de gesto do usuario
-- Iframes ocultos (`visibility: hidden`, `width: 0`) nao funcionam no mobile -- o Android imprime a pagina pai
-- Auto-print disparado por `useEffect` (sem gesto direto do usuario) e bloqueado
+## Funcoes e Permissoes de Acesso
 
-## Solucao em 3 Etapas
+```text
++-------------+--------+-----------+----------+---------+---------+--------+----------+--------+-------+
+| Pagina      | Owner  | Gerente   | Atendente| Cozinha | Garcom  |
++-------------+--------+-----------+----------+---------+---------+
+| Pedidos     |   X    |     X     |    X     |  X(*)   |   X     |
+| Mesas       |   X    |     X     |    X     |         |   X     |
+| Financeiro  |   X    |     X     |          |         |         |
+| Catalogo    |   X    |     X     |    X     |         |         |
+| Meu Negocio |   X    |     X     |          |         |         |
+| Clientes    |   X    |     X     |    X     |         |         |
+| Usuarios    |   X    |           |          |         |         |
+| Meu Plano   |   X    |           |          |         |         |
+| Configuracoes|  X    |     X     |          |         |         |
++-------------+--------+-----------+----------+---------+---------+
 
-### Etapa 1: Corrigir impressao manual (clique no icone)
+(*) Cozinha: acesso somente ao Kanban de pedidos, sem valores
+```
 
-**Arquivo:** `src/hooks/usePrintOrder.ts`
+## Etapas de Implementacao
 
-Reescrever o metodo `printOrder` para ser mais direto e compativel com mobile:
-- Usar `window.open()` com o HTML completo ja escrito
-- Chamar `window.print()` de forma sincrona, sem `await` intermediario
-- Eliminar o `await new Promise(resolve => setTimeout(resolve, 300))` que quebra o gesto
-- Para logos, usar `onload` do window ao inves de polling manual de imagens
-- Manter iframe como fallback para desktop com popup bloqueado, mas com `opacity: 0` e dimensoes reais (`width: 58mm`)
+### Etapa 1: Banco de Dados
 
-**Arquivo:** `src/pages/dashboard/Configuracoes.tsx`
+- Adicionar novos valores ao enum `establishment_role`: `attendant`, `kitchen`, `waiter`
+- Criar uma edge function `create-team-member` que:
+  - Recebe email, senha temporaria e role
+  - Cria o usuario via Supabase Admin API (`supabase.auth.admin.createUser`)
+  - Vincula ao estabelecimento na tabela `establishment_members`
+  - Cria o perfil na tabela `profiles`
+- Atualizar a RLS policy de `profiles` para permitir que owners vejam perfis dos membros do seu estabelecimento (necessario para exibir nomes na tabela de usuarios)
 
-Corrigir o botao "Imprimir Teste" que usa iframe oculto com `visibility: hidden` e `width: 0`:
-- Trocar para usar `window.open()` igual ao metodo principal
-- Garantir consistencia: todos os pontos de impressao usam o mesmo caminho
+### Etapa 2: Hook de Permissoes (`useUserRole`)
 
-### Etapa 2: Corrigir auto-impressao ao receber pedido
+Criar um hook `useUserRole` que:
+- Busca o role do usuario logado na tabela `establishment_members`
+- Retorna o role e funcoes auxiliares como `canAccess(page)` e `isOwner`
+- Define o mapeamento de quais paginas cada role pode acessar
 
-**Arquivo:** `src/pages/dashboard/Pedidos.tsx`
+### Etapa 3: Controle de Acesso no Sidebar
 
-O auto-print dispara dentro de um `useEffect` + `forEach(async ...)` com `await setTimeout` de 1500ms. Isso nao tem gesto do usuario.
+- Filtrar os itens do menu com base no role do usuario
+- Cozinha ve apenas "Gestao de Pedidos"
+- Garcom ve "Gestao de Pedidos" e "Mesas"
+- Atendente ve Pedidos, Mesas, Catalogo, Clientes
+- Gerente ve tudo exceto Usuarios e Meu Plano
+- Owner ve tudo
 
-Solucao: Quando `isPrintOnOrder` esta ativo e chega um novo pedido:
-- Em vez de chamar `printOrder()` diretamente (que abre print dialog sem gesto), mostrar um **toast interativo** com botao "Imprimir" que o usuario clica
-- Isso mantem o gesto do usuario direto no `onClick` do botao
-- Alternativa: navegar o usuario para uma pagina de impressao dedicada
+### Etapa 4: Protecao de Rotas
 
-A logica de buscar o pedido fresco com items/addons continua, mas a chamada `printOrder` so acontece quando o usuario clica no toast.
+- Atualizar o `ProtectedRoute` ou criar um wrapper que redireciona para a primeira pagina permitida caso o usuario tente acessar uma rota nao autorizada
 
-### Etapa 3: Corrigir impressao ao confirmar pedido
+### Etapa 5: Pagina de Usuarios (refatorar `Usuarios.tsx`)
 
-**Arquivo:** `src/components/pedidos/OrderDetailModal.tsx`
+- Formulario de adicao com campos: Email, Senha temporaria, Funcao (select com Gerente/Atendente/Cozinha/Garcom)
+- Chamar a edge function `create-team-member` ao submeter
+- Tabela com lista de membros mostrando nome, email, funcao, data de entrada
+- Botao de editar funcao (apenas owner)
+- Botao de remover membro (apenas owner)
+- Indicacao visual do proprietario (sem botoes de acao)
 
-No `handleStatusChange`, apos `await updateStatus.mutateAsync(...)`, chama `handlePrint()`. O problema e que o `await` anterior quebra o contexto de gesto.
+### Etapa 6: Ajuste no Kanban para Cozinha
 
-Solucao:
-- Disparar a impressao **antes** de esperar a mutacao, ou usar uma estrategia de dois passos
-- Melhor abordagem: abrir a janela de impressao imediatamente no click (reservando o `window.open`), depois preencher o conteudo apos a mutacao completar
-
-**Arquivos:** `src/components/pedidos/OrderKanban.tsx` e `src/components/pedidos/OrderList.tsx`
-
-O quick confirm tambem chama `onQuickConfirmPrint` apos `await updateStatus.mutateAsync`. Mesma correcao: abrir window imediatamente no gesto.
+- Quando o role for `kitchen`, ocultar valores monetarios nos cards de pedido
+- Mostrar apenas nome dos itens, quantidades e observacoes
 
 ## Detalhes Tecnicos
 
-### Padrao de impressao unificado (usePrintOrder.ts)
+### Edge Function `create-team-member`
 
 ```text
-Gesto do usuario (click)
-    |
-    v
-window.open("", "_blank")  <-- abre IMEDIATAMENTE no gesto
-    |
-    v
-document.write(htmlContent)
-    |
-    v
-window.print()  <-- sem awaits entre open e print
+POST /create-team-member
+Body: { email, password, role, establishment_id }
+Auth: Bearer token do owner
+
+1. Verifica se o caller e owner do establishment
+2. Cria usuario via supabase.auth.admin.createUser()
+3. Insere em establishment_members (establishment_id, user_id, role)
+4. Insere em profiles (user_id, establishment_name, establishment_id)
+5. Retorna o novo membro criado
 ```
 
-Para auto-print (receber pedido), como nao ha gesto:
+### Mapeamento de permissoes (useUserRole)
 
 ```text
-Novo pedido chega (realtime)
-    |
-    v
-Toast: "Novo pedido #123! [Imprimir]"  <-- usuario clica = gesto
-    |
-    v
-printOrder() com window.open + print
+const rolePermissions = {
+  owner:     ["pedidos","mesas","financeiro","catalogo","meu-negocio","clientes","usuarios","meu-plano","configuracoes"],
+  manager:   ["pedidos","mesas","financeiro","catalogo","meu-negocio","clientes","configuracoes"],
+  attendant: ["pedidos","mesas","catalogo","clientes"],
+  kitchen:   ["pedidos"],
+  waiter:    ["pedidos","mesas"],
+}
 ```
 
-Para confirmar pedido, onde ha gesto mas com await no meio:
+### Arquivos a criar/modificar
 
-```text
-Click "Confirmar"
-    |
-    v
-const printWin = window.open("", "_blank")  <-- reserva janela no gesto
-    |
-    v
-await updateStatus.mutateAsync(...)
-    |
-    v
-printWin.document.write(html) + printWin.print()  <-- usa janela ja aberta
-```
-
-### Arquivos a modificar
-
-1. `src/hooks/usePrintOrder.ts` -- simplificar, remover delays desnecessarios, adicionar metodo que recebe janela pre-aberta
-2. `src/pages/dashboard/Pedidos.tsx` -- trocar auto-print por toast com botao
-3. `src/components/pedidos/OrderDetailModal.tsx` -- pre-abrir window no gesto antes do await
-4. `src/components/pedidos/OrderKanban.tsx` -- pre-abrir window no gesto
-5. `src/components/pedidos/OrderList.tsx` -- pre-abrir window no gesto
-6. `src/pages/dashboard/Configuracoes.tsx` -- corrigir botao teste para usar window.open
-
-### Resultado esperado
-
-- Clique manual no icone de impressora: abre Rawbt com o recibo correto
-- Imprimir ao receber: toast aparece, usuario clica "Imprimir", Rawbt abre com recibo
-- Imprimir ao confirmar: ao clicar confirmar, Rawbt abre com recibo imediatamente
-- Botao teste em Configuracoes: funciona igual no mobile
-- Desktop: continua funcionando normalmente com window.open ou fallback iframe
+1. **Criar** `supabase/functions/create-team-member/index.ts` -- edge function
+2. **Criar** `src/hooks/useUserRole.ts` -- hook de permissoes
+3. **Modificar** `src/components/dashboard/DashboardSidebar.tsx` -- filtrar menu por role
+4. **Modificar** `src/components/auth/ProtectedRoute.tsx` -- verificar permissao de rota
+5. **Modificar** `src/pages/dashboard/Usuarios.tsx` -- refatorar formulario e tabela
+6. **Modificar** `src/components/pedidos/OrderCard.tsx` -- ocultar valores para cozinha
+7. **Migrar** banco: adicionar valores ao enum `establishment_role`
 
