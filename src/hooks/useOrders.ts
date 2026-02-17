@@ -164,7 +164,7 @@ export function useOrders() {
         },
         () => {
           // Check if notification sound is enabled
-          const isSoundEnabled = (establishment as any).notification_sound_enabled !== false;
+          const isSoundEnabled = establishment.notification_sound_enabled !== false;
           if (isSoundEnabled) {
             playNotificationSound();
           }

@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import type { Establishment } from "@/types/establishment";
 
 export function useEstablishment() {
   const { user } = useAuth();
 
-  return useQuery({
+  return useQuery<Establishment | null>({
     queryKey: ["establishment", user?.id],
     queryFn: async () => {
       if (!user?.id) return null;

@@ -14,16 +14,21 @@ import { startOfDay, startOfWeek, startOfMonth, subDays, isAfter } from "date-fn
 import { getNowInSaoPaulo } from "@/lib/dateUtils";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { usePrintOrder } from "@/hooks/usePrintOrder";
+import { usePrintSettings } from "@/hooks/usePrintSettings";
+import { useOrderNotification } from "@/hooks/useOrderNotification";
 import { PreparationTimeConfig } from "@/components/pedidos/PreparationTimeConfig";
 import { StoreQuickClose } from "@/components/pedidos/StoreQuickClose";
 import { QuickOrderModal } from "@/components/pedidos/QuickOrderModal";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+
 export default function Pedidos() {
   const { data: orders, isLoading, refetch, hasNextPage, fetchNextPage, isFetchingNextPage } = useOrders();
   const { data: establishment } = useEstablishment();
   const { role } = useUserRole();
   const { printOrder, printInWindow } = usePrintOrder();
+  const { printFontSize, printMarginLeft, printMarginRight, printFontBold, printLineHeight, printContrastHigh, printMode, isPrintOnOrder, isPrintOnConfirm } = usePrintSettings();
+  const { playNotificationSound } = useOrderNotification();
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -41,28 +46,18 @@ export default function Pedidos() {
   const pendingOrders = orders?.filter((o) => o.status === "pending") || [];
   const pendingCount = pendingOrders.length;
   
-  // Print mode: browser only
-  const printMode = ((establishment as any)?.print_mode || "none") as string;
-  const isPrintOnOrder = printMode.includes("on_order");
-  const isPrintOnConfirm = printMode.includes("on_confirm");
-  
   const establishmentName = establishment?.name || "Estabelecimento";
   const logoUrl = establishment?.logo_url;
-  const printFontSize = (establishment as any)?.print_font_size || 12;
-  const printMarginLeft = (establishment as any)?.print_margin_left || 0;
-  const printMarginRight = (establishment as any)?.print_margin_right || 0;
-  const printFontBold = (establishment as any)?.print_font_bold !== false;
-  const printLineHeight = (establishment as any)?.print_line_height || 1.4;
-  const printContrastHigh = (establishment as any)?.print_contrast_high === true;
   
   // Temporary closed state
-  const isTemporaryClosed = (establishment as any)?.temporary_closed ?? false;
+  const isTemporaryClosed = establishment?.temporary_closed ?? false;
   
   // Payment method settings for quick order
-  const paymentPixEnabled = (establishment as any)?.payment_pix_enabled ?? true;
-  const paymentCreditEnabled = (establishment as any)?.payment_credit_enabled ?? true;
-  const paymentDebitEnabled = (establishment as any)?.payment_debit_enabled ?? true;
-  const paymentCashEnabled = (establishment as any)?.payment_cash_enabled ?? true;
+  const paymentPixEnabled = establishment?.payment_pix_enabled ?? true;
+  const paymentCreditEnabled = establishment?.payment_credit_enabled ?? true;
+  const paymentDebitEnabled = establishment?.payment_debit_enabled ?? true;
+  const paymentCashEnabled = establishment?.payment_cash_enabled ?? true;
+
   // Play notification sound and show print toast when new pending orders arrive
   useEffect(() => {
     // Skip first load
@@ -127,7 +122,7 @@ export default function Pedidos() {
     }
     
     previousPendingCountRef.current = pendingCount;
-  }, [pendingCount, soundEnabled, orders, printMode, isPrintOnOrder, establishmentName, logoUrl, printOrder, printFontSize, printMarginLeft, printMarginRight, printFontBold, printLineHeight, printContrastHigh]);
+  }, [pendingCount, soundEnabled, orders, printMode, isPrintOnOrder, establishmentName, logoUrl, printOrder, printFontSize, printMarginLeft, printMarginRight, printFontBold, printLineHeight, printContrastHigh, playNotificationSound]);
 
   // Function to print an order from the card (direct user click)
   const handlePrintOrder = (order: Order) => {
@@ -164,38 +159,6 @@ export default function Pedidos() {
       printContrastHigh,
     });
   }, [isPrintOnConfirm, printInWindow, establishmentName, logoUrl, printFontSize, printMarginLeft, printMarginRight, printFontBold, printLineHeight, printContrastHigh]);
-
-  const playNotificationSound = () => {
-    try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      oscillator.frequency.value = 800;
-      oscillator.type = "sine";
-      gainNode.gain.value = 0.3;
-
-      oscillator.start();
-      oscillator.stop(audioContext.currentTime + 0.3);
-
-      setTimeout(() => {
-        const osc2 = audioContext.createOscillator();
-        const gain2 = audioContext.createGain();
-        osc2.connect(gain2);
-        gain2.connect(audioContext.destination);
-        osc2.frequency.value = 1000;
-        osc2.type = "sine";
-        gain2.gain.value = 0.3;
-        osc2.start();
-        osc2.stop(audioContext.currentTime + 0.3);
-      }, 200);
-    } catch {
-      // Audio notification not supported
-    }
-  };
 
   // Infinite scroll handler
   const loadMoreRef = useRef<HTMLDivElement>(null);

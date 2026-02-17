@@ -109,42 +109,42 @@ export default function MeuNegocio() {
     if (establishment) {
       setName(establishment.name || "");
       setSlug(establishment.slug || "");
-      setDescription((establishment as any).description || "");
-      setLogoUrl((establishment as any).logo_url || "");
-      setBannerUrl((establishment as any).banner_url || "");
-      setPhone((establishment as any).phone || "");
-      setAddress((establishment as any).address || "");
-      setNeighborhood((establishment as any).neighborhood || "");
-      setCity((establishment as any).city || "");
-      setDeliveryInfo((establishment as any).delivery_info || "");
-      setMinOrderValue((establishment as any).min_order_value?.toString() || "");
-      setDeliveryFee((establishment as any).delivery_fee?.toString() || "");
+      setDescription(establishment.description || "");
+      setLogoUrl(establishment.logo_url || "");
+      setBannerUrl(establishment.banner_url || "");
+      setPhone(establishment.phone || "");
+      setAddress(establishment.address || "");
+      setNeighborhood(establishment.neighborhood || "");
+      setCity(establishment.city || "");
+      setDeliveryInfo(establishment.delivery_info || "");
+      setMinOrderValue(establishment.min_order_value?.toString() || "");
+      setDeliveryFee(establishment.delivery_fee?.toString() || "");
       
-      const hours = (establishment as any).opening_hours;
+      const hours = establishment.opening_hours;
       if (hours && typeof hours === "object") {
-        setOpeningHours({ ...defaultOpeningHours, ...hours });
+        setOpeningHours({ ...defaultOpeningHours, ...(hours as Record<string, any>) });
       }
       
       // Service modalities
-      setServiceDelivery((establishment as any).service_delivery ?? true);
-      setServicePickup((establishment as any).service_pickup ?? false);
-      setServiceDineIn((establishment as any).service_dine_in ?? false);
-      setServiceTable((establishment as any).service_table ?? false);
+      setServiceDelivery(establishment.service_delivery ?? true);
+      setServicePickup(establishment.service_pickup ?? false);
+      setServiceDineIn(establishment.service_dine_in ?? false);
+      setServiceTable(establishment.service_table ?? false);
       
       // Scheduling
-      setAllowScheduling((establishment as any).allow_scheduling ?? false);
+      setAllowScheduling(establishment.allow_scheduling ?? false);
       
       // Location sharing
-      setLocationSharingEnabled((establishment as any).location_sharing_enabled ?? true);
+      setLocationSharingEnabled(establishment.location_sharing_enabled ?? true);
       
       // Payment methods
-      setPaymentPixEnabled((establishment as any).payment_pix_enabled ?? true);
-      setPaymentCreditEnabled((establishment as any).payment_credit_enabled ?? true);
-      setPaymentDebitEnabled((establishment as any).payment_debit_enabled ?? true);
-      setPaymentCashEnabled((establishment as any).payment_cash_enabled ?? true);
-      setPixKey((establishment as any).pix_key || "");
-      setPixKeyType((establishment as any).pix_key_type || "");
-      setPixHolderName((establishment as any).pix_holder_name || "");
+      setPaymentPixEnabled(establishment.payment_pix_enabled ?? true);
+      setPaymentCreditEnabled(establishment.payment_credit_enabled ?? true);
+      setPaymentDebitEnabled(establishment.payment_debit_enabled ?? true);
+      setPaymentCashEnabled(establishment.payment_cash_enabled ?? true);
+      setPixKey(establishment.pix_key || "");
+      setPixKeyType(establishment.pix_key_type || "");
+      setPixHolderName(establishment.pix_holder_name || "");
     }
   }, [establishment]);
 

@@ -1,22 +1,8 @@
 import { useState } from "react";
 import { MapPin, Phone, Clock, Truck, Info, Timer, ChevronDown, ChevronUp } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-
-interface DayHours {
-  open: string;
-  close: string;
-  closed: boolean;
-}
-
-interface OpeningHours {
-  monday: DayHours;
-  tuesday: DayHours;
-  wednesday: DayHours;
-  thursday: DayHours;
-  friday: DayHours;
-  saturday: DayHours;
-  sunday: DayHours;
-}
+import { formatPrice } from "@/lib/formatters";
+import type { OpeningHours } from "@/types/establishment";
 
 interface StoreInfoProps {
   description?: string | null;
@@ -54,13 +40,6 @@ const dayOrder: Array<keyof OpeningHours> = [
   "saturday",
   "sunday",
 ];
-
-function formatPrice(value: number): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
-}
 
 export function StoreInfo({
   description,

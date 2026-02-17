@@ -13,7 +13,7 @@ const rolePermissions: Record<AppRole, string[]> = {
   employee: ["pedidos", "mesas", "catalogo", "clientes"],
 };
 
-const roleLabels: Record<AppRole, string> = {
+export const roleLabels: Record<AppRole, string> = {
   owner: "Proprietário",
   manager: "Gerente",
   attendant: "Atendente",

@@ -13,11 +13,11 @@ import {
   UtensilsCrossed,
   LockKeyhole,
 } from "lucide-react";
+import React, { useState } from "react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { useUserRole } from "@/hooks/useUserRole";
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -59,7 +59,7 @@ export function DashboardSidebar() {
   const { setOpenMobile, isMobile } = useSidebar();
   const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
-  const isTableEnabled = (establishment as any)?.service_table ?? false;
+  const isTableEnabled = establishment?.service_table ?? false;
 
   const filteredMenuItems = menuItems.filter((item) => canAccess(item.permission));
 
@@ -99,9 +99,9 @@ export function DashboardSidebar() {
           {isLoadingEstablishment ? (
             // Skeleton while loading - prevents flash of TáVindo logo
             <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-muted animate-pulse flex-shrink-0" />
-          ) : (establishment as any)?.logo_url ? (
+          ) : establishment?.logo_url ? (
             <img 
-              src={(establishment as any).logo_url} 
+              src={establishment.logo_url} 
               alt={establishment?.name || "Estabelecimento"} 
               className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover bg-primary/10 border-2 border-primary/20 flex-shrink-0"
               data-testid="sidebar-logo-establishment"
@@ -149,8 +149,8 @@ export function DashboardSidebar() {
               </SidebarMenuItem>
 
               {filteredMenuItems.map((item, index) => (
-                <>
-                  <SidebarMenuItem key={item.title} role="menuitem">
+                <React.Fragment key={item.title}>
+                  <SidebarMenuItem role="menuitem">
                     <SidebarMenuButton asChild>
                       <NavLink
                         to={item.url}
@@ -206,7 +206,7 @@ export function DashboardSidebar() {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   )}
-                </>
+                </React.Fragment>
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
