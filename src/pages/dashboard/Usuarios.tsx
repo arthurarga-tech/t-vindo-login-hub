@@ -102,6 +102,8 @@ export default function Usuarios() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Add form state
+  const [newName, setNewName] = useState("");
+  const [newPhone, setNewPhone] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newRole, setNewRole] = useState<MemberRole>("attendant");
@@ -159,7 +161,7 @@ export default function Usuarios() {
   };
 
   const handleAddMember = async () => {
-    if (!establishment?.id || !newEmail.trim() || !newPassword.trim()) return;
+    if (!establishment?.id || !newEmail.trim() || !newPassword.trim() || !newName.trim()) return;
 
     setIsSubmitting(true);
     try {
@@ -169,6 +171,8 @@ export default function Usuarios() {
           password: newPassword,
           role: newRole,
           establishment_id: establishment.id,
+          name: newName.trim(),
+          phone: newPhone.trim() || null,
         },
       });
 
@@ -177,6 +181,8 @@ export default function Usuarios() {
 
       toast.success("Membro adicionado com sucesso!");
       setIsAddDialogOpen(false);
+      setNewName("");
+      setNewPhone("");
       setNewEmail("");
       setNewPassword("");
       setNewRole("attendant");
@@ -273,6 +279,26 @@ export default function Usuarios() {
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
+                  <Label htmlFor="add-name">Nome</Label>
+                  <Input
+                    id="add-name"
+                    type="text"
+                    placeholder="Nome do membro"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="add-phone">Telefone</Label>
+                  <Input
+                    id="add-phone"
+                    type="tel"
+                    placeholder="(00) 00000-0000"
+                    value={newPhone}
+                    onChange={(e) => setNewPhone(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="add-email">Email</Label>
                   <Input
                     id="add-email"
@@ -325,7 +351,7 @@ export default function Usuarios() {
                 </Button>
                 <Button
                   onClick={handleAddMember}
-                  disabled={isSubmitting || !newEmail.trim() || newPassword.length < 6}
+                  disabled={isSubmitting || !newName.trim() || !newEmail.trim() || newPassword.length < 6}
                 >
                   {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                   Criar Acesso

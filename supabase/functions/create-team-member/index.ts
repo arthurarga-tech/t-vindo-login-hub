@@ -40,12 +40,12 @@ Deno.serve(async (req) => {
 
     const callerId = claimsData.claims.sub;
 
-    const { email, password, role, establishment_id } = await req.json();
+    const { email, password, role, establishment_id, name, phone } = await req.json();
 
     // Validate inputs
-    if (!email || !password || !role || !establishment_id) {
+    if (!email || !password || !role || !establishment_id || !name) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: email, password, role, establishment_id" }),
+        JSON.stringify({ error: "Missing required fields: email, password, role, establishment_id, name" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -148,7 +148,8 @@ Deno.serve(async (req) => {
           .from("profiles")
           .update({
             establishment_id,
-            establishment_name: establishment.name,
+            establishment_name: name,
+            phone: phone || null,
           })
           .eq("user_id", existingUser.id);
 
@@ -209,7 +210,8 @@ Deno.serve(async (req) => {
       .from("profiles")
       .update({
         establishment_id,
-        establishment_name: establishment.name,
+        establishment_name: name,
+        phone: phone || null,
       })
       .eq("user_id", newUserId);
 
