@@ -1176,6 +1176,18 @@ export type Database = {
         Returns: undefined
       }
       create_public_order_items: { Args: { p_items: Json }; Returns: Json }
+      delete_customer_cascade: {
+        Args: { p_customer_id: string }
+        Returns: undefined
+      }
+      get_customer_delete_counts: {
+        Args: { p_customer_id: string }
+        Returns: {
+          financial_transaction_count: number
+          order_count: number
+          order_item_count: number
+        }[]
+      }
       get_customer_stats_summary: {
         Args: {
           p_establishment_id: string

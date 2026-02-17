@@ -13,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CustomerWithStats, useDeleteCustomer } from "@/hooks/useCustomers";
+import { CustomerWithStats, useDeleteCustomer, useCustomerDeleteCounts } from "@/hooks/useCustomers";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { formatInSaoPaulo, toSaoPauloTime } from "@/lib/dateUtils";
@@ -26,6 +26,7 @@ interface CustomerTableProps {
 export function CustomerTable({ customers, onCustomerClick }: CustomerTableProps) {
   const [customerToDelete, setCustomerToDelete] = useState<CustomerWithStats | null>(null);
   const deleteCustomer = useDeleteCustomer();
+  const { data: deleteCounts } = useCustomerDeleteCounts(customerToDelete?.id || null);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -168,11 +169,22 @@ export function CustomerTable({ customers, onCustomerClick }: CustomerTableProps
               <p>
                 Tem certeza que deseja excluir <strong>{customerToDelete?.name}</strong>?
               </p>
-              {customerToDelete && customerToDelete.total_orders > 0 && (
-                <p className="text-amber-600 font-medium">
-                  ⚠️ Este cliente possui {customerToDelete.total_orders} pedido(s) registrado(s). 
-                  Os pedidos serão mantidos para histórico, mas não estarão mais vinculados a este cliente.
-                </p>
+              {deleteCounts && (deleteCounts.order_count > 0 || deleteCounts.financial_transaction_count > 0) && (
+                <div className="text-destructive font-medium space-y-1">
+                  <p>⚠️ Todos os registros deste cliente serão excluídos permanentemente:</p>
+                  <ul className="list-disc list-inside text-sm">
+                    {deleteCounts.order_count > 0 && (
+                      <li>{deleteCounts.order_count} pedido(s)</li>
+                    )}
+                    {deleteCounts.order_item_count > 0 && (
+                      <li>{deleteCounts.order_item_count} item(ns) de pedido</li>
+                    )}
+                    {deleteCounts.financial_transaction_count > 0 && (
+                      <li>{deleteCounts.financial_transaction_count} lançamento(s) financeiro(s)</li>
+                    )}
+                  </ul>
+                  <p className="text-sm">Esta ação não pode ser desfeita.</p>
+                </div>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
