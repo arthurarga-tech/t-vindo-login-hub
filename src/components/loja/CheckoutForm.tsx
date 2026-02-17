@@ -17,6 +17,7 @@ import { z } from "zod";
 import { formatInSaoPaulo } from "@/lib/dateUtils";
 import { ptBR } from "date-fns/locale";
 import { ScheduleSelector } from "./ScheduleSelector";
+import type { OpeningHours } from "@/types/establishment";
 
 type PaymentMethod = "cash" | "credit" | "debit" | "pix";
 type OrderType = "delivery" | "pickup" | "dine_in";
@@ -65,7 +66,7 @@ interface CheckoutFormProps {
   scheduledFor?: Date | null;
   allowScheduling?: boolean;
   onScheduleChange?: (date: Date | null) => void;
-  openingHours?: any;
+  openingHours?: OpeningHours | null;
 }
 
 export function CheckoutForm({ scheduledFor, allowScheduling = false, onScheduleChange, openingHours }: CheckoutFormProps) {
@@ -105,17 +106,17 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
   const [pixKeyCopied, setPixKeyCopied] = useState(false);
 
   // Get payment method settings from establishment
-  const paymentPixEnabled = (establishment as any)?.payment_pix_enabled ?? true;
-  const paymentCreditEnabled = (establishment as any)?.payment_credit_enabled ?? true;
-  const paymentDebitEnabled = (establishment as any)?.payment_debit_enabled ?? true;
-  const paymentCashEnabled = (establishment as any)?.payment_cash_enabled ?? true;
-  const pixKey = (establishment as any)?.pix_key || "";
-  const pixKeyType = (establishment as any)?.pix_key_type || "";
-  const pixHolderName = (establishment as any)?.pix_holder_name || "";
-  const establishmentPhone = (establishment as any)?.phone || "";
+  const paymentPixEnabled = establishment?.payment_pix_enabled ?? true;
+  const paymentCreditEnabled = establishment?.payment_credit_enabled ?? true;
+  const paymentDebitEnabled = establishment?.payment_debit_enabled ?? true;
+  const paymentCashEnabled = establishment?.payment_cash_enabled ?? true;
+  const pixKey = establishment?.pix_key || "";
+  const pixKeyType = establishment?.pix_key_type || "";
+  const pixHolderName = establishment?.pix_holder_name || "";
+  const establishmentPhone = establishment?.phone || "";
 
   // Get delivery fee from establishment
-  const establishmentDeliveryFee = (establishment as any)?.delivery_fee ?? 0;
+  const establishmentDeliveryFee = establishment?.delivery_fee ?? 0;
 
   // Calculate delivery fee based on order type
   const deliveryFee = orderType === "delivery" ? establishmentDeliveryFee : 0;
@@ -127,12 +128,12 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
   const needsChange = paymentMethod === "cash" && changeForValue > 0;
 
   // Get available service modalities
-  const serviceDelivery = (establishment as any)?.service_delivery ?? true;
-  const servicePickup = (establishment as any)?.service_pickup ?? false;
-  const serviceDineIn = (establishment as any)?.service_dine_in ?? false;
+  const serviceDelivery = establishment?.service_delivery ?? true;
+  const servicePickup = establishment?.service_pickup ?? false;
+  const serviceDineIn = establishment?.service_dine_in ?? false;
   
-  // Get location sharing setting
-  const locationSharingEnabled = (establishment as any)?.location_sharing_enabled ?? true;
+  // Get location sharing setting - this field is on the full establishment, not public view
+  const locationSharingEnabled = true;
 
   // Set default order type based on available modalities
   useEffect(() => {

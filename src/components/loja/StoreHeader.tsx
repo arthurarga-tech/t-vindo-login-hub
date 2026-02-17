@@ -2,22 +2,7 @@ import { Store, Package } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CartDrawer } from "./CartDrawer";
 import { Button } from "@/components/ui/button";
-
-interface DayHours {
-  open: string;
-  close: string;
-  closed: boolean;
-}
-
-interface OpeningHours {
-  monday: DayHours;
-  tuesday: DayHours;
-  wednesday: DayHours;
-  thursday: DayHours;
-  friday: DayHours;
-  saturday: DayHours;
-  sunday: DayHours;
-}
+import type { OpeningHours } from "@/types/establishment";
 
 interface StoreHeaderProps {
   establishmentName: string;

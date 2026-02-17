@@ -16,24 +16,24 @@ export default function CheckoutPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { data: establishment, isLoading } = usePublicEstablishment(slug);
-  const isTemporaryClosed = (establishment as any)?.temporary_closed ?? false;
+  const isTemporaryClosed = establishment?.temporary_closed ?? false;
   const { isOpen, nextOpenTime } = useStoreOpeningHours(
-    (establishment as any)?.opening_hours,
+    establishment?.opening_hours,
     isTemporaryClosed
   );
   
   const [scheduledFor, setScheduledFor] = useState<Date | null>(null);
   const [showScheduler, setShowScheduler] = useState(false);
 
-  const allowScheduling = (establishment as any)?.allow_scheduling ?? false;
+  const allowScheduling = establishment?.allow_scheduling ?? false;
 
   // Dynamically update browser theme-color based on establishment's primary color
-  useThemeColor((establishment as any)?.theme_primary_color);
+  useThemeColor(establishment?.theme_primary_color);
 
   // Generate custom CSS variables for theme
   const customStyles = useMemo(() => {
-    const primaryColor = (establishment as any)?.theme_primary_color || "#ea580c";
-    const secondaryColor = (establishment as any)?.theme_secondary_color || "#1e293b";
+    const primaryColor = establishment?.theme_primary_color || "#ea580c";
+    const secondaryColor = establishment?.theme_secondary_color || "#1e293b";
     
     return {
       "--store-primary": hexToHSL(primaryColor),
@@ -192,7 +192,7 @@ export default function CheckoutPage() {
             Voltar
           </Button>
           <ScheduleSelector
-            openingHours={(establishment as any)?.opening_hours}
+            openingHours={establishment?.opening_hours}
             onScheduleSelect={setScheduledFor}
             selectedDate={scheduledFor}
           />
@@ -211,7 +211,7 @@ export default function CheckoutPage() {
           scheduledFor={scheduledFor} 
           allowScheduling={allowScheduling}
           onScheduleChange={setScheduledFor}
-          openingHours={(establishment as any)?.opening_hours}
+          openingHours={establishment?.opening_hours}
         />
       </div>
     </CartProvider>
