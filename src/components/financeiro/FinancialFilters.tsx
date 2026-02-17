@@ -68,10 +68,9 @@ export function FinancialFilters({
   const handleCalendarSelect = (range: DateRange | undefined) => {
     if (range?.from) {
       onPeriodChange("custom");
-      onDateRangeChange({
-        start: range.from,
-        end: range.to || range.from,
-      });
+      const from = startOfDayInSaoPaulo(range.from);
+      const to = range.to ? endOfDayInSaoPaulo(range.to) : endOfDayInSaoPaulo(range.from);
+      onDateRangeChange({ start: from, end: to });
     }
   };
 
