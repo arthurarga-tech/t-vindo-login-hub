@@ -23,9 +23,10 @@ interface OrderCardProps {
   onPrint?: (order: Order) => void;
   nextStatus?: OrderStatus | null;
   compact?: boolean;
+  hideValues?: boolean;
 }
 
-export function OrderCard({ order, onClick, onQuickStatusChange, onPrint, nextStatus, compact = false }: OrderCardProps) {
+export function OrderCard({ order, onClick, onQuickStatusChange, onPrint, nextStatus, compact = false, hideValues = false }: OrderCardProps) {
   const status = statusDisplayConfig[order.status as OrderStatus] || statusDisplayConfig.pending;
   const orderType = (order.order_type || "delivery") as OrderType;
   const typeInfo = orderTypeLabels[orderType];
@@ -207,21 +208,23 @@ export function OrderCard({ order, onClick, onQuickStatusChange, onPrint, nextSt
           </div>
         )}
 
-        <div className={`flex items-center justify-between border-t ${compact ? 'pt-1' : 'pt-2'}`}>
-          <div 
-            className={`flex items-center gap-1 ${compact ? 'text-[11px]' : 'text-sm'}`}
-            data-testid={`order-card-${order.id}-payment-method`}
-          >
-            <CreditCard className={compact ? "h-3 w-3" : "h-4 w-4"} text-muted-foreground />
-            <span>{paymentMethodLabels[order.payment_method] || order.payment_method}</span>
+        {!hideValues && (
+          <div className={`flex items-center justify-between border-t ${compact ? 'pt-1' : 'pt-2'}`}>
+            <div 
+              className={`flex items-center gap-1 ${compact ? 'text-[11px]' : 'text-sm'}`}
+              data-testid={`order-card-${order.id}-payment-method`}
+            >
+              <CreditCard className={compact ? "h-3 w-3" : "h-4 w-4"} text-muted-foreground />
+              <span>{paymentMethodLabels[order.payment_method] || order.payment_method}</span>
+            </div>
+            <span 
+              className={`font-bold text-primary ${compact ? 'text-sm' : ''}`}
+              data-testid={`order-card-${order.id}-total`}
+            >
+              {formatPrice(order.total)}
+            </span>
           </div>
-          <span 
-            className={`font-bold text-primary ${compact ? 'text-sm' : ''}`}
-            data-testid={`order-card-${order.id}-total`}
-          >
-            {formatPrice(order.total)}
-          </span>
-        </div>
+        )}
 
         {nextStatus && onQuickStatusChange && (
           <Button 

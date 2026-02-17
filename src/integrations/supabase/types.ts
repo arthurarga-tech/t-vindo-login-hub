@@ -1232,7 +1232,13 @@ export type Database = {
     }
     Enums: {
       billing_cycle: "monthly" | "semiannual" | "annual"
-      establishment_role: "owner" | "manager" | "employee"
+      establishment_role:
+        | "owner"
+        | "manager"
+        | "employee"
+        | "attendant"
+        | "kitchen"
+        | "waiter"
       subscription_status:
         | "trialing"
         | "active"
@@ -1367,7 +1373,14 @@ export const Constants = {
   public: {
     Enums: {
       billing_cycle: ["monthly", "semiannual", "annual"],
-      establishment_role: ["owner", "manager", "employee"],
+      establishment_role: [
+        "owner",
+        "manager",
+        "employee",
+        "attendant",
+        "kitchen",
+        "waiter",
+      ],
       subscription_status: [
         "trialing",
         "active",

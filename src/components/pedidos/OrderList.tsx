@@ -8,9 +8,10 @@ interface OrderListProps {
   onOrderClick: (order: Order) => void;
   onPrint?: (order: Order) => void;
   onQuickConfirmPrint?: (preOpenedWindow: Window | null, order: Order) => void;
+  hideValues?: boolean;
 }
 
-export function OrderList({ orders, onOrderClick, onPrint, onQuickConfirmPrint }: OrderListProps) {
+export function OrderList({ orders, onOrderClick, onPrint, onQuickConfirmPrint, hideValues = false }: OrderListProps) {
   const updateStatus = useUpdateOrderStatus();
 
   const handleQuickStatusChange = async (order: Order, newStatus: OrderStatus) => {
@@ -70,6 +71,7 @@ export function OrderList({ orders, onOrderClick, onPrint, onQuickConfirmPrint }
           onQuickStatusChange={handleQuickStatusChange}
           onPrint={onPrint}
           nextStatus={getNextStatus(order)}
+          hideValues={hideValues}
           compact
         />
       ))}

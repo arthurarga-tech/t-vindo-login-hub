@@ -10,6 +10,7 @@ interface OrderKanbanProps {
   onOrderClick: (order: Order) => void;
   onPrint?: (order: Order) => void;
   onQuickConfirmPrint?: (preOpenedWindow: Window | null, order: Order) => void;
+  hideValues?: boolean;
 }
 
 interface KanbanColumn {
@@ -29,7 +30,7 @@ const columns: KanbanColumn[] = [
   { id: "completed", statuses: ["delivered", "picked_up", "served"], label: "Finalizados", color: "bg-green-500" },
 ];
 
-export function OrderKanban({ orders, onOrderClick, onPrint, onQuickConfirmPrint }: OrderKanbanProps) {
+export function OrderKanban({ orders, onOrderClick, onPrint, onQuickConfirmPrint, hideValues = false }: OrderKanbanProps) {
   const updateStatus = useUpdateOrderStatus();
 
   const getOrdersByStatuses = (statuses: OrderStatus[]) => {
@@ -125,6 +126,7 @@ export function OrderKanban({ orders, onOrderClick, onPrint, onQuickConfirmPrint
                       onQuickStatusChange={handleQuickStatusChange}
                       onPrint={onPrint}
                       nextStatus={getNextStatus(order)}
+                      hideValues={hideValues}
                       compact
                     />
                   ))
