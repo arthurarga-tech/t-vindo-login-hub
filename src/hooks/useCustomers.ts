@@ -191,22 +191,51 @@ export function useCustomerOrders(customerId: string | null) {
   });
 }
 
+export interface CustomerDeleteCounts {
+  order_count: number;
+  order_item_count: number;
+  financial_transaction_count: number;
+}
+
+export function useCustomerDeleteCounts(customerId: string | null) {
+  return useQuery({
+    queryKey: ["customer-delete-counts", customerId],
+    queryFn: async (): Promise<CustomerDeleteCounts> => {
+      if (!customerId) return { order_count: 0, order_item_count: 0, financial_transaction_count: 0 };
+
+      const { data, error } = await supabase.rpc("get_customer_delete_counts", {
+        p_customer_id: customerId,
+      });
+
+      if (error) throw error;
+      const row = data?.[0] || { order_count: 0, order_item_count: 0, financial_transaction_count: 0 };
+      return {
+        order_count: Number(row.order_count),
+        order_item_count: Number(row.order_item_count),
+        financial_transaction_count: Number(row.financial_transaction_count),
+      };
+    },
+    enabled: !!customerId,
+  });
+}
+
 export function useDeleteCustomer() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (customerId: string) => {
-      const { error } = await supabase
-        .from("customers")
-        .delete()
-        .eq("id", customerId);
+      const { error } = await supabase.rpc("delete_customer_cascade", {
+        p_customer_id: customerId,
+      });
 
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       queryClient.invalidateQueries({ queryKey: ["customer-stats"] });
-      toast.success("Cliente excluído com sucesso");
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["financial"] });
+      toast.success("Cliente e todos os registros relacionados excluídos com sucesso");
     },
     onError: (error) => {
       toast.error("Erro ao excluir cliente: " + error.message);
