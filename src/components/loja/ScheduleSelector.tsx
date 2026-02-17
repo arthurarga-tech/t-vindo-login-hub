@@ -7,9 +7,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStoreOpeningHours, ScheduleSlot, AvailableDay } from "@/hooks/useStoreOpeningHours";
 import { formatInSaoPaulo } from "@/lib/dateUtils";
 import { ptBR } from "date-fns/locale";
+import type { OpeningHours } from "@/types/establishment";
 
 interface ScheduleSelectorProps {
-  openingHours: any;
+  openingHours: OpeningHours | null | undefined;
   onScheduleSelect: (date: Date | null) => void;
   selectedDate: Date | null;
 }

@@ -1,6 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Category } from "./useCategories";
+import type { PublicEstablishment } from "@/types/establishment";
+import type { OpeningHours } from "@/types/establishment";
 import { useEffect } from "react";
 
 export interface PublicProduct {
@@ -16,7 +18,7 @@ export interface PublicProduct {
 export function usePublicEstablishment(slug: string | undefined) {
   const queryClient = useQueryClient();
   
-  const query = useQuery({
+  const query = useQuery<PublicEstablishment | null>({
     queryKey: ["public-establishment", slug],
     queryFn: async () => {
       if (!slug) return null;
@@ -35,7 +37,12 @@ export function usePublicEstablishment(slug: string | undefined) {
         .maybeSingle();
 
       if (error) throw error;
-      return data;
+      if (!data) return null;
+      
+      return {
+        ...data,
+        opening_hours: data.opening_hours as unknown as OpeningHours | null,
+      } as PublicEstablishment;
     },
     enabled: !!slug,
     // Refetch more frequently to catch status changes

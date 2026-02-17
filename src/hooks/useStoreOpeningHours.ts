@@ -7,22 +7,7 @@ import {
   formatInSaoPaulo
 } from "@/lib/dateUtils";
 import { ptBR } from "date-fns/locale";
-
-interface DayHours {
-  open: string;
-  close: string;
-  closed: boolean;
-}
-
-interface OpeningHours {
-  monday: DayHours;
-  tuesday: DayHours;
-  wednesday: DayHours;
-  thursday: DayHours;
-  friday: DayHours;
-  saturday: DayHours;
-  sunday: DayHours;
-}
+import type { DayHours, OpeningHours } from "@/types/establishment";
 
 type DayKey = keyof OpeningHours;
 

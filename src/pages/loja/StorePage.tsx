@@ -23,21 +23,21 @@ export default function StorePage() {
   const { data: products, isLoading: loadingProducts } = usePublicProducts(establishment?.id);
   const { data: preparationTime } = usePublicPreparationTime(establishment?.id);
   
-  const isTemporaryClosed = (establishment as any)?.temporary_closed ?? false;
+  const isTemporaryClosed = establishment?.temporary_closed ?? false;
   const { isOpen, nextOpenTime } = useStoreOpeningHours(
-    (establishment as any)?.opening_hours,
+    establishment?.opening_hours,
     isTemporaryClosed
   );
 
   // Dynamically update browser theme-color based on establishment's primary color
-  useThemeColor((establishment as any)?.theme_primary_color);
+  useThemeColor(establishment?.theme_primary_color);
 
   const isLoading = loadingEstablishment || loadingCategories || loadingProducts;
 
   // Generate custom CSS variables for theme
   const customStyles = useMemo(() => {
-    const primaryColor = (establishment as any)?.theme_primary_color || "#ea580c";
-    const secondaryColor = (establishment as any)?.theme_secondary_color || "#1e293b";
+    const primaryColor = establishment?.theme_primary_color || "#ea580c";
+    const secondaryColor = establishment?.theme_secondary_color || "#1e293b";
     
     return {
       "--store-primary": hexToHSL(primaryColor),
@@ -105,15 +105,15 @@ export default function StorePage() {
         data-testid="store-page"
       >
         <StoreHeader 
-          establishmentName={establishment.name}
-          logoUrl={(establishment as any).logo_url}
-          bannerUrl={(establishment as any).banner_url}
-          phone={(establishment as any).phone}
-          openingHours={(establishment as any).opening_hours}
-          primaryColor={(establishment as any).theme_primary_color}
+          establishmentName={establishment.name || ""}
+          logoUrl={establishment.logo_url}
+          bannerUrl={establishment.banner_url}
+          phone={establishment.phone}
+          openingHours={establishment.opening_hours}
+          primaryColor={establishment.theme_primary_color}
           isTemporaryClosed={isTemporaryClosed}
           isStoreOpen={isOpen}
-          allowScheduling={(establishment as any).allow_scheduling}
+          allowScheduling={establishment.allow_scheduling ?? false}
           nextOpenTime={nextOpenTime}
         />
         
@@ -131,14 +131,14 @@ export default function StorePage() {
           role="main"
         >
           <StoreInfo
-            description={(establishment as any).description}
-            phone={(establishment as any).phone}
-            address={(establishment as any).address}
-            neighborhood={(establishment as any).neighborhood}
-            city={(establishment as any).city}
-            openingHours={(establishment as any).opening_hours}
-            deliveryInfo={(establishment as any).delivery_info}
-            minOrderValue={(establishment as any).min_order_value}
+            description={establishment.description}
+            phone={establishment.phone}
+            address={establishment.address}
+            neighborhood={establishment.neighborhood}
+            city={establishment.city}
+            openingHours={establishment.opening_hours}
+            deliveryInfo={establishment.delivery_info}
+            minOrderValue={establishment.min_order_value}
             estimatedTime={preparationTime}
           />
           {isLoading ? (
@@ -200,7 +200,7 @@ export default function StorePage() {
           )}
         </main>
         
-        <CartBar isStoreOpen={isOpen} allowScheduling={(establishment as any).allow_scheduling} />
+        <CartBar isStoreOpen={isOpen} allowScheduling={establishment.allow_scheduling ?? false} />
       </div>
     </CartProvider>
   );
