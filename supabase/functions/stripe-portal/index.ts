@@ -50,6 +50,25 @@ serve(async (req) => {
     const { establishmentId } = await req.json();
     if (!establishmentId) throw new Error("Establishment ID is required");
 
+    // Verify user owns or is a member of the establishment
+    const { data: establishment, error: estError } = await supabaseAdmin
+      .from("establishments")
+      .select("owner_id")
+      .eq("id", establishmentId)
+      .single();
+
+    if (estError || !establishment) throw new Error("Establishment not found");
+    if (establishment.owner_id !== user.id) {
+      const { data: membership } = await supabaseAdmin
+        .from("establishment_members")
+        .select("id")
+        .eq("establishment_id", establishmentId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!membership) throw new Error("Unauthorized: not a member of this establishment");
+    }
+    logStep("Ownership verified", { establishmentId, userId: user.id });
+
     // Get subscription record
     const { data: subscription, error: subError } = await supabaseAdmin
       .from("subscriptions")
