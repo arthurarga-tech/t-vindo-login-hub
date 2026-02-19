@@ -137,7 +137,7 @@ export default function Pedidos() {
         };
 
         if (isRawbtOnOrder) {
-          printViaRawbt(printOpts);
+          printViaRawbt({ ...printOpts, silent: true });
           // Small delay between RawBT intents to avoid conflicts
           await new Promise(resolve => setTimeout(resolve, 2000));
         } else {

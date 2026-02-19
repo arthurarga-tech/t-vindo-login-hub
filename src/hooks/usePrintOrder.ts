@@ -558,15 +558,34 @@ export function usePrintOrder() {
    * Generates a plain-text receipt and sends via rawbt:base64 intent URL.
    * RawBT does NOT render HTML — it sends raw bytes to the printer.
    */
-  const printViaRawbt = useCallback((opts: PrintOrderOptions) => {
+  const printViaRawbt = useCallback((opts: PrintOrderOptions & { silent?: boolean }) => {
     const textContent = generateReceiptText(opts);
     try {
       const base64 = btoa(unescape(encodeURIComponent(textContent)));
-      window.location.href = `rawbt:base64,${base64}`;
+      const url = `rawbt:base64,${base64}`;
+      if (opts.silent) {
+        // Use hidden iframe to trigger intent silently (no Android popup)
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = url;
+        document.body.appendChild(iframe);
+        setTimeout(() => iframe.remove(), 5000);
+      } else {
+        window.location.href = url;
+      }
     } catch {
       try {
         const base64 = btoa(textContent);
-        window.location.href = `rawbt:base64,${base64}`;
+        const url = `rawbt:base64,${base64}`;
+        if (opts.silent) {
+          const iframe = document.createElement("iframe");
+          iframe.style.display = "none";
+          iframe.src = url;
+          document.body.appendChild(iframe);
+          setTimeout(() => iframe.remove(), 5000);
+        } else {
+          window.location.href = url;
+        }
       } catch {
         console.error("Failed to encode receipt for RawBT");
       }
