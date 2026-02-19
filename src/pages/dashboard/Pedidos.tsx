@@ -27,13 +27,13 @@ export default function Pedidos() {
   const { data: establishment } = useEstablishment();
   const { role } = useUserRole();
   const { printOrder, printInWindow, printViaRawbt } = usePrintOrder();
-  const { printFontSize, printMarginLeft, printMarginRight, printFontBold, printLineHeight, printContrastHigh, printMode, isPrintOnOrder, isPrintOnConfirm, isRawbtOnOrder, isRawbtOnConfirm } = usePrintSettings();
+  const { printFontSize, printMarginLeft, printMarginRight, printFontBold, printLineHeight, printContrastHigh, printMode, isPrintOnOrder, isPrintOnConfirm, isRawbtOnOrder, isRawbtOnConfirm, printAddonPrices } = usePrintSettings();
   const { playNotificationSound } = useOrderNotification();
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const previousPendingCountRef = useRef<number | null>(null);
-  const printedOrdersRef = useRef<Set<string>>(new Set());
+  const printQueueRef = useRef<boolean>(false); // is queue processing
   const [filters, setFilters] = useState<OrderFiltersState>({
     search: "",
     status: "all",
@@ -58,15 +58,107 @@ export default function Pedidos() {
   const paymentDebitEnabled = establishment?.payment_debit_enabled ?? true;
   const paymentCashEnabled = establishment?.payment_cash_enabled ?? true;
 
-  // Play notification sound and show print toast when new pending orders arrive
+  // --- localStorage-based anti-duplicate tracking ---
+  const getAutoPrintedIds = (): Record<string, number> => {
+    try {
+      const raw = localStorage.getItem("auto_printed_orders");
+      if (!raw) return {};
+      const parsed = JSON.parse(raw) as Record<string, number>;
+      // Clean entries older than 24h
+      const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+      const cleaned: Record<string, number> = {};
+      for (const [id, ts] of Object.entries(parsed)) {
+        if (ts > cutoff) cleaned[id] = ts;
+      }
+      if (Object.keys(cleaned).length !== Object.keys(parsed).length) {
+        localStorage.setItem("auto_printed_orders", JSON.stringify(cleaned));
+      }
+      return cleaned;
+    } catch { return {}; }
+  };
+
+  const markAsPrinted = (orderId: string) => {
+    const current = getAutoPrintedIds();
+    current[orderId] = Date.now();
+    localStorage.setItem("auto_printed_orders", JSON.stringify(current));
+  };
+
+  // --- Sequential print queue ---
+  const processQueue = useCallback(async (orderIds: string[]) => {
+    if (printQueueRef.current) return;
+    printQueueRef.current = true;
+
+    for (const orderId of orderIds) {
+      try {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        const fetchOrderWithAddons = async (retries = 2): Promise<any> => {
+          const { data: freshOrder, error } = await supabase
+            .from("orders")
+            .select(`
+              *,
+              customer:customers(*),
+              items:order_items(*, addons:order_item_addons(*))
+            `)
+            .eq("id", orderId)
+            .single();
+
+          if (error || !freshOrder) return null;
+
+          const hasItems = freshOrder.items && freshOrder.items.length > 0;
+          const hasAnyAddons = freshOrder.items?.some((i: any) => i.addons && i.addons.length > 0);
+          
+          if (hasItems && !hasAnyAddons && retries > 0) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return fetchOrderWithAddons(retries - 1);
+          }
+
+          return freshOrder;
+        };
+
+        const freshOrder = await fetchOrderWithAddons();
+        
+        if (!freshOrder) {
+          toast.error("Erro ao buscar pedido para impressão");
+          continue;
+        }
+        
+        const printOpts = {
+          order: freshOrder as Order,
+          establishmentName,
+          logoUrl,
+          printFontSize,
+          printMarginLeft,
+          printMarginRight,
+          printFontBold,
+          printLineHeight,
+          printContrastHigh,
+          printAddonPrices,
+        };
+
+        if (isRawbtOnOrder) {
+          printViaRawbt(printOpts);
+          // Small delay between RawBT intents to avoid conflicts
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } else {
+          printOrder(printOpts);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } catch {
+        toast.error("Erro ao imprimir pedido automaticamente");
+      }
+    }
+
+    printQueueRef.current = false;
+  }, [establishmentName, logoUrl, printFontSize, printMarginLeft, printMarginRight, printFontBold, printLineHeight, printContrastHigh, printAddonPrices, isRawbtOnOrder, printOrder, printViaRawbt]);
+
+  // Play notification sound and auto-print when new pending orders arrive
   useEffect(() => {
-    // Skip first load
+    // Skip first load — mark all current pending as already printed
     if (previousPendingCountRef.current === null) {
       previousPendingCountRef.current = pendingCount;
       if (orders) {
-        orders.filter(o => o.status === "pending").forEach(o => {
-          printedOrdersRef.current.add(o.id);
-        });
+        orders.filter(o => o.status === "pending").forEach(o => markAsPrinted(o.id));
       }
       return;
     }
@@ -78,77 +170,21 @@ export default function Pedidos() {
     
     // Auto print on new order
     if ((isPrintOnOrder || isRawbtOnOrder) && orders) {
-      const newPendingOrders = orders.filter(
-        (o) => o.status === "pending" && !printedOrdersRef.current.has(o.id)
-      );
+      const printedIds = getAutoPrintedIds();
+      const newPendingOrders = orders
+        .filter((o) => o.status === "pending" && !printedIds[o.id])
+        .sort((a, b) => a.order_number - b.order_number);
       
       if (newPendingOrders.length > 0) {
-        newPendingOrders.forEach(async (order) => {
-          printedOrdersRef.current.add(order.id);
-          
-          try {
-            // Wait a moment for addons to be saved (race condition with quick orders)
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            const fetchOrderWithAddons = async (retries = 2): Promise<any> => {
-              const { data: freshOrder, error } = await supabase
-                .from("orders")
-                .select(`
-                  *,
-                  customer:customers(*),
-                  items:order_items(*, addons:order_item_addons(*))
-                `)
-                .eq("id", order.id)
-                .single();
-
-              if (error || !freshOrder) return null;
-
-              // Check if items exist but addons might still be saving
-              const hasItems = freshOrder.items && freshOrder.items.length > 0;
-              const hasAnyAddons = freshOrder.items?.some((i: any) => i.addons && i.addons.length > 0);
-              
-              // If items exist but no addons found and we have retries, wait and try again
-              if (hasItems && !hasAnyAddons && retries > 0) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                return fetchOrderWithAddons(retries - 1);
-              }
-
-              return freshOrder;
-            };
-
-            const freshOrder = await fetchOrderWithAddons();
-            
-            if (!freshOrder) {
-              toast.error("Erro ao buscar pedido para impressão");
-              return;
-            }
-            
-            const printOpts = {
-              order: freshOrder as Order,
-              establishmentName,
-              logoUrl,
-              printFontSize,
-              printMarginLeft,
-              printMarginRight,
-              printFontBold,
-              printLineHeight,
-              printContrastHigh,
-            };
-
-            if (isRawbtOnOrder) {
-              printViaRawbt(printOpts);
-            } else {
-              printOrder(printOpts);
-            }
-          } catch {
-            toast.error("Erro ao imprimir pedido automaticamente");
-          }
-        });
+        // Mark all as printed immediately to avoid duplicates from re-renders
+        newPendingOrders.forEach(o => markAsPrinted(o.id));
+        // Process sequentially
+        processQueue(newPendingOrders.map(o => o.id));
       }
     }
     
     previousPendingCountRef.current = pendingCount;
-  }, [pendingCount, soundEnabled, orders, printMode, isPrintOnOrder, isRawbtOnOrder, establishmentName, logoUrl, printOrder, printViaRawbt, printFontSize, printMarginLeft, printMarginRight, printFontBold, printLineHeight, printContrastHigh, playNotificationSound]);
+  }, [pendingCount, soundEnabled, orders, isPrintOnOrder, isRawbtOnOrder, processQueue, playNotificationSound]);
 
   // Function to print an order from the card (direct user click)
   const handlePrintOrder = (order: Order) => {
@@ -162,13 +198,13 @@ export default function Pedidos() {
       printFontBold,
       printLineHeight,
       printContrastHigh,
+      printAddonPrices,
     });
   };
 
   // Function to print on quick confirm using pre-opened window or RawBT
   const handleQuickConfirmPrint = useCallback((preOpenedWindow: Window | null, order: Order) => {
     if (isRawbtOnConfirm) {
-      // Close any pre-opened window — RawBT doesn't need it
       try { preOpenedWindow?.close(); } catch { /* ignore */ }
       printViaRawbt({
         order,
@@ -180,6 +216,7 @@ export default function Pedidos() {
         printFontBold,
         printLineHeight,
         printContrastHigh,
+        printAddonPrices,
       });
       return;
     }
@@ -199,8 +236,9 @@ export default function Pedidos() {
       printFontBold,
       printLineHeight,
       printContrastHigh,
+      printAddonPrices,
     });
-  }, [isPrintOnConfirm, isRawbtOnConfirm, printInWindow, printViaRawbt, establishmentName, logoUrl, printFontSize, printMarginLeft, printMarginRight, printFontBold, printLineHeight, printContrastHigh]);
+  }, [isPrintOnConfirm, isRawbtOnConfirm, printInWindow, printViaRawbt, establishmentName, logoUrl, printFontSize, printMarginLeft, printMarginRight, printFontBold, printLineHeight, printContrastHigh, printAddonPrices]);
 
   // Infinite scroll handler
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -423,6 +461,7 @@ export default function Pedidos() {
         printFontBold={printFontBold}
         printLineHeight={printLineHeight}
         printContrastHigh={printContrastHigh}
+        printAddonPrices={printAddonPrices}
       />
 
       {establishment && (

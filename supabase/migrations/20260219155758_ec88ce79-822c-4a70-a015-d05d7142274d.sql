@@ -1,0 +1,1 @@
+ALTER TABLE public.establishments ADD COLUMN print_addon_prices boolean DEFAULT true;

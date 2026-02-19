@@ -56,9 +56,10 @@ interface OrderDetailModalProps {
   printFontBold?: boolean;
   printLineHeight?: number;
   printContrastHigh?: boolean;
+  printAddonPrices?: boolean;
 }
 
-export function OrderDetailModal({ order, open, onClose, establishmentName, logoUrl, printMode = "none", printFontSize = 12, printMarginLeft = 0, printMarginRight = 0, printFontBold = true, printLineHeight = 1.4, printContrastHigh = false }: OrderDetailModalProps) {
+export function OrderDetailModal({ order, open, onClose, establishmentName, logoUrl, printMode = "none", printFontSize = 12, printMarginLeft = 0, printMarginRight = 0, printFontBold = true, printLineHeight = 1.4, printContrastHigh = false, printAddonPrices = true }: OrderDetailModalProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [editingItem, setEditingItem] = useState<OrderItem | null>(null);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
@@ -95,6 +96,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
       printFontBold,
       printLineHeight,
       printContrastHigh,
+      printAddonPrices,
     });
     
     if (result.success) {
@@ -133,6 +135,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
           printFontBold,
           printLineHeight,
           printContrastHigh,
+          printAddonPrices,
         });
       }
       
