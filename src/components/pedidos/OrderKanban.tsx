@@ -11,6 +11,7 @@ interface OrderKanbanProps {
   onPrint?: (order: Order) => void;
   onQuickConfirmPrint?: (preOpenedWindow: Window | null, order: Order) => void;
   hideValues?: boolean;
+  silentPrintOnConfirm?: boolean;
 }
 
 interface KanbanColumn {
@@ -30,7 +31,7 @@ const columns: KanbanColumn[] = [
   { id: "completed", statuses: ["delivered", "picked_up", "served"], label: "Finalizados", color: "bg-green-500" },
 ];
 
-export function OrderKanban({ orders, onOrderClick, onPrint, onQuickConfirmPrint, hideValues = false }: OrderKanbanProps) {
+export function OrderKanban({ orders, onOrderClick, onPrint, onQuickConfirmPrint, hideValues = false, silentPrintOnConfirm = false }: OrderKanbanProps) {
   const updateStatus = useUpdateOrderStatus();
 
   const getOrdersByStatuses = (statuses: OrderStatus[]) => {
@@ -39,8 +40,9 @@ export function OrderKanban({ orders, onOrderClick, onPrint, onQuickConfirmPrint
 
   const handleQuickStatusChange = async (order: Order, newStatus: OrderStatus) => {
     // Pre-open print window IMMEDIATELY on user gesture before any await
+    // Skip for RawBT silent print — no window needed
     let printWin: Window | null = null;
-    if (newStatus === "confirmed" && onQuickConfirmPrint) {
+    if (newStatus === "confirmed" && onQuickConfirmPrint && !silentPrintOnConfirm) {
       printWin = window.open("", "_blank");
     }
 

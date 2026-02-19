@@ -9,15 +9,17 @@ interface OrderListProps {
   onPrint?: (order: Order) => void;
   onQuickConfirmPrint?: (preOpenedWindow: Window | null, order: Order) => void;
   hideValues?: boolean;
+  silentPrintOnConfirm?: boolean;
 }
 
-export function OrderList({ orders, onOrderClick, onPrint, onQuickConfirmPrint, hideValues = false }: OrderListProps) {
+export function OrderList({ orders, onOrderClick, onPrint, onQuickConfirmPrint, hideValues = false, silentPrintOnConfirm = false }: OrderListProps) {
   const updateStatus = useUpdateOrderStatus();
 
   const handleQuickStatusChange = async (order: Order, newStatus: OrderStatus) => {
     // Pre-open print window IMMEDIATELY on user gesture before any await
+    // Skip for RawBT silent print — no window needed
     let printWin: Window | null = null;
-    if (newStatus === "confirmed" && onQuickConfirmPrint) {
+    if (newStatus === "confirmed" && onQuickConfirmPrint && !silentPrintOnConfirm) {
       printWin = window.open("", "_blank");
     }
 

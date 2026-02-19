@@ -401,7 +401,28 @@ export function usePrintOrder() {
     writeAndPrint(win, htmlContent);
   }, [buildHtml]);
 
-  return { printOrder, printInWindow, buildHtml };
+  /**
+   * Print silently via RawBT app (Android).
+   * Generates receipt HTML, encodes as Base64, and navigates to rawbt: intent URL.
+   * No popup or print dialog — RawBT intercepts the URL and sends to the printer.
+   */
+  const printViaRawbt = useCallback((opts: PrintOrderOptions) => {
+    const htmlContent = buildHtml(opts);
+    try {
+      const base64 = btoa(unescape(encodeURIComponent(htmlContent)));
+      window.location.href = `rawbt:base64,${base64}`;
+    } catch {
+      // Fallback: try without encodeURIComponent for simpler content
+      try {
+        const base64 = btoa(htmlContent);
+        window.location.href = `rawbt:base64,${base64}`;
+      } catch {
+        console.error("Failed to encode receipt for RawBT");
+      }
+    }
+  }, [buildHtml]);
+
+  return { printOrder, printInWindow, printViaRawbt, buildHtml };
 }
 
 export { generateReceiptHtml };
