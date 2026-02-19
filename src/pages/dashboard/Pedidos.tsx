@@ -87,17 +87,38 @@ export default function Pedidos() {
           printedOrdersRef.current.add(order.id);
           
           try {
-            const { data: freshOrder, error } = await supabase
-              .from("orders")
-              .select(`
-                *,
-                customer:customers(*),
-                items:order_items(*, addons:order_item_addons(*))
-              `)
-              .eq("id", order.id)
-              .single();
+            // Wait a moment for addons to be saved (race condition with quick orders)
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            const fetchOrderWithAddons = async (retries = 2): Promise<any> => {
+              const { data: freshOrder, error } = await supabase
+                .from("orders")
+                .select(`
+                  *,
+                  customer:customers(*),
+                  items:order_items(*, addons:order_item_addons(*))
+                `)
+                .eq("id", order.id)
+                .single();
+
+              if (error || !freshOrder) return null;
+
+              // Check if items exist but addons might still be saving
+              const hasItems = freshOrder.items && freshOrder.items.length > 0;
+              const hasAnyAddons = freshOrder.items?.some((i: any) => i.addons && i.addons.length > 0);
+              
+              // If items exist but no addons found and we have retries, wait and try again
+              if (hasItems && !hasAnyAddons && retries > 0) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                return fetchOrderWithAddons(retries - 1);
+              }
+
+              return freshOrder;
+            };
+
+            const freshOrder = await fetchOrderWithAddons();
             
-            if (error || !freshOrder) {
+            if (!freshOrder) {
               toast.error("Erro ao buscar pedido para impressão");
               return;
             }
