@@ -327,6 +327,145 @@ function writeAndPrint(win: Window, htmlContent: string) {
   setTimeout(() => { if (!triggered) { triggered = true; triggerPrint(); } }, 3000);
 }
 
+const LINE_WIDTH = 32;
+const SEPARATOR = '-'.repeat(LINE_WIDTH);
+const DOUBLE_SEPARATOR = '='.repeat(LINE_WIDTH);
+
+function centerText(text: string): string {
+  if (text.length >= LINE_WIDTH) return text;
+  const pad = Math.floor((LINE_WIDTH - text.length) / 2);
+  return ' '.repeat(pad) + text;
+}
+
+function rightAlignRow(label: string, value: string): string {
+  const gap = LINE_WIDTH - label.length - value.length;
+  if (gap <= 0) return label + ' ' + value;
+  return label + ' '.repeat(gap) + value;
+}
+
+function formatBRL(v: number): string {
+  return `R$ ${v.toFixed(2).replace('.', ',')}`;
+}
+
+function generateReceiptText(opts: PrintOrderOptions): string {
+  const order = opts.order;
+  const safeOrder = {
+    ...order,
+    items: order.items || [],
+    customer: order.customer || { name: 'Cliente', phone: '' },
+    subtotal: order.subtotal || 0,
+    total: order.total || 0,
+    delivery_fee: order.delivery_fee || 0,
+    order_number: order.order_number || 0,
+    order_type: order.order_type || 'delivery',
+    payment_method: order.payment_method || 'cash',
+    created_at: order.created_at || new Date().toISOString(),
+  };
+
+  const orderTypeLabels: Record<string, string> = {
+    delivery: 'Entrega',
+    pickup: 'Retirada',
+    dine_in: 'No Local',
+  };
+
+  const paymentLabels: Record<string, string> = {
+    pix: 'Pix',
+    credit: 'Credito',
+    debit: 'Debito',
+    cash: 'Dinheiro',
+  };
+
+  const lines: string[] = [];
+
+  // Scheduled banner
+  if ((order as any).scheduled_for) {
+    lines.push(DOUBLE_SEPARATOR);
+    lines.push(centerText('AGENDADO'));
+    lines.push(centerText(formatInSaoPaulo((order as any).scheduled_for, "dd/MM 'as' HH:mm", { locale: ptBR })));
+    lines.push(DOUBLE_SEPARATOR);
+  }
+
+  // Header
+  lines.push(centerText(opts.establishmentName.toUpperCase()));
+  lines.push(centerText(`PEDIDO #${safeOrder.order_number}`));
+  lines.push(centerText(orderTypeLabels[safeOrder.order_type] || safeOrder.order_type));
+
+  if ((order as any).table_number) {
+    lines.push(centerText(`MESA ${(order as any).table_number}`));
+  }
+
+  lines.push(centerText(formatInSaoPaulo(safeOrder.created_at, 'dd/MM/yyyy HH:mm', { locale: ptBR })));
+  lines.push(SEPARATOR);
+
+  // Customer
+  lines.push('CLIENTE');
+  lines.push((order.customer as any)?.name || 'Cliente');
+  lines.push((order.customer as any)?.phone || '-');
+
+  if (safeOrder.order_type === 'delivery' && (order.customer as any)?.address) {
+    const c = order.customer as any;
+    lines.push(`${c.address}${c.address_number ? `, ${c.address_number}` : ''}`);
+    if (c.address_complement) lines.push(c.address_complement);
+    lines.push(`${c.neighborhood || ''}${c.city ? ` - ${c.city}` : ''}`);
+  }
+  lines.push(SEPARATOR);
+
+  // Items
+  lines.push('ITENS');
+  if (safeOrder.items.length > 0) {
+    for (const item of safeOrder.items) {
+      const qty = `${item.quantity || 1}x `;
+      const name = item.product_name || 'Produto';
+      const price = formatBRL(item.total || 0);
+      const nameMax = LINE_WIDTH - qty.length - price.length - 1;
+      const truncName = name.length > nameMax ? name.substring(0, nameMax) : name;
+      lines.push(rightAlignRow(qty + truncName, price));
+
+      if (item.addons) {
+        for (const addon of item.addons) {
+          lines.push(`  + ${addon.quantity || 1}x ${addon.addon_name} (${formatBRL(addon.addon_price || 0)})`);
+        }
+      }
+      if ((item as any).observation) {
+        lines.push(`  Obs: ${(item as any).observation}`);
+      }
+    }
+  } else {
+    lines.push('Nenhum item');
+  }
+  lines.push(SEPARATOR);
+
+  // Payment & totals
+  lines.push(`PAGAMENTO: ${paymentLabels[safeOrder.payment_method] || safeOrder.payment_method}`);
+  lines.push(rightAlignRow('Subtotal', formatBRL(safeOrder.subtotal)));
+  if (safeOrder.delivery_fee > 0) {
+    lines.push(rightAlignRow('Taxa entrega', formatBRL(safeOrder.delivery_fee)));
+  }
+  lines.push(DOUBLE_SEPARATOR);
+  lines.push(rightAlignRow('TOTAL', formatBRL(safeOrder.total)));
+  lines.push(DOUBLE_SEPARATOR);
+
+  // Change
+  if (safeOrder.payment_method === 'cash' && (safeOrder as any).change_for && (safeOrder as any).change_for > 0) {
+    lines.push(`TROCO PARA: ${formatBRL((safeOrder as any).change_for)}`);
+    lines.push(`LEVAR: ${formatBRL((safeOrder as any).change_for - safeOrder.total)}`);
+  }
+
+  // Notes
+  if (safeOrder.notes) {
+    lines.push(SEPARATOR);
+    lines.push('OBSERVACOES');
+    lines.push(safeOrder.notes);
+  }
+
+  lines.push(SEPARATOR);
+  lines.push(centerText('Obrigado pela'));
+  lines.push(centerText('preferencia!'));
+  lines.push('');
+
+  return lines.join('\n');
+}
+
 export function usePrintOrder() {
   /**
    * Generate receipt HTML from order options.
@@ -403,24 +542,23 @@ export function usePrintOrder() {
 
   /**
    * Print silently via RawBT app (Android).
-   * Generates receipt HTML, encodes as Base64, and navigates to rawbt: intent URL.
-   * No popup or print dialog — RawBT intercepts the URL and sends to the printer.
+   * Generates a plain-text receipt and sends via rawbt:base64 intent URL.
+   * RawBT does NOT render HTML — it sends raw bytes to the printer.
    */
   const printViaRawbt = useCallback((opts: PrintOrderOptions) => {
-    const htmlContent = buildHtml(opts);
+    const textContent = generateReceiptText(opts);
     try {
-      const base64 = btoa(unescape(encodeURIComponent(htmlContent)));
+      const base64 = btoa(unescape(encodeURIComponent(textContent)));
       window.location.href = `rawbt:base64,${base64}`;
     } catch {
-      // Fallback: try without encodeURIComponent for simpler content
       try {
-        const base64 = btoa(htmlContent);
+        const base64 = btoa(textContent);
         window.location.href = `rawbt:base64,${base64}`;
       } catch {
         console.error("Failed to encode receipt for RawBT");
       }
     }
-  }, [buildHtml]);
+  }, []);
 
   return { printOrder, printInWindow, printViaRawbt, buildHtml };
 }
