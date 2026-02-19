@@ -10,6 +10,8 @@ export interface PrintSettings {
   printMode: string;
   isPrintOnOrder: boolean;
   isPrintOnConfirm: boolean;
+  isRawbtOnOrder: boolean;
+  isRawbtOnConfirm: boolean;
 }
 
 export function usePrintSettings(): PrintSettings {
@@ -25,7 +27,9 @@ export function usePrintSettings(): PrintSettings {
     printLineHeight: establishment?.print_line_height ?? 1.4,
     printContrastHigh: establishment?.print_contrast_high === true,
     printMode,
-    isPrintOnOrder: printMode.includes("on_order"),
-    isPrintOnConfirm: printMode.includes("on_confirm"),
+    isPrintOnOrder: printMode === "browser_on_order",
+    isPrintOnConfirm: printMode === "browser_on_confirm",
+    isRawbtOnOrder: printMode === "rawbt_on_order",
+    isRawbtOnConfirm: printMode === "rawbt_on_confirm",
   };
 }

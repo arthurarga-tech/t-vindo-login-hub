@@ -16,7 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useWhatsAppNotification } from "@/hooks/useWhatsAppNotification";
 import { generateReceiptHtml } from "@/hooks/usePrintOrder";
 
-type PrintMode = "none" | "browser_on_order" | "browser_on_confirm";
+type PrintMode = "none" | "browser_on_order" | "browser_on_confirm" | "rawbt_on_order" | "rawbt_on_confirm";
 
 const templateLabels: Record<string, { label: string; description: string }> = {
   confirmed: { label: "Pedido Confirmado", description: "Quando o pedido é confirmado" },
@@ -73,6 +73,10 @@ export default function Configuracoes() {
         newPrintMode = "browser_on_order";
       } else if (legacyPrintMode === "on_confirm" || legacyPrintMode === "browser_on_confirm") {
         newPrintMode = "browser_on_confirm";
+      } else if (legacyPrintMode === "rawbt_on_order") {
+        newPrintMode = "rawbt_on_order";
+      } else if (legacyPrintMode === "rawbt_on_confirm") {
+        newPrintMode = "rawbt_on_confirm";
       }
       setPrintMode(newPrintMode);
       setPrintFontSize(establishment.print_font_size ?? 12);
@@ -259,14 +263,47 @@ export default function Configuracoes() {
                 </p>
               </div>
             </div>
+
+            <div className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50 border border-primary/20">
+              <RadioGroupItem value="rawbt_on_order" id="print-rawbt-on-order" className="mt-0.5" data-testid="configuracoes-print-mode-rawbt-on-order" />
+              <div>
+                <Label htmlFor="print-rawbt-on-order" className="font-medium cursor-pointer">
+                  📱 RawBT — Imprimir ao receber pedido
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Impressão silenciosa via app RawBT quando um novo pedido chegar (sem diálogo)
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50 border border-primary/20">
+              <RadioGroupItem value="rawbt_on_confirm" id="print-rawbt-on-confirm" className="mt-0.5" data-testid="configuracoes-print-mode-rawbt-on-confirm" />
+              <div>
+                <Label htmlFor="print-rawbt-on-confirm" className="font-medium cursor-pointer">
+                  📱 RawBT — Imprimir ao confirmar pedido
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Impressão silenciosa via app RawBT quando você confirmar o pedido (sem diálogo)
+                </p>
+              </div>
+            </div>
           </RadioGroup>
 
-          <div className="p-3 bg-muted/50 rounded-lg">
-            <p className="text-sm text-muted-foreground">
-              💡 Ao imprimir, selecione a impressora desejada no diálogo do navegador. Para definir uma impressora padrão, 
-              marque a opção "Lembrar" ou configure nas preferências de impressão do seu navegador.
-            </p>
-          </div>
+          {printMode.startsWith("rawbt") ? (
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                📱 Para usar o RawBT, instale o app <strong>RawBT</strong> no seu smartphone Android e configure a impressora Bluetooth/USB nele. 
+                A impressão será enviada automaticamente sem abrir diálogo.
+              </p>
+            </div>
+          ) : (
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                💡 Ao imprimir, selecione a impressora desejada no diálogo do navegador. Para definir uma impressora padrão, 
+                marque a opção "Lembrar" ou configure nas preferências de impressão do seu navegador.
+              </p>
+            </div>
+          )}
 
           <Button
             variant="outline"
