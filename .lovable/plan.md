@@ -1,46 +1,69 @@
 
-# Impressao Silenciosa via RawBT
 
-## O que sera feito
+# Correcao da Impressao RawBT - Texto Puro
 
-Adicionar 2 novas opcoes de impressao automatica silenciosa via aplicativo RawBT no Android, alem das opcoes existentes de impressao pelo navegador:
+## Problema
 
-1. **RawBT ao receber pedido** - imprime automaticamente e silenciosamente quando um novo pedido chega
-2. **RawBT ao confirmar pedido** - imprime silenciosamente quando o operador confirma o pedido
+O esquema de URL `rawbt:base64,` envia dados brutos diretamente para a impressora termica. Ele **nao renderiza HTML** — simplesmente passa os bytes decodificados para a impressora. Por isso, a impressora esta imprimindo o codigo-fonte HTML como texto.
 
-A diferenca das opcoes atuais (navegador) e que o RawBT imprime **sem abrir dialogo de impressao** - o pedido vai direto para a impressora termica conectada via Bluetooth/USB.
+## Solucao
 
-## Como funciona o RawBT
-
-O aplicativo RawBT no Android intercepta URLs com o esquema `rawbt:base64,...`. Ao navegar para essa URL, o app captura o HTML codificado em Base64 e envia diretamente para a impressora termica, sem interacao do usuario.
+Criar uma funcao que gera um **recibo em texto puro** (sem HTML) formatado para impressoras termicas de 58mm (~32 caracteres por linha), e usar esse texto no `printViaRawbt` ao inves do HTML.
 
 ## Mudancas Tecnicas
 
-### 1. Atualizar tipo `PrintMode` em `Configuracoes.tsx`
-- Adicionar `"rawbt_on_order"` e `"rawbt_on_confirm"` ao tipo `PrintMode`
-- Adicionar 2 novos RadioGroup items na secao de impressao
+### 1. Adicionar funcao `generateReceiptText` em `usePrintOrder.ts`
 
-### 2. Atualizar `usePrintSettings.ts`
-- Adicionar flags `isRawbtOnOrder` e `isRawbtOnConfirm`
-- Manter compatibilidade com as flags existentes `isPrintOnOrder` e `isPrintOnConfirm`
+Criar uma nova funcao que gera o recibo como texto puro formatado, com:
+- Alinhamento central para cabecalho (nome do estabelecimento, numero do pedido)
+- Separadores com tracos `--------------------------------`
+- Itens formatados com quantidade, nome e preco
+- Addons com prefixo `+`
+- Totais alinhados a direita
+- Dados do cliente e endereco
+- Observacoes
+- Informacao de agendamento (se houver)
+- Mesa (se houver)
+- Troco (se pagamento em dinheiro)
 
-### 3. Adicionar funcao `printViaRawbt` em `usePrintOrder.ts`
-- Gera o HTML do recibo
-- Converte para Base64
-- Navega para `rawbt:base64,<html-base64>` usando `window.location.href`
-- Nao abre popup nem dialogo - impressao silenciosa
+Exemplo de saida:
+```text
+      ACAI DA JANA
+     PEDIDO #409
+      Entrega
+  19/02/2026 08:07
+--------------------------------
+CLIENTE
+Fulano de Tal
+(11) 99999-9999
+Rua Exemplo, 123
+Bairro - Cidade
+--------------------------------
+ITENS
+1x Acai 500ml         R$ 25,00
+  + 1x Granola         R$ 2,00
+  Obs: Sem banana
+2x Agua               R$ 8,00
+--------------------------------
+PAGAMENTO: Pix
+Subtotal          R$ 35,00
+Taxa entrega       R$ 5,00
+================================
+TOTAL             R$ 40,00
+================================
+--------------------------------
+Obrigado pela preferencia!
+```
 
-### 4. Atualizar `Pedidos.tsx`
-- No `useEffect` de novos pedidos: se `isRawbtOnOrder`, chamar `printViaRawbt` ao inves de `printOrder`
-- No `handleQuickConfirmPrint`: se `isRawbtOnConfirm`, chamar `printViaRawbt` e nao abrir `window.open()`
+### 2. Atualizar `printViaRawbt` em `usePrintOrder.ts`
 
-### 5. Atualizar `OrderList.tsx` e `OrderKanban.tsx`
-- Quando o modo e RawBT ao confirmar, nao pre-abrir `window.open()` (nao e necessario para RawBT)
+Modificar para usar `generateReceiptText` ao inves de `buildHtml`:
+- Gerar texto puro do recibo
+- Codificar em Base64
+- Navegar para `rawbt:base64,<texto-base64>`
 
-### Arquivos a modificar:
-- `src/hooks/usePrintSettings.ts` - novas flags RawBT
-- `src/hooks/usePrintOrder.ts` - nova funcao `printViaRawbt`
-- `src/pages/dashboard/Configuracoes.tsx` - novas opcoes no RadioGroup
-- `src/pages/dashboard/Pedidos.tsx` - logica condicional RawBT vs browser
-- `src/components/pedidos/OrderList.tsx` - condicional para nao pre-abrir window
-- `src/components/pedidos/OrderKanban.tsx` - condicional para nao pre-abrir window
+### 3. Arquivos a modificar
+- `src/hooks/usePrintOrder.ts` - adicionar `generateReceiptText` e atualizar `printViaRawbt`
+
+Nenhuma outra mudanca necessaria — apenas o conteudo enviado ao RawBT muda de HTML para texto puro. As opcoes de configuracao (tamanho da fonte, margens etc.) se aplicam apenas a impressao pelo navegador e nao afetam o texto puro do RawBT.
+
