@@ -1,69 +1,56 @@
 
 
-# Correcao da Impressao RawBT - Texto Puro
+# Fila de Impressao Inteligente e Opcao de Precos nos Adicionais
 
-## Problema
+## Resumo
 
-O esquema de URL `rawbt:base64,` envia dados brutos diretamente para a impressora termica. Ele **nao renderiza HTML** — simplesmente passa os bytes decodificados para a impressora. Por isso, a impressora esta imprimindo o codigo-fonte HTML como texto.
+Tres melhorias na impressao automatica:
+1. **Evitar impressao duplicada** usando localStorage para persistir IDs de pedidos ja impressos (sobrevive a refresh)
+2. **Fila sequencial** para imprimir pedidos na ordem correta quando chegam simultaneamente
+3. **Nova configuracao** para exibir ou ocultar precos dos adicionais em todas as modalidades de impressao
 
-## Solucao
-
-Criar uma funcao que gera um **recibo em texto puro** (sem HTML) formatado para impressoras termicas de 58mm (~32 caracteres por linha), e usar esse texto no `printViaRawbt` ao inves do HTML.
+Os botoes manuais de impressao nao serao alterados.
 
 ## Mudancas Tecnicas
 
-### 1. Adicionar funcao `generateReceiptText` em `usePrintOrder.ts`
+### 1. Novo campo no banco: `print_addon_prices` (boolean)
 
-Criar uma nova funcao que gera o recibo como texto puro formatado, com:
-- Alinhamento central para cabecalho (nome do estabelecimento, numero do pedido)
-- Separadores com tracos `--------------------------------`
-- Itens formatados com quantidade, nome e preco
-- Addons com prefixo `+`
-- Totais alinhados a direita
-- Dados do cliente e endereco
-- Observacoes
-- Informacao de agendamento (se houver)
-- Mesa (se houver)
-- Troco (se pagamento em dinheiro)
+Adicionar coluna `print_addon_prices` na tabela `establishments` com default `true`.
 
-Exemplo de saida:
-```text
-      ACAI DA JANA
-     PEDIDO #409
-      Entrega
-  19/02/2026 08:07
---------------------------------
-CLIENTE
-Fulano de Tal
-(11) 99999-9999
-Rua Exemplo, 123
-Bairro - Cidade
---------------------------------
-ITENS
-1x Acai 500ml         R$ 25,00
-  + 1x Granola         R$ 2,00
-  Obs: Sem banana
-2x Agua               R$ 8,00
---------------------------------
-PAGAMENTO: Pix
-Subtotal          R$ 35,00
-Taxa entrega       R$ 5,00
-================================
-TOTAL             R$ 40,00
-================================
---------------------------------
-Obrigado pela preferencia!
-```
+### 2. Atualizar `usePrintSettings.ts`
 
-### 2. Atualizar `printViaRawbt` em `usePrintOrder.ts`
+- Adicionar campo `printAddonPrices: boolean` ao retorno
+- Ler de `establishment?.print_addon_prices ?? true`
 
-Modificar para usar `generateReceiptText` ao inves de `buildHtml`:
-- Gerar texto puro do recibo
-- Codificar em Base64
-- Navegar para `rawbt:base64,<texto-base64>`
+### 3. Atualizar `PrintOrderOptions` e funcoes de impressao em `usePrintOrder.ts`
 
-### 3. Arquivos a modificar
-- `src/hooks/usePrintOrder.ts` - adicionar `generateReceiptText` e atualizar `printViaRawbt`
+- Adicionar `printAddonPrices?: boolean` na interface `PrintOrderOptions`
+- Em `generateReceiptHtml`: condicionar exibicao do preco do addon ao flag
+- Em `generateReceiptText` (RawBT): condicionar exibicao do preco do addon ao flag
 
-Nenhuma outra mudanca necessaria — apenas o conteudo enviado ao RawBT muda de HTML para texto puro. As opcoes de configuracao (tamanho da fonte, margens etc.) se aplicam apenas a impressao pelo navegador e nao afetam o texto puro do RawBT.
+### 4. Fila de impressao e anti-duplicata em `Pedidos.tsx`
+
+- Substituir `printedOrdersRef` (Set em memoria) por leitura/escrita em `localStorage` com chave `auto_printed_orders`
+  - Guardar array de IDs, limpar entradas com mais de 24h para nao crescer infinitamente
+- Implementar fila sequencial: ao detectar novos pedidos pendentes, adiciona-los a uma fila e processar um de cada vez (aguardar o fetch + envio ao RawBT/browser antes de processar o proximo)
+- Ordenar novos pedidos por `order_number` antes de enfileirar
+
+### 5. Configuracoes UI em `Configuracoes.tsx`
+
+- Adicionar estado `printAddonPrices` com Switch na secao de personalizacao do recibo
+- Incluir no `handleSave`
+
+### 6. Passar `printAddonPrices` em todos os locais que chamam impressao
+
+- `Pedidos.tsx`: auto-print e `handlePrintOrder` e `handleQuickConfirmPrint`
+- `OrderDetailModal`: impressao manual
+
+### Arquivos a modificar
+
+- `supabase/migrations/` - nova migracao para coluna `print_addon_prices`
+- `src/hooks/usePrintSettings.ts` - novo campo
+- `src/hooks/usePrintOrder.ts` - condicional de precos nos addons
+- `src/pages/dashboard/Pedidos.tsx` - fila sequencial + localStorage anti-duplicata
+- `src/pages/dashboard/Configuracoes.tsx` - novo switch na UI
+- `src/components/pedidos/OrderDetailModal.tsx` - passar novo prop
 
