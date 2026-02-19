@@ -304,6 +304,7 @@ export type Database = {
           pix_key: string | null
           pix_key_type: string | null
           preparation_time_mode: string | null
+          print_addon_prices: boolean | null
           print_contrast_high: boolean | null
           print_font_bold: boolean | null
           print_font_size: number | null
@@ -355,6 +356,7 @@ export type Database = {
           pix_key?: string | null
           pix_key_type?: string | null
           preparation_time_mode?: string | null
+          print_addon_prices?: boolean | null
           print_contrast_high?: boolean | null
           print_font_bold?: boolean | null
           print_font_size?: number | null
@@ -406,6 +408,7 @@ export type Database = {
           pix_key?: string | null
           pix_key_type?: string | null
           preparation_time_mode?: string | null
+          print_addon_prices?: boolean | null
           print_contrast_high?: boolean | null
           print_font_bold?: boolean | null
           print_font_size?: number | null

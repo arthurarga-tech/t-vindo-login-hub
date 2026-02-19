@@ -13,6 +13,7 @@ interface PrintOrderOptions {
   printFontBold?: boolean;
   printLineHeight?: number;
   printContrastHigh?: boolean;
+  printAddonPrices?: boolean;
 }
 
 export interface PrintResult {
@@ -29,7 +30,8 @@ function generateReceiptHtml(
   _applyPrinterOffset: boolean = true,
   fontBold: boolean = true,
   lineHeight: number = 1.4,
-  highContrast: boolean = false
+  highContrast: boolean = false,
+  showAddonPrices: boolean = true
 ): string {
   const safeOrder = {
     ...order,
@@ -251,7 +253,7 @@ ${formatInSaoPaulo((order as any).scheduled_for, "dd/MM 'às' HH:mm", { locale: 
 <span class="item-name">${item.product_name || "Produto"}</span>
 <span class="item-price">R$ ${(item.total || 0).toFixed(2).replace(".", ",")}</span>
 </div>${item.addons?.map(addon => `
-<div class="addon">+ ${addon.quantity || 1}x ${addon.addon_name} (R$ ${(addon.addon_price || 0).toFixed(2).replace(".", ",")})</div>`).join("") || ""}${(item as any).observation ? `<div class="addon" style="font-style: italic;">Obs: ${(item as any).observation}</div>` : ""}`).join("") : '<div class="item">Nenhum item</div>'}
+<div class="addon">+ ${addon.quantity || 1}x ${addon.addon_name}${showAddonPrices ? ` (R$ ${(addon.addon_price || 0).toFixed(2).replace(".", ",")})` : ''}</div>`).join("") || ""}${(item as any).observation ? `<div class="addon" style="font-style: italic;">Obs: ${(item as any).observation}</div>` : ""}`).join("") : '<div class="item">Nenhum item</div>'}
 </div>
 <div class="section">
 <div class="section-title">Pagamento: ${paymentMethodLabels[safeOrder.payment_method] || safeOrder.payment_method}</div>
@@ -430,8 +432,10 @@ function generateReceiptText(opts: PrintOrderOptions): string {
       lines.push(ESC_BOLD_ON + rightAlignRow(qty + truncName, price) + ESC_BOLD_OFF);
 
       if (item.addons && item.addons.length > 0) {
+        const showPrices = opts.printAddonPrices !== false;
         for (const addon of item.addons) {
-          lines.push(`  + ${addon.quantity || 1}x ${addon.addon_name}`);
+          const priceStr = showPrices ? ` (${formatBRL(addon.addon_price || 0)})` : '';
+          lines.push(`  + ${addon.quantity || 1}x ${addon.addon_name}${priceStr}`);
         }
       }
       if ((item as any).observation) {
@@ -489,7 +493,8 @@ export function usePrintOrder() {
       true,
       opts.printFontBold ?? true,
       opts.printLineHeight ?? 1.4,
-      opts.printContrastHigh ?? false
+      opts.printContrastHigh ?? false,
+      opts.printAddonPrices ?? true
     );
   }, []);
 

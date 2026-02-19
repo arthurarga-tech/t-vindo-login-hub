@@ -45,6 +45,7 @@ export default function Configuracoes() {
   const [printFontBold, setPrintFontBold] = useState(true);
   const [printLineHeight, setPrintLineHeight] = useState(1.4);
   const [printContrastHigh, setPrintContrastHigh] = useState(false);
+  const [printAddonPrices, setPrintAddonPrices] = useState(true);
   
   // Theme colors
   const [themePrimaryColor, setThemePrimaryColor] = useState("#ea580c");
@@ -85,6 +86,7 @@ export default function Configuracoes() {
       setPrintFontBold(establishment.print_font_bold !== false);
       setPrintLineHeight(establishment.print_line_height ?? 1.4);
       setPrintContrastHigh(establishment.print_contrast_high === true);
+      setPrintAddonPrices((establishment as any).print_addon_prices !== false);
       setThemePrimaryColor(establishment.theme_primary_color || "#ea580c");
       setThemeSecondaryColor(establishment.theme_secondary_color || "#1e293b");
       setCardCreditFee(String(establishment.card_credit_fee || 0));
@@ -112,6 +114,7 @@ export default function Configuracoes() {
           print_font_bold: printFontBold,
           print_line_height: printLineHeight,
           print_contrast_high: printContrastHigh,
+          print_addon_prices: printAddonPrices,
           theme_primary_color: themePrimaryColor,
           theme_secondary_color: themeSecondaryColor,
           card_credit_fee: parseFloat(cardCreditFee.replace(",", ".")) || 0,
@@ -503,6 +506,22 @@ export default function Configuracoes() {
                   id="printContrastHigh"
                   checked={printContrastHigh}
                   onCheckedChange={setPrintContrastHigh}
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                <div className="space-y-0.5">
+                  <Label htmlFor="printAddonPrices" className="font-medium cursor-pointer">
+                    Mostrar preços dos adicionais
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Exibe o valor de cada adicional no recibo impresso
+                  </p>
+                </div>
+                <Switch
+                  id="printAddonPrices"
+                  checked={printAddonPrices}
+                  onCheckedChange={setPrintAddonPrices}
                 />
               </div>
             </div>

@@ -12,6 +12,7 @@ export interface PrintSettings {
   isPrintOnConfirm: boolean;
   isRawbtOnOrder: boolean;
   isRawbtOnConfirm: boolean;
+  printAddonPrices: boolean;
 }
 
 export function usePrintSettings(): PrintSettings {
@@ -31,5 +32,6 @@ export function usePrintSettings(): PrintSettings {
     isPrintOnConfirm: printMode === "browser_on_confirm",
     isRawbtOnOrder: printMode === "rawbt_on_order",
     isRawbtOnConfirm: printMode === "rawbt_on_confirm",
+    printAddonPrices: (establishment as any)?.print_addon_prices ?? true,
   };
 }
