@@ -331,6 +331,14 @@ const LINE_WIDTH = 32;
 const SEPARATOR = '-'.repeat(LINE_WIDTH);
 const DOUBLE_SEPARATOR = '='.repeat(LINE_WIDTH);
 
+// ESC/POS commands for thermal printers
+const ESC_BOLD_ON = '\x1B\x45\x01';
+const ESC_BOLD_OFF = '\x1B\x45\x00';
+const ESC_DOUBLE_ON = '\x1B\x21\x30'; // Double height + double width + bold
+const ESC_DOUBLE_OFF = '\x1B\x21\x00';
+const ESC_CENTER = '\x1B\x61\x01';
+const ESC_LEFT = '\x1B\x61\x00';
+
 function centerText(text: string): string {
   if (text.length >= LINE_WIDTH) return text;
   const pad = Math.floor((LINE_WIDTH - text.length) / 2);
@@ -380,26 +388,26 @@ function generateReceiptText(opts: PrintOrderOptions): string {
   // Scheduled banner
   if ((order as any).scheduled_for) {
     lines.push(DOUBLE_SEPARATOR);
-    lines.push(centerText('AGENDADO'));
-    lines.push(centerText(formatInSaoPaulo((order as any).scheduled_for, "dd/MM 'as' HH:mm", { locale: ptBR })));
+    lines.push(ESC_BOLD_ON + centerText('AGENDADO') + ESC_BOLD_OFF);
+    lines.push(ESC_BOLD_ON + centerText(formatInSaoPaulo((order as any).scheduled_for, "dd/MM 'as' HH:mm", { locale: ptBR })) + ESC_BOLD_OFF);
     lines.push(DOUBLE_SEPARATOR);
   }
 
   // Header
-  lines.push(centerText(opts.establishmentName.toUpperCase()));
-  lines.push(centerText(`PEDIDO #${safeOrder.order_number}`));
+  lines.push(ESC_CENTER + ESC_BOLD_ON + opts.establishmentName.toUpperCase() + ESC_BOLD_OFF + ESC_LEFT);
+  lines.push(ESC_CENTER + ESC_DOUBLE_ON + `PEDIDO #${safeOrder.order_number}` + ESC_DOUBLE_OFF + ESC_LEFT);
   lines.push(centerText(orderTypeLabels[safeOrder.order_type] || safeOrder.order_type));
 
   if ((order as any).table_number) {
-    lines.push(centerText(`MESA ${(order as any).table_number}`));
+    lines.push(ESC_CENTER + ESC_DOUBLE_ON + `MESA ${(order as any).table_number}` + ESC_DOUBLE_OFF + ESC_LEFT);
   }
 
   lines.push(centerText(formatInSaoPaulo(safeOrder.created_at, 'dd/MM/yyyy HH:mm', { locale: ptBR })));
   lines.push(SEPARATOR);
 
   // Customer
-  lines.push('CLIENTE');
-  lines.push((order.customer as any)?.name || 'Cliente');
+  lines.push(ESC_BOLD_ON + 'CLIENTE' + ESC_BOLD_OFF);
+  lines.push(ESC_BOLD_ON + ((order.customer as any)?.name || 'Cliente') + ESC_BOLD_OFF);
   lines.push((order.customer as any)?.phone || '-');
 
   if (safeOrder.order_type === 'delivery' && (order.customer as any)?.address) {
@@ -411,7 +419,7 @@ function generateReceiptText(opts: PrintOrderOptions): string {
   lines.push(SEPARATOR);
 
   // Items
-  lines.push('ITENS');
+  lines.push(ESC_BOLD_ON + 'ITENS' + ESC_BOLD_OFF);
   if (safeOrder.items.length > 0) {
     for (const item of safeOrder.items) {
       const qty = `${item.quantity || 1}x `;
@@ -419,9 +427,9 @@ function generateReceiptText(opts: PrintOrderOptions): string {
       const price = formatBRL(item.total || 0);
       const nameMax = LINE_WIDTH - qty.length - price.length - 1;
       const truncName = name.length > nameMax ? name.substring(0, nameMax) : name;
-      lines.push(rightAlignRow(qty + truncName, price));
+      lines.push(ESC_BOLD_ON + rightAlignRow(qty + truncName, price) + ESC_BOLD_OFF);
 
-      if (item.addons) {
+      if (item.addons && item.addons.length > 0) {
         for (const addon of item.addons) {
           lines.push(`  + ${addon.quantity || 1}x ${addon.addon_name} (${formatBRL(addon.addon_price || 0)})`);
         }
@@ -436,25 +444,25 @@ function generateReceiptText(opts: PrintOrderOptions): string {
   lines.push(SEPARATOR);
 
   // Payment & totals
-  lines.push(`PAGAMENTO: ${paymentLabels[safeOrder.payment_method] || safeOrder.payment_method}`);
+  lines.push(ESC_BOLD_ON + `PAGAMENTO: ${paymentLabels[safeOrder.payment_method] || safeOrder.payment_method}` + ESC_BOLD_OFF);
   lines.push(rightAlignRow('Subtotal', formatBRL(safeOrder.subtotal)));
   if (safeOrder.delivery_fee > 0) {
     lines.push(rightAlignRow('Taxa entrega', formatBRL(safeOrder.delivery_fee)));
   }
   lines.push(DOUBLE_SEPARATOR);
-  lines.push(rightAlignRow('TOTAL', formatBRL(safeOrder.total)));
+  lines.push(ESC_BOLD_ON + rightAlignRow('TOTAL', formatBRL(safeOrder.total)) + ESC_BOLD_OFF);
   lines.push(DOUBLE_SEPARATOR);
 
   // Change
   if (safeOrder.payment_method === 'cash' && (safeOrder as any).change_for && (safeOrder as any).change_for > 0) {
-    lines.push(`TROCO PARA: ${formatBRL((safeOrder as any).change_for)}`);
-    lines.push(`LEVAR: ${formatBRL((safeOrder as any).change_for - safeOrder.total)}`);
+    lines.push(ESC_BOLD_ON + `TROCO PARA: ${formatBRL((safeOrder as any).change_for)}` + ESC_BOLD_OFF);
+    lines.push(ESC_BOLD_ON + `LEVAR: ${formatBRL((safeOrder as any).change_for - safeOrder.total)}` + ESC_BOLD_OFF);
   }
 
   // Notes
   if (safeOrder.notes) {
     lines.push(SEPARATOR);
-    lines.push('OBSERVACOES');
+    lines.push(ESC_BOLD_ON + 'OBSERVACOES' + ESC_BOLD_OFF);
     lines.push(safeOrder.notes);
   }
 
