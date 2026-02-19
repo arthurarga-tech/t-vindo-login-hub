@@ -431,7 +431,7 @@ function generateReceiptText(opts: PrintOrderOptions): string {
 
       if (item.addons && item.addons.length > 0) {
         for (const addon of item.addons) {
-          lines.push(`  + ${addon.quantity || 1}x ${addon.addon_name} (${formatBRL(addon.addon_price || 0)})`);
+          lines.push(`  + ${addon.quantity || 1}x ${addon.addon_name}`);
         }
       }
       if ((item as any).observation) {
