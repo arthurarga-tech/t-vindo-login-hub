@@ -65,3 +65,78 @@ export function usePublicAddonsForCategory(categoryId: string | undefined) {
     enabled: !!categoryId,
   });
 }
+
+// Hook that merges category-level addons + product-exclusive addons
+export function usePublicAddonsForProduct(
+  productId: string | undefined,
+  categoryId: string | undefined
+) {
+  return useQuery({
+    queryKey: ["public-addons-for-product", productId, categoryId],
+    queryFn: async () => {
+      if (!productId) return { groups: [], addons: [] };
+
+      // Fetch groups from category (via category_addon_groups)
+      const categoryGroupsPromise = categoryId
+        ? supabase
+            .from("category_addon_groups")
+            .select("addon_groups!inner(*)")
+            .eq("category_id", categoryId)
+            .eq("addon_groups.active", true)
+        : Promise.resolve({ data: [], error: null });
+
+      // Fetch groups from product (via product_addon_groups)
+      const productGroupsPromise = supabase
+        .from("product_addon_groups")
+        .select("addon_groups!inner(*)")
+        .eq("product_id", productId)
+        .eq("addon_groups.active", true);
+
+      const [categoryResult, productResult] = await Promise.all([
+        categoryGroupsPromise,
+        productGroupsPromise,
+      ]);
+
+      if (categoryResult.error) throw categoryResult.error;
+      if (productResult.error) throw productResult.error;
+
+      const categoryGroups = (categoryResult.data || []).map(
+        (row: any) => row.addon_groups as AddonGroup
+      );
+      const productGroups = (productResult.data || []).map(
+        (row: any) => row.addon_groups as AddonGroup
+      );
+
+      // Merge deduplicating by id
+      const seen = new Set<string>();
+      const allGroups: AddonGroup[] = [];
+      for (const g of [...categoryGroups, ...productGroups]) {
+        if (!seen.has(g.id)) {
+          seen.add(g.id);
+          allGroups.push(g);
+        }
+      }
+
+      if (allGroups.length === 0) {
+        return { groups: [], addons: [] };
+      }
+
+      const groupIds = allGroups.map((g) => g.id);
+
+      const { data: addons, error: addonsError } = await supabase
+        .from("addons")
+        .select("*")
+        .in("addon_group_id", groupIds)
+        .eq("active", true)
+        .order("order_position", { ascending: true });
+
+      if (addonsError) throw addonsError;
+
+      return {
+        groups: allGroups,
+        addons: (addons || []) as Addon[],
+      };
+    },
+    enabled: !!productId,
+  });
+}
