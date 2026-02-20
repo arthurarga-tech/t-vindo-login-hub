@@ -18,20 +18,16 @@ import { cn } from "@/lib/utils";
 import {
   DndContext,
   closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
   DragEndEvent,
 } from "@dnd-kit/core";
 import {
   arrayMove,
   SortableContext,
-  sortableKeyboardCoordinates,
   useSortable,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useDndSensors } from "@/hooks/useDndSensors";
 
 interface ProductListProps {
   products: Product[];
@@ -87,7 +83,7 @@ function SortableProductCard({
           <button
             {...attributes}
             {...listeners}
-            className="cursor-grab active:cursor-grabbing touch-none bg-background/80 rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="cursor-grab active:cursor-grabbing touch-none bg-background/80 rounded p-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
             data-testid={`product-card-${product.id}-drag-handle`}
             aria-label="Arrastar para reordenar"
           >
@@ -206,12 +202,7 @@ export function ProductList({
   const updateProduct = useUpdateProduct(establishmentId);
   const reorderProducts = useReorderProducts(establishmentId);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  const sensors = useDndSensors();
 
   const handleDelete = async () => {
     if (deleteId) {

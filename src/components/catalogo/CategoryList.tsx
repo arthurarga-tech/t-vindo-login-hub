@@ -17,20 +17,16 @@ import { cn } from "@/lib/utils";
 import {
   DndContext,
   closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
   DragEndEvent,
 } from "@dnd-kit/core";
 import {
   arrayMove,
   SortableContext,
-  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useDndSensors } from "@/hooks/useDndSensors";
 
 interface CategoryListProps {
   categories: Category[];
@@ -198,12 +194,7 @@ export function CategoryList({
   const updateCategory = useUpdateCategory(establishmentId);
   const reorderCategories = useReorderCategories(establishmentId);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  const sensors = useDndSensors();
 
   const handleDelete = async () => {
     if (deleteId) {
