@@ -19,23 +19,33 @@ serve(async (req) => {
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
     if (!supabaseUrl || !supabaseServiceKey) throw new Error("Supabase env vars not set");
 
+    // Webhook signature verification is mandatory for security
+    if (!webhookSecret) {
+      logStep("ERROR: STRIPE_WEBHOOK_SECRET is not configured");
+      return new Response(JSON.stringify({ error: "Webhook secret not configured" }), {
+        headers: { "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     const body = await req.text();
     let event: Stripe.Event;
 
-    // Verify webhook signature if secret is configured
-    if (webhookSecret) {
-      const signature = req.headers.get("stripe-signature");
-      if (!signature) throw new Error("No Stripe signature found");
-      
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-      logStep("Webhook signature verified");
-    } else {
-      event = JSON.parse(body);
-      logStep("Webhook received without signature verification");
+    // Always verify webhook signature — prevents forged requests
+    const signature = req.headers.get("stripe-signature");
+    if (!signature) {
+      logStep("ERROR: No Stripe signature found in request");
+      return new Response(JSON.stringify({ error: "No Stripe signature" }), {
+        headers: { "Content-Type": "application/json" },
+        status: 400,
+      });
     }
+
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    logStep("Webhook signature verified");
 
     logStep("Processing event", { type: event.type });
 
