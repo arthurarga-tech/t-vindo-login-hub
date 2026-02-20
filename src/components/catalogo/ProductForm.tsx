@@ -222,13 +222,14 @@ export function ProductForm({
               )}
             />
 
-            {/* Adicionais exclusivos do produto — só em modo de edição */}
+            {/* Adicionais do produto — só em modo de edição */}
             {product && establishmentId && (
               <>
                 <Separator />
                 <ProductAddonLinkManager
                   productId={product.id}
                   establishmentId={establishmentId}
+                  categoryId={product.category_id}
                 />
                 <Separator />
               </>
