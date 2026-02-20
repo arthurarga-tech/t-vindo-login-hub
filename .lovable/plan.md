@@ -1,117 +1,156 @@
 
-# Adicionais da Categoria na Edição do Produto + Exclusões por Produto
+# Reordenação de Adicionais + Revisão Desktop/Mobile
 
-## Contexto e Problema
+## Diagnóstico do Estado Atual
 
-Hoje, o `ProductAddonLinkManager` no formulário de edição do produto exibe apenas os grupos de adicionais vinculados **diretamente ao produto** via `product_addon_groups`. Os grupos vinculados à **categoria** do produto via `category_addon_groups` não aparecem no formulário — e o usuário não tem como excluí-los para um produto específico.
+### Drag-and-drop já implementado:
+- **Categorias** (`CategoryList.tsx`): DnD completo com `@dnd-kit`, `GripVertical`, `useReorderCategories`
+- **Produtos** (`ProductList.tsx`): DnD completo com `@dnd-kit`, `GripVertical`, `useReorderProducts`
+- **Adicionais individuais** (`AddonList.tsx`): sem DnD, sem handle de arraste
+- **Grupos globais** (`GlobalAddonGroupManager.tsx`): sem DnD
+- **Grupos na categoria** (`CategoryAddonLinkManager.tsx`): sem DnD (apenas "vinculados/disponiveis")
+- **Grupos no produto** (`ProductAddonLinkManager.tsx`): sem DnD
 
-**Exemplo real:** A categoria "Açaí" tem o grupo "Complementos" vinculado. Ao editar um produto específico dessa categoria ("Açaí Pequeno"), o dono quer que "Complementos" apareça na lista de adicionais e, se necessário, poder desativar esse grupo especificamente para esse produto.
+### Problema atual no DnD mobile:
+O `PointerSensor` do dnd-kit funciona em desktop mas pode ter conflito com scroll em mobile. O padrão correto para mobile é usar `PointerSensor` com `activationConstraint: { distance: 8 }` (evita ativar drag ao scroll) combinado com `TouchSensor`. **Isso afeta todos os DnDs existentes** (categorias e produtos também).
+
+### O que precisa ser implementado:
+1. Reordenação dos **adicionais individuais** dentro de um grupo (em `AddonList.tsx`)
+2. Reordenação dos **grupos globais** no gerenciador global (`GlobalAddonGroupManager.tsx`)
+3. Reordenação dos **grupos vinculados** na seção da categoria (`CategoryAddonLinkManager.tsx` — apenas os "Vinculados")
+4. Reordenação dos **grupos vinculados** na seção do produto (`ProductAddonLinkManager.tsx` — seções "Da Categoria" e "Exclusivos")
+5. Correção mobile em todos os DnDs existentes
+
+### Análise de compatibilidade da loja pública (Açaí da Jana):
+A loja usa `usePublicAddonsForProduct` (já implementado) que busca grupos por produto + categoria, filtra exclusões, e ordena addons por `order_position`. A loja está funcionando corretamente. O risco de regressão é baixo pois a loja apenas lê dados.
+
+---
 
 ## Arquitetura da Solução
 
-A abordagem é criar um mecanismo de **exclusão**: a tabela `product_addon_exclusions` armazena quais grupos de adicionais da categoria estão **bloqueados** para um produto específico. Na loja pública, ao montar a lista de adicionais, exclui-se os grupos bloqueados.
+### Reordenação de grupos — onde salvar a ordem?
 
-```text
-FLUXO DE ADICIONAIS PARA UM PRODUTO NA LOJA PÚBLICA:
-  grupos_da_categoria (via category_addon_groups)
-    - MENOS os excluídos (via product_addon_exclusions)
-  + grupos_exclusivos_do_produto (via product_addon_groups)
-  = adicionais visíveis para o cliente
-```
+Os grupos de adicionais (`addon_groups`) têm `order_position`. Quando reordenados:
+- **No gerenciador global**: reordena diretamente `addon_groups.order_position`
+- **Na categoria**: a ordem dos grupos vinculados é definida pela ordem em `category_addon_groups`. Como essa tabela não tem `order_position`, a ordem virá do `addon_groups.order_position` (que já existe). Para reordenar grupos especificamente por categoria, precisaríamos de uma coluna na junction table. **Decisão de design**: reordenar via `addon_groups.order_position` (afeta globalmente), mais simples e consistente.
+- **No produto**: mesma lógica — reordenar via `addon_groups.order_position`.
 
-## O Que Será Implementado
-
-### 1. Nova Tabela: `product_addon_exclusions`
-
-```sql
-CREATE TABLE product_addon_exclusions (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  product_id uuid NOT NULL,
-  addon_group_id uuid NOT NULL,
-  created_at timestamptz DEFAULT now() NOT NULL,
-  UNIQUE(product_id, addon_group_id)
-);
-```
-
-Com RLS permitindo que membros do estabelecimento gerenciem as exclusões, e leitura pública para que a loja consiga filtrar.
-
-### 2. Novo hook `useProductAddonExclusions` (em `useProductAddonGroups.ts`)
-
-- `useProductAddonExclusions(productId)` — retorna IDs dos grupos excluídos para o produto
-- `useExcludeAddonFromProduct()` — insere em `product_addon_exclusions` (bloqueia o grupo da categoria para esse produto)
-- `useRestoreAddonToProduct()` — remove de `product_addon_exclusions` (restaura o grupo)
-
-### 3. Atualizar `ProductAddonLinkManager.tsx`
-
-O componente agora precisa saber a `categoryId` do produto para poder buscar os grupos da categoria. O layout passa a ter **3 seções**:
-
-```text
-[Adicionais do Produto]
-
---- DA CATEGORIA (herdados) ---
-  ✅ Complementos         [Excluir deste produto]
-  ✅ Tamanhos             [Excluir deste produto]
-  🚫 Molhos (excluído)    [Restaurar]
-
---- EXCLUSIVOS DESTE PRODUTO ---
-  ✅ Cobertura Extra      [Remover]
-  
---- DISPONÍVEIS PARA ADICIONAR ---
-  ○ Bebidas               [Adicionar]
-```
-
-**Regra visual:**
-- Grupos da categoria com status "ativo" → fundo verde-claro, botão "Excluir deste produto" (vermelho)
-- Grupos da categoria "excluídos" → fundo muted com tachado/badge "Excluído", botão "Restaurar"
-- Grupos exclusivos do produto → mesmo visual atual com botão "Remover"
-- Grupos disponíveis → mesmo visual atual com botão "Adicionar"
-
-### 4. Atualizar `ProductForm.tsx`
-
-Passar `categoryId={product?.category_id}` para o `ProductAddonLinkManager`, além do `productId` e `establishmentId` já existentes.
-
-### 5. Atualizar `usePublicAddonsForProduct` (`usePublicAddons.ts`)
-
-Adicionar a busca de exclusões ao hook:
+### Hook novo: `useReorderAddons` e `useReorderAddonGroups`
 
 ```typescript
-// Busca exclusões do produto
-const exclusions = await supabase
-  .from("product_addon_exclusions")
-  .select("addon_group_id")
-  .eq("product_id", productId);
+// Em useAddons.ts
+export function useReorderAddons(addonGroupId: string | undefined) { ... }
 
-// Filtra os grupos da categoria removendo os excluídos
-const activeExclusionIds = new Set(exclusions.map(e => e.addon_group_id));
-const filteredCategoryGroups = categoryGroups.filter(g => !activeExclusionIds.has(g.id));
+// Em useGlobalAddonGroups.ts
+export function useReorderAddonGroups(establishmentId: string | undefined) { ... }
 ```
 
-### 6. Novos hooks no `useProductAddonGroups.ts`
+### Correção mobile — sensor unificado
+
+Criar um hook reutilizável `useDndSensors()` com configuração que funciona em desktop e mobile:
 
 ```typescript
-export function useProductAddonExclusions(productId: string | undefined) { ... }
-export function useExcludeAddonFromProduct() { ... }  // INSERT em product_addon_exclusions
-export function useRestoreAddonToProduct() { ... }    // DELETE de product_addon_exclusions
+// src/hooks/useDndSensors.ts
+import { useSensor, useSensors, PointerSensor, KeyboardSensor, TouchSensor } from "@dnd-kit/core";
+import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+
+export function useDndSensors() {
+  return useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 }, // evita conflito com scroll mobile
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200,        // tempo antes de ativar drag no touch
+        tolerance: 5,      // pixels de tolerância de movimento
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+}
 ```
+
+---
 
 ## Arquivos a Criar/Modificar
 
 | Arquivo | Ação |
 |---|---|
-| Migration SQL | Criar tabela `product_addon_exclusions` + RLS |
-| `src/hooks/useProductAddonGroups.ts` | Adicionar 3 novos hooks de exclusão |
-| `src/components/catalogo/ProductAddonLinkManager.tsx` | Adicionar seção "Da Categoria", lógica de exclusão/restauração |
-| `src/components/catalogo/ProductForm.tsx` | Passar `categoryId` ao `ProductAddonLinkManager` |
-| `src/hooks/usePublicAddons.ts` | Filtrar grupos excluídos em `usePublicAddonsForProduct` |
+| `src/hooks/useDndSensors.ts` | Criar — sensores mobile-safe centralizados |
+| `src/hooks/useAddons.ts` | Adicionar `useReorderAddons` |
+| `src/hooks/useGlobalAddonGroups.ts` | Adicionar `useReorderAddonGroups` |
+| `src/components/catalogo/AddonList.tsx` | Adicionar DnD nos adicionais individuais |
+| `src/components/catalogo/GlobalAddonGroupManager.tsx` | Adicionar DnD nos grupos globais |
+| `src/components/catalogo/CategoryAddonLinkManager.tsx` | Adicionar DnD nos grupos vinculados |
+| `src/components/catalogo/ProductAddonLinkManager.tsx` | Adicionar DnD nas seções "Da Categoria" e "Exclusivos" |
+| `src/components/catalogo/CategoryList.tsx` | Usar `useDndSensors` (fix mobile) |
+| `src/components/catalogo/ProductList.tsx` | Usar `useDndSensors` (fix mobile) |
 
-## Comportamento Final Esperado
+---
 
-**No dashboard (editar produto "Açaí Pequeno" da categoria "Açaí"):**
-- Seção "Da Categoria" aparece automaticamente com todos os grupos vinculados à categoria "Açaí"
-- Cada grupo tem botão "Excluir deste produto" → bloqueia só para esse produto
-- Grupos excluídos ficam visíveis com badge "Excluído" e botão "Restaurar"
-- Seção "Exclusivos deste produto" mostra os grupos vinculados diretamente ao produto
+## Detalhes de UX por Componente
 
-**Na loja pública:**
-- Cliente vê os adicionais da categoria MENOS os excluídos + os exclusivos do produto
-- Transparente para o cliente — ele simplesmente não vê o que foi excluído
+### AddonList — DnD nos itens
+```
+[≡] Paçoca          +R$ 0,00   [👁] [✏️] [🗑]
+[≡] Morango         +R$ 0,50   [👁] [✏️] [🗑]
+[≡] Chocolate       +R$ 1,00   [👁] [✏️] [🗑]
+```
+- Handle `GripVertical` à esquerda de cada addon
+- Em mobile: ícone sempre visível (sem `opacity-0 group-hover`)
+- Ao soltar: salva nova ordem em `addons.order_position` via `useReorderAddons`
+
+### GlobalAddonGroupManager — DnD nos grupos
+```
+[≡] ▼ Complementos     [Obrig] [0-10]  [⚙] [🗑]
+[≡] ▼ Bebidas          [0-3]           [⚙] [🗑]
+```
+- Handle `GripVertical` antes do ícone de expand
+- Ao soltar: salva nova ordem em `addon_groups.order_position` via `useReorderAddonGroups`
+
+### CategoryAddonLinkManager — DnD nos vinculados
+```
+Vinculados:
+[≡] Complementos     [Remover]
+[≡] Bebidas          [Remover]
+```
+- DnD apenas na seção "Vinculados" (os disponíveis ficam estáticos)
+- A ordem salva em `addon_groups.order_position` (impacto global — informar isso)
+
+### ProductAddonLinkManager — DnD nas seções ativas
+```
+Da Categoria:
+[≡] Complementos (heredado)    [Excluir]
+[≡] Bebidas (heredado)         [Excluir]
+
+Exclusivos deste produto:
+[≡] Cobertura Extra             [Remover]
+```
+- DnD separado para cada seção
+- A ordem também salva em `addon_groups.order_position`
+
+---
+
+## Compatibilidade Mobile — Revisão Geral
+
+### Loja pública (já compatível):
+- `ProductDetailModal.tsx`: `sm:max-w-[500px] max-h-[90vh]` — OK
+- `ProductAddonSelector.tsx`: botões com `h-7 w-7` — OK para touch
+- `StoreHeader.tsx`: layout responsivo com `sm:` breakpoints — OK
+- `CartDrawer.tsx`, `CartBar.tsx` — verificar se têm paddings adequados para mobile
+
+### Dashboard (melhorias necessárias):
+- `ProductList.tsx`: handle de drag `opacity-0 group-hover:opacity-100` — **invisível em mobile** (sem hover). Será corrigido para mostrar sempre em telas touch
+- `CategoryList.tsx`: handle sempre visível — OK
+- `AddonList.tsx`: botões pequenos `h-6 w-6` — OK para touch mas podem ser aumentados para `h-7 w-7`
+
+### Sensor fix — impacto:
+Substituir o `useSensors` local em `CategoryList` e `ProductList` pelo novo `useDndSensors()` centralizado. O `activationConstraint: { distance: 8 }` previne que o drag se ative durante scroll no mobile.
+
+---
+
+## Nota sobre ordem global vs. por contexto
+
+Quando o usuário reordena grupos no nível de categoria ou produto, a ordem salva em `addon_groups.order_position` é **global** — afeta a ordem em todos os outros contextos onde esse grupo aparece. Isso é aceitável e simplifica a implementação, já que é o mesmo comportamento que categorias e produtos têm (ordem global por estabelecimento).
