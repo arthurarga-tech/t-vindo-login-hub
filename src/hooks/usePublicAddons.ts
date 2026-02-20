@@ -93,7 +93,7 @@ export function usePublicAddonsForProduct(
         .eq("addon_groups.active", true);
 
       const exclusionsPromise = supabase
-        .from("product_addon_exclusions" as any)
+        .from("product_addon_exclusions")
         .select("addon_group_id")
         .eq("product_id", productId);
 

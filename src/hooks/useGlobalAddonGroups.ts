@@ -162,7 +162,11 @@ export function useReorderAddonGroups(establishmentId: string | undefined) {
       await Promise.all(updates);
     },
     onSuccess: () => {
+      // Invalidate all queries that depend on addon group order (Bugs 2 & 4)
       queryClient.invalidateQueries({ queryKey: ["global-addon-groups", establishmentId] });
+      queryClient.invalidateQueries({ queryKey: ["public-addons-for-category"] });
+      queryClient.invalidateQueries({ queryKey: ["public-addons-for-product"] });
+      queryClient.invalidateQueries({ queryKey: ["category-addon-links"] });
     },
     onError: () => {
       toast.error("Erro ao reordenar grupos");

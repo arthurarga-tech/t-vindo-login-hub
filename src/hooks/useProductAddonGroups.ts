@@ -94,12 +94,12 @@ export function useProductAddonExclusions(productId: string | undefined) {
       if (!productId) return [];
 
       const { data, error } = await supabase
-        .from("product_addon_exclusions" as any)
+        .from("product_addon_exclusions")
         .select("addon_group_id")
         .eq("product_id", productId);
 
       if (error) throw error;
-      return (data || []).map((row: any) => row.addon_group_id as string);
+      return (data || []).map((row) => row.addon_group_id);
     },
     enabled: !!productId,
   });
@@ -117,7 +117,7 @@ export function useExcludeAddonFromProduct() {
       addonGroupId: string;
     }) => {
       const { error } = await supabase
-        .from("product_addon_exclusions" as any)
+        .from("product_addon_exclusions")
         .insert({ product_id: productId, addon_group_id: addonGroupId });
 
       if (error) throw error;
@@ -145,7 +145,7 @@ export function useRestoreAddonToProduct() {
       addonGroupId: string;
     }) => {
       const { error } = await supabase
-        .from("product_addon_exclusions" as any)
+        .from("product_addon_exclusions")
         .delete()
         .eq("product_id", productId)
         .eq("addon_group_id", addonGroupId);

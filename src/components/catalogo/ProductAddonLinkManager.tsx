@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Link2, Link2Off, Loader2, Plus, Ban, RotateCcw, GripVertical } from "lucide-react";
+import { Link2, Link2Off, Loader2, Plus, Ban, RotateCcw, GripVertical, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   useGlobalAddonGroups,
   useCreateGlobalAddonGroup,
+  useCategoryAddonLinks,
   useReorderAddonGroups,
 } from "@/hooks/useGlobalAddonGroups";
 import {
@@ -15,7 +16,6 @@ import {
   useExcludeAddonFromProduct,
   useRestoreAddonToProduct,
 } from "@/hooks/useProductAddonGroups";
-import { usePublicAddonsForCategory } from "@/hooks/usePublicAddons";
 import { AddonGroupForm } from "./AddonGroupForm";
 import type { AddonGroup, AddonGroupFormData } from "@/hooks/useAddons";
 import {
@@ -32,6 +32,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useDndSensors } from "@/hooks/useDndSensors";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface ProductAddonLinkManagerProps {
   productId: string;
@@ -91,6 +92,7 @@ function SortableCategoryGroupRow({
           <p className="text-xs text-muted-foreground">
             {group.min_selections}-{group.max_selections} seleções
             {group.required && " • Obrigatório"}
+            {!group.active && " • Inativo"}
           </p>
         </div>
         {isExcluded && (
@@ -187,14 +189,16 @@ export function ProductAddonLinkManager({
   establishmentId,
   categoryId,
 }: ProductAddonLinkManagerProps) {
+  // Bug 3 fix: use globalGroups (includes inactive) + categoryAddonLinks IDs
+  // instead of usePublicAddonsForCategory (which filters active-only).
   const { data: globalGroups = [], isLoading: isLoadingGroups } =
     useGlobalAddonGroups(establishmentId);
+  const { data: categoryLinkedIds = [], isLoading: isLoadingCategoryLinks } =
+    useCategoryAddonLinks(categoryId ?? undefined);
   const { data: linkedGroupIds = [], isLoading: isLoadingLinks } =
     useProductAddonLinks(productId);
   const { data: excludedGroupIds = [], isLoading: isLoadingExclusions } =
     useProductAddonExclusions(productId);
-  const { data: categoryAddonsData, isLoading: isLoadingCategory } =
-    usePublicAddonsForCategory(categoryId ?? undefined);
 
   const linkMutation = useLinkAddonGroupToProduct();
   const unlinkMutation = useUnlinkAddonGroupFromProduct();
@@ -204,10 +208,12 @@ export function ProductAddonLinkManager({
   const reorderGroups = useReorderAddonGroups(establishmentId);
 
   const [formOpen, setFormOpen] = useState(false);
+
+  // Bug 1 fix: single sensor instance for one unified DndContext
   const sensors = useDndSensors();
 
   const isLoading =
-    isLoadingGroups || isLoadingLinks || isLoadingExclusions || isLoadingCategory;
+    isLoadingGroups || isLoadingLinks || isLoadingExclusions || isLoadingCategoryLinks;
 
   const isMutating =
     linkMutation.isPending ||
@@ -234,12 +240,18 @@ export function ProductAddonLinkManager({
     }
   };
 
+  // Bug 6 fix: wrap in try/catch so form doesn't close on error
   const handleCreateAndLink = async (data: AddonGroupFormData) => {
-    const result = await createGroup.mutateAsync(data);
-    if (result?.id) {
-      await linkMutation.mutateAsync({ productId, addonGroupId: result.id });
+    try {
+      const result = await createGroup.mutateAsync(data);
+      if (result?.id) {
+        await linkMutation.mutateAsync({ productId, addonGroupId: result.id });
+      }
+      setFormOpen(false);
+    } catch {
+      toast.error("Erro ao criar e vincular grupo. Tente novamente.");
+      // Do NOT close the form — let user retry
     }
-    setFormOpen(false);
   };
 
   if (isLoading) {
@@ -251,8 +263,10 @@ export function ProductAddonLinkManager({
     );
   }
 
-  const categoryGroups = categoryAddonsData?.groups ?? [];
-  const categoryGroupIds = new Set(categoryGroups.map((g) => g.id));
+  // Bug 3 fix: derive category groups from globalGroups (includes inactive) + categoryLinkedIds
+  const categoryGroupIds = new Set(categoryLinkedIds);
+  const categoryGroups = globalGroups.filter((g) => categoryGroupIds.has(g.id));
+
   const exclusiveGroups = globalGroups.filter(
     (g) => linkedGroupIds.includes(g.id) && !categoryGroupIds.has(g.id)
   );
@@ -263,27 +277,38 @@ export function ProductAddonLinkManager({
   const totalActive =
     categoryGroups.filter((g) => !excludedGroupIds.includes(g.id)).length + exclusiveGroups.length;
 
-  const handleDragEndCategory = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      const oldIndex = categoryGroups.findIndex((g) => `cat-${g.id}` === active.id);
-      const newIndex = categoryGroups.findIndex((g) => `cat-${g.id}` === over.id);
-      const reordered = arrayMove(categoryGroups, oldIndex, newIndex);
-      await reorderGroups.mutateAsync(
-        reordered.map((g, i) => ({ id: g.id, order_position: i }))
-      );
-    }
-  };
+  // Bug 1 fix: unified DndContext with prefixed IDs to avoid conflicts
+  const allSortableIds = [
+    ...categoryGroups.map((g) => `cat-${g.id}`),
+    ...exclusiveGroups.map((g) => `exc-${g.id}`),
+  ];
 
-  const handleDragEndExclusive = async (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-    if (over && active.id !== over.id) {
-      const oldIndex = exclusiveGroups.findIndex((g) => `exc-${g.id}` === active.id);
-      const newIndex = exclusiveGroups.findIndex((g) => `exc-${g.id}` === over.id);
-      const reordered = arrayMove(exclusiveGroups, oldIndex, newIndex);
-      await reorderGroups.mutateAsync(
-        reordered.map((g, i) => ({ id: g.id, order_position: i }))
-      );
+    if (!over || active.id === over.id) return;
+
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    // Determine which section the drag occurred in
+    if (activeId.startsWith("cat-") && overId.startsWith("cat-")) {
+      const oldIndex = categoryGroups.findIndex((g) => `cat-${g.id}` === activeId);
+      const newIndex = categoryGroups.findIndex((g) => `cat-${g.id}` === overId);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const reordered = arrayMove(categoryGroups, oldIndex, newIndex);
+        await reorderGroups.mutateAsync(
+          reordered.map((g, i) => ({ id: g.id, order_position: i }))
+        );
+      }
+    } else if (activeId.startsWith("exc-") && overId.startsWith("exc-")) {
+      const oldIndex = exclusiveGroups.findIndex((g) => `exc-${g.id}` === activeId);
+      const newIndex = exclusiveGroups.findIndex((g) => `exc-${g.id}` === overId);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const reordered = arrayMove(exclusiveGroups, oldIndex, newIndex);
+        await reorderGroups.mutateAsync(
+          reordered.map((g, i) => ({ id: g.id, order_position: i }))
+        );
+      }
     }
   };
 
@@ -305,48 +330,55 @@ export function ProductAddonLinkManager({
         </Button>
       </div>
 
-      {/* ── SEÇÃO 1: Da Categoria ──────────────────────────── */}
-      {categoryGroups.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-            Da Categoria (herdados)
-          </p>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEndCategory}
-          >
-            <SortableContext
-              items={categoryGroups.map((g) => `cat-${g.id}`)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="space-y-2">
-                {categoryGroups.map((group) => (
-                  <SortableCategoryGroupRow
-                    key={group.id}
-                    group={group}
-                    isExcluded={excludedGroupIds.includes(group.id)}
-                    isMutating={isMutating}
-                    onToggleExclusion={handleToggleCategoryExclusion}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
-        </div>
-      )}
+      {/* Bug 1 fix: Single unified DndContext for both sections */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        {/* ── SEÇÃO 1: Da Categoria ──────────────────────────── */}
+        {categoryId ? (
+          categoryGroups.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                Da Categoria (herdados)
+              </p>
+              <SortableContext
+                items={categoryGroups.map((g) => `cat-${g.id}`)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-2">
+                  {categoryGroups.map((group) => (
+                    <SortableCategoryGroupRow
+                      key={group.id}
+                      group={group}
+                      isExcluded={excludedGroupIds.includes(group.id)}
+                      isMutating={isMutating}
+                      onToggleExclusion={handleToggleCategoryExclusion}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </div>
+          ) : (
+            <div className="text-xs text-muted-foreground py-2 px-3 rounded-lg border border-dashed bg-muted/20">
+              Nenhum adicional herdado da categoria.
+            </div>
+          )
+        ) : (
+          // Melhoria 4: empty state when product has no category
+          <div className="flex items-center gap-2 text-xs text-muted-foreground py-3 px-3 rounded-lg border border-dashed bg-muted/20">
+            <FolderOpen className="h-4 w-4 shrink-0" />
+            <span>Associe este produto a uma categoria para ver os adicionais herdados.</span>
+          </div>
+        )}
 
-      {/* ── SEÇÃO 2: Exclusivos do produto ────────────────── */}
-      {exclusiveGroups.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-            Exclusivos deste produto
-          </p>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEndExclusive}
-          >
+        {/* ── SEÇÃO 2: Exclusivos do produto ────────────────── */}
+        {exclusiveGroups.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+              Exclusivos deste produto
+            </p>
             <SortableContext
               items={exclusiveGroups.map((g) => `exc-${g.id}`)}
               strategy={verticalListSortingStrategy}
@@ -362,9 +394,9 @@ export function ProductAddonLinkManager({
                 ))}
               </div>
             </SortableContext>
-          </DndContext>
-        </div>
-      )}
+          </div>
+        )}
+      </DndContext>
 
       {/* ── SEÇÃO 3: Disponíveis para adicionar ───────────── */}
       {availableGroups.length > 0 && (
@@ -399,8 +431,8 @@ export function ProductAddonLinkManager({
         </div>
       )}
 
-      {/* Empty state */}
-      {categoryGroups.length === 0 && globalGroups.length === 0 && (
+      {/* Empty state — no global groups at all */}
+      {globalGroups.length === 0 && (
         <div className="text-sm text-muted-foreground py-6 text-center border-2 border-dashed rounded-lg">
           <p>Nenhum grupo de adicionais encontrado.</p>
           <p className="text-xs mt-1">Clique em "Novo Grupo" para criar o primeiro.</p>
