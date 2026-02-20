@@ -1,110 +1,78 @@
 
-# Migração de Grupos Diretos para Grupos Globais
+# Limpeza Final: Remoção dos Grupos Diretos e Refatoração da UI
 
-## Situação Atual
+## Estado Atual Confirmado
 
-Existem **19 grupos de adicionais diretos** (com `category_id` preenchido) distribuídos em 3 estabelecimentos:
+A migração anterior foi bem-sucedida:
+- **19 grupos globais** (category_id = NULL) foram criados com todos os addons copiados
+- **19 vínculos** em `category_addon_groups` estão funcionando corretamente
+- Os 19 grupos diretos originais (category_id preenchido) ainda existem e precisam ser removidos
 
-| Estabelecimento | Grupos Diretos | Categorias |
-|---|---|---|
-| Açaí da Jana | 13 | 4 (Açaí, Açaí 1KG, Milk shake, Bebidas) |
-| Dom Burguer | 5 | 3 |
-| LosHermAnos | 1 | 1 |
+## O Que Será Feito
 
-A tabela `category_addon_groups` (a de vínculos globais) está **completamente vazia** — nenhum grupo global existe ainda.
+### 1. Limpeza do Banco de Dados (SQL via migration)
 
-## Estratégia: Migração em 2 Fases, Sem Remover Nada Agora
+Deletar todos os `addon_groups` onde `category_id IS NOT NULL`. Quando um grupo é deletado, seus `addons` são deletados em cascata automaticamente (FK com ON DELETE CASCADE).
 
-### Fase 1 — Migração de Dados via SQL (esta implementação)
-
-Para cada grupo de adicional direto existente:
-1. Criar um **novo grupo global** (com `category_id = NULL`) com os mesmos dados (nome, min/max, required, active, order_position, establishment_id)
-2. Copiar todos os **addons** do grupo direto para o novo grupo global
-3. Criar um **link** em `category_addon_groups` apontando o novo grupo global para a mesma categoria do grupo original
-4. Os grupos diretos originais **permanecem intactos** — a loja da Açaí da Jana continua funcionando exatamente como antes, pois `usePublicAddonsForCategory` já faz o UNION entre grupos diretos e grupos globais vinculados
-
-### Fase 2 — O que NÃO acontece nesta implementação (será feito quando você confirmar)
-- Os grupos diretos originais **não serão excluídos** ainda
-- O `AddonGroupManager` (aba "Adicionais Diretos") **não será removido** ainda
-- Quando você verificar que tudo está funcionando na loja pública, você nos avisará para fazer a limpeza
-
-## O Que Esta Implementação Faz
-
-### 1. Migration SQL de dados
-
-Uma migration de dados que executa a cópia completa via SQL puro:
+Os 19 grupos diretos a serem removidos:
+- **Açaí da Jana (ff858aa6...)**: 5 grupos de "Açaí", 5 de "Açaí 1KG", 2 de "Milk shake", 1 de "Bebidas"
+- **Dom Burguer (8db7ea0f...)**: 1 de "Combos", 2 de "Lanches Artesanais", 2 de "Porções"
+- **LosHermAnos (cce7305a...)**: 1 de "Lanches"
 
 ```sql
--- Para cada addon_group com category_id IS NOT NULL:
--- 1. Insere novo grupo global (category_id = NULL)
--- 2. Copia todos os addons do grupo original para o novo
--- 3. Cria o link em category_addon_groups
+-- Deleta todos os grupos diretos (os globais têm category_id IS NULL)
+DELETE FROM addon_groups WHERE category_id IS NOT NULL;
 ```
 
-O script garante **idempotência**: verifica se já existe um link para o grupo naquela categoria antes de criar, evitando duplicatas se a migration rodar mais de uma vez.
+### 2. Correção do `usePublicAddons.ts`
 
-### 2. Após a migration, o estado esperado no banco
+A função `usePublicAddonGroups` (usada em alguns lugares) ainda busca por `category_id = X`, o que retornará vazio após a limpeza. Ela será atualizada para buscar apenas via `category_addon_groups` (junction table). A função `usePublicAddonsForCategory` já está correta — após a limpeza, a query de "diretos" retornará vazio e a de "globais via junction" retornará tudo normalmente.
 
-Para a Açaí da Jana, por exemplo, a categoria "Açaí" terá:
-- Grupos diretos existentes (category_id = 059acc5e...) — **intactos**
-- Novos grupos globais (category_id = NULL) — **cópias globais**
-- Links em category_addon_groups — **vinculando os globais à categoria**
+### 3. Remoção do Código Legado
 
-No dashboard, na aba "Grupos Globais" da categoria "Açaí", aparecerão os grupos migrados. Na aba "Adicionais Diretos", os grupos originais continuarão aparecendo.
+**Aba "Adicionais Diretos"** (`Catalogo.tsx`):
+- Remover a tab `addons` ("Adicionais Diretos") e seu conteúdo `<AddonGroupManager>`
+- A tab `global-links` passa a se chamar **"Adicionais"** (sem o "Globais")
+- O botão "Novo Grupo" dentro desta aba abrirá um modal de seleção de grupos globais para vincular
 
-Na loja pública, o cliente verá os adicionais — **mas eles aparecerão duplicados temporariamente** (direto + global). Por isso, a limpeza dos grupos diretos originais será o passo seguinte, após sua confirmação.
+**Renomeação e mudança de comportamento** em `CategoryAddonLinkManager`:
+- Renomear para comportamento de "Adicionais" (sem mencionar "global")
+- Adicionar botão "Novo Grupo" que abre o `AddonGroupForm` para criar um novo grupo global e já vinculá-lo à categoria automaticamente
+
+**Arquivos a remover ou simplificar**:
+- `src/components/catalogo/AddonGroupManager.tsx` — remover completamente (não é mais usado)
+- Hooks legados em `useAddons.ts`: `useAddonGroups`, `useCreateAddonGroup`, `useUpdateAddonGroup`, `useDeleteAddonGroup` — remover
+
+### 4. Nova UX da Aba "Adicionais" por Categoria
+
+A tab que antes era "Grupos Globais" passa a ser **"Adicionais"** e terá um novo comportamento:
+
+```text
+[Aba: Adicionais]
+  - Lista dos grupos globais já vinculados à categoria (com botão Desvincular)
+  - Grupos globais disponíveis para vincular (com botão Vincular)
+  - Botão "Novo Grupo" → cria grupo global novo E já vincula à categoria
+```
+
+O usuário vê apenas "Adicionais" — sem saber que são "globais" internamente.
+
+### 5. Atualização da Tab Global no Catálogo
+
+A aba principal "Adicionais" no nível do catálogo (fora das categorias) mantém o `GlobalAddonGroupManager` onde o dono vê e gerencia todos os grupos do estabelecimento.
 
 ## Arquivos Modificados
 
-- **Migration SQL** — cópia dos dados (grupos + addons + links)
-- Nenhum arquivo de código front-end será alterado nesta fase
+| Arquivo | Ação |
+|---|---|
+| Migration SQL | `DELETE FROM addon_groups WHERE category_id IS NOT NULL` |
+| `src/hooks/usePublicAddons.ts` | Simplificar `usePublicAddonGroups` para buscar via junction |
+| `src/hooks/useAddons.ts` | Remover hooks legados diretos |
+| `src/components/catalogo/CategoryAddonLinkManager.tsx` | Novo botão "Novo Grupo", renomear labels |
+| `src/components/catalogo/GlobalAddonGroupManager.tsx` | Ajuste de texto (sem mencionar "global") |
+| `src/pages/dashboard/Catalogo.tsx` | Remover aba "Adicionais Diretos", renomear "Grupos Globais" para "Adicionais" |
+| `src/components/catalogo/AddonGroupManager.tsx` | Deletar arquivo |
 
-## Aviso Importante sobre Duplicatas Temporárias
+## Segurança da Limpeza
 
-Durante o período entre esta migração e a limpeza dos grupos diretos, **a loja pública mostrará os adicionais duplicados** para cada categoria que tiver grupos migrados. Isso é esperado e temporário. Por isso, o próximo passo imediatamente após esta migration deve ser:
-
-1. Verificar no dashboard que os grupos globais apareceram corretamente
-2. Verificar na loja da Açaí da Jana
-3. Confirmar e pedir a limpeza (remoção dos grupos diretos + código legado)
-
-## Sequência de Execução da Migration
-
-```sql
-DO $$
-DECLARE
-  v_group RECORD;
-  v_new_group_id uuid;
-BEGIN
-  FOR v_group IN 
-    SELECT * FROM addon_groups WHERE category_id IS NOT NULL
-  LOOP
-    -- Pula se já existe link (idempotente)
-    IF EXISTS (
-      SELECT 1 FROM category_addon_groups cag
-      JOIN addon_groups ag2 ON ag2.id = cag.addon_group_id
-      WHERE cag.category_id = v_group.category_id
-        AND ag2.name = v_group.name
-        AND ag2.category_id IS NULL
-        AND ag2.establishment_id = v_group.establishment_id
-    ) THEN CONTINUE; END IF;
-
-    -- Cria o grupo global
-    INSERT INTO addon_groups (establishment_id, name, min_selections, max_selections, required, active, order_position, category_id)
-    VALUES (v_group.establishment_id, v_group.name, v_group.min_selections, v_group.max_selections, v_group.required, v_group.active, v_group.order_position, NULL)
-    RETURNING id INTO v_new_group_id;
-
-    -- Copia os addons
-    INSERT INTO addons (addon_group_id, name, price, active, order_position)
-    SELECT v_new_group_id, name, price, active, order_position
-    FROM addons WHERE addon_group_id = v_group.id;
-
-    -- Cria o link
-    INSERT INTO category_addon_groups (category_id, addon_group_id)
-    VALUES (v_group.category_id, v_new_group_id);
-  END LOOP;
-END $$;
-```
-
-## Arquivos Modificados
-
-- `supabase/migrations/[timestamp]_migrate_direct_addons_to_global.sql` — migration de dados
+- A loja pública (`usePublicAddonsForCategory`) já busca via junction: após deletar os diretos, continuará funcionando sem alteração
+- `order_item_addons` guarda `addon_id` dos addons — os addons dos grupos globais (copiados na migração anterior) são **diferentes** dos diretos; os pedidos existentes estão vinculados aos addons originais (diretos), que serão deletados — mas isso é seguro pois `order_item_addons` armazena `addon_name` e `addon_price` diretamente, sem depender do addon existir no futuro
