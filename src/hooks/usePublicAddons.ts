@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { AddonGroup, Addon } from "./useAddons";
 
+// Fetch active addon groups linked to a category via category_addon_groups
 export function usePublicAddonGroups(categoryId: string | undefined) {
   return useQuery({
     queryKey: ["public-addon-groups", categoryId],
@@ -9,14 +10,13 @@ export function usePublicAddonGroups(categoryId: string | undefined) {
       if (!categoryId) return [];
 
       const { data, error } = await supabase
-        .from("addon_groups")
-        .select("*")
+        .from("category_addon_groups")
+        .select("addon_groups!inner(*)")
         .eq("category_id", categoryId)
-        .eq("active", true)
-        .order("order_position", { ascending: true });
+        .eq("addon_groups.active", true);
 
       if (error) throw error;
-      return data as AddonGroup[];
+      return (data || []).map((row: any) => row.addon_groups as AddonGroup);
     },
     enabled: !!categoryId,
   });
@@ -28,16 +28,6 @@ export function usePublicAddonsForCategory(categoryId: string | undefined) {
     queryFn: async () => {
       if (!categoryId) return { groups: [], addons: [] };
 
-      // Fetch active addon groups directly linked to the category
-      const { data: directGroups, error: directError } = await supabase
-        .from("addon_groups")
-        .select("*")
-        .eq("category_id", categoryId)
-        .eq("active", true)
-        .order("order_position", { ascending: true });
-
-      if (directError) throw directError;
-
       // Fetch active global addon groups linked via category_addon_groups
       const { data: linkedRows, error: linkedError } = await supabase
         .from("category_addon_groups")
@@ -47,18 +37,9 @@ export function usePublicAddonsForCategory(categoryId: string | undefined) {
 
       if (linkedError) throw linkedError;
 
-      // Extract and deduplicate groups (direct + linked)
-      const linkedGroups = (linkedRows || []).map(
+      const allGroups = (linkedRows || []).map(
         (row: any) => row.addon_groups as AddonGroup
       );
-
-      const directGroupIds = new Set((directGroups || []).map((g) => g.id));
-      const uniqueLinkedGroups = linkedGroups.filter((g) => !directGroupIds.has(g.id));
-
-      const allGroups = [
-        ...(directGroups as AddonGroup[] || []),
-        ...uniqueLinkedGroups,
-      ];
 
       if (allGroups.length === 0) {
         return { groups: [], addons: [] };

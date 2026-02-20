@@ -17,7 +17,8 @@ import {
 import { formatPrice } from "@/lib/formatters";
 import { useCategories } from "@/hooks/useCategories";
 import { useProducts, Product } from "@/hooks/useProducts";
-import { useAddonGroups, useAddonsForGroups, AddonGroup, Addon } from "@/hooks/useAddons";
+import { useAddonsForGroups, AddonGroup, Addon } from "@/hooks/useAddons";
+import { usePublicAddonGroups } from "@/hooks/usePublicAddons";
 
 export interface SelectedAddon {
   id: string;
@@ -222,7 +223,7 @@ export function ProductSelector({ establishmentId, onSelectProduct }: ProductSel
   }, [filtered]);
 
   // Addon data for the product being customized
-  const { data: addonGroups } = useAddonGroups(customizingProduct?.category_id ?? undefined);
+  const { data: addonGroups } = usePublicAddonGroups(customizingProduct?.category_id ?? undefined);
   const activeGroupIds = useMemo(() => addonGroups?.filter((g) => g.active).map((g) => g.id) || [], [addonGroups]);
   const { data: addons } = useAddonsForGroups(activeGroupIds);
   const activeAddons = useMemo(() => addons?.filter((a) => a.active) || [], [addons]);

@@ -8,7 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/formatters";
-import { useAddonGroups, useAddonsForGroups } from "@/hooks/useAddons";
+import { useAddonsForGroups } from "@/hooks/useAddons";
+import { usePublicAddonGroups } from "@/hooks/usePublicAddons";
 import { QuickOrderCartItem } from "./QuickOrderCart";
 
 interface QuickOrderEditItemModalProps {
@@ -28,7 +29,7 @@ export function QuickOrderEditItemModal({
   const [observation, setObservation] = useState("");
   const [selectedAddons, setSelectedAddons] = useState<Map<string, number>>(new Map());
 
-  const { data: addonGroups } = useAddonGroups(item?.categoryId);
+  const { data: addonGroups } = usePublicAddonGroups(item?.categoryId);
   const activeGroupIds = useMemo(
     () => addonGroups?.filter((g) => g.active).map((g) => g.id) || [],
     [addonGroups]

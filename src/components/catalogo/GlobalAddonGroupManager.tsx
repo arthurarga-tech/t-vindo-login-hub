@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Settings2, Trash2, ChevronDown, ChevronUp, Globe } from "lucide-react";
+import { Plus, Settings2, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -105,7 +105,7 @@ export function GlobalAddonGroupManager({ establishmentId }: GlobalAddonGroupMan
   if (isLoading) {
     return (
       <div className="text-sm text-muted-foreground py-4 text-center">
-        Carregando grupos globais...
+        Carregando adicionais...
       </div>
     );
   }
@@ -113,24 +113,16 @@ export function GlobalAddonGroupManager({ establishmentId }: GlobalAddonGroupMan
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Globe className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-medium text-foreground">Grupos Globais de Adicionais</h3>
-        </div>
+        <h3 className="text-sm font-medium text-foreground">Grupos de Adicionais</h3>
         <Button size="sm" variant="outline" onClick={handleCreate}>
           <Plus className="h-4 w-4 mr-1" />
           Novo Grupo
         </Button>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        Grupos globais podem ser vinculados a múltiplas categorias sem precisar duplicá-los.
-      </p>
-
       {groups.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground text-sm border-2 border-dashed rounded-lg">
-          <Globe className="h-8 w-8 mx-auto mb-2 opacity-40" />
-          <p>Nenhum grupo global criado ainda</p>
+          <p>Nenhum grupo de adicionais criado ainda</p>
           <p className="text-xs mt-1">Crie grupos reutilizáveis para compartilhar entre categorias</p>
         </div>
       ) : (
@@ -219,7 +211,7 @@ export function GlobalAddonGroupManager({ establishmentId }: GlobalAddonGroupMan
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir grupo global?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir grupo de adicionais?</AlertDialogTitle>
             <AlertDialogDescription>
               Esta ação irá excluir o grupo "{groupToDelete?.name}" e todos os seus adicionais,
               removendo-o também de todas as categorias vinculadas. Esta ação não pode ser desfeita.
