@@ -286,6 +286,7 @@ export default function Catalogo() {
         categories={categories}
         onSubmit={handleProductSubmit}
         isLoading={createProduct.isPending || updateProduct.isPending}
+        establishmentId={establishmentId}
       />
     </div>
   );

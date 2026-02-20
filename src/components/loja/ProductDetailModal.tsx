@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { ImageIcon, Plus, Minus } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { toast } from "sonner";
-import { usePublicAddonsForCategory } from "@/hooks/usePublicAddons";
+import { usePublicAddonsForProduct } from "@/hooks/usePublicAddons";
 import {
   ProductAddonSelector,
   SelectedAddon,
@@ -36,7 +36,7 @@ export function ProductDetailModal({
   const [selectedAddons, setSelectedAddons] = useState<SelectedAddon[]>([]);
   const [observation, setObservation] = useState("");
 
-  const { data: addonData } = usePublicAddonsForCategory(product?.category_id ?? undefined);
+  const { data: addonData } = usePublicAddonsForProduct(product?.id ?? undefined, product?.category_id ?? undefined);
   const groups = addonData?.groups ?? [];
   const addons = addonData?.addons ?? [];
 

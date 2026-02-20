@@ -29,7 +29,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 import { ImageUpload } from "./ImageUpload";
+import { ProductAddonLinkManager } from "./ProductAddonLinkManager";
 import { Product } from "@/hooks/useProducts";
 import { Category } from "@/hooks/useCategories";
 import { Loader2 } from "lucide-react";
@@ -52,6 +54,7 @@ interface ProductFormProps {
   categories: Category[];
   onSubmit: (data: ProductFormValues) => void;
   isLoading?: boolean;
+  establishmentId?: string;
 }
 
 export function ProductForm({
@@ -61,6 +64,7 @@ export function ProductForm({
   categories,
   onSubmit,
   isLoading,
+  establishmentId,
 }: ProductFormProps) {
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -217,6 +221,18 @@ export function ProductForm({
                 </FormItem>
               )}
             />
+
+            {/* Adicionais exclusivos do produto — só em modo de edição */}
+            {product && establishmentId && (
+              <>
+                <Separator />
+                <ProductAddonLinkManager
+                  productId={product.id}
+                  establishmentId={establishmentId}
+                />
+                <Separator />
+              </>
+            )}
 
             <FormField
               control={form.control}
