@@ -1,86 +1,117 @@
 
-# Adicionais Exclusivos por Produto no Formulário de Edição
+# Adicionais da Categoria na Edição do Produto + Exclusões por Produto
 
-## Contexto
+## Contexto e Problema
 
-A tabela `product_addon_groups` já existe no banco de dados — ela cria um vínculo entre produtos e grupos de adicionais globais. Porém, ela não está sendo usada em nenhum lugar do frontend. O objetivo é:
+Hoje, o `ProductAddonLinkManager` no formulário de edição do produto exibe apenas os grupos de adicionais vinculados **diretamente ao produto** via `product_addon_groups`. Os grupos vinculados à **categoria** do produto via `category_addon_groups` não aparecem no formulário — e o usuário não tem como excluí-los para um produto específico.
 
-1. No formulário de edição de produto, mostrar e gerenciar quais grupos de adicionais estão vinculados àquele produto específico.
-2. Atualizar a loja pública para que o cliente veja, ao abrir o detalhe de um produto, os adicionais da categoria **mais** os adicionais exclusivos daquele produto.
+**Exemplo real:** A categoria "Açaí" tem o grupo "Complementos" vinculado. Ao editar um produto específico dessa categoria ("Açaí Pequeno"), o dono quer que "Complementos" apareça na lista de adicionais e, se necessário, poder desativar esse grupo especificamente para esse produto.
 
-## Como Funciona Hoje vs. Como Ficará
+## Arquitetura da Solução
 
-**Hoje:** A loja carrega adicionais pela categoria do produto (`usePublicAddonsForCategory(product.category_id)`).
+A abordagem é criar um mecanismo de **exclusão**: a tabela `product_addon_exclusions` armazena quais grupos de adicionais da categoria estão **bloqueados** para um produto específico. Na loja pública, ao montar a lista de adicionais, exclui-se os grupos bloqueados.
 
-**Após a implementação:**
-- Adicionais da categoria (via `category_addon_groups`) → continuam aparecendo para todos os produtos da categoria.
-- Adicionais exclusivos do produto (via `product_addon_groups`) → aparecem **apenas** para aquele produto específico.
-- Ambos são mesclados e exibidos para o cliente no detalhe do produto.
+```text
+FLUXO DE ADICIONAIS PARA UM PRODUTO NA LOJA PÚBLICA:
+  grupos_da_categoria (via category_addon_groups)
+    - MENOS os excluídos (via product_addon_exclusions)
+  + grupos_exclusivos_do_produto (via product_addon_groups)
+  = adicionais visíveis para o cliente
+```
 
 ## O Que Será Implementado
 
-### 1. Novo hook `useProductAddonGroups.ts`
+### 1. Nova Tabela: `product_addon_exclusions`
 
-Funções para gerenciar vínculos produto ↔ grupo de adicionais:
+```sql
+CREATE TABLE product_addon_exclusions (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  product_id uuid NOT NULL,
+  addon_group_id uuid NOT NULL,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  UNIQUE(product_id, addon_group_id)
+);
+```
 
-- `useProductAddonLinks(productId)` — retorna os IDs dos grupos vinculados ao produto
-- `useLinkAddonGroupToProduct()` — insere em `product_addon_groups`
-- `useUnlinkAddonGroupFromProduct()` — remove de `product_addon_groups`
+Com RLS permitindo que membros do estabelecimento gerenciem as exclusões, e leitura pública para que a loja consiga filtrar.
 
-### 2. Novo componente `ProductAddonLinkManager.tsx`
+### 2. Novo hook `useProductAddonExclusions` (em `useProductAddonGroups.ts`)
 
-Exibido dentro do formulário de edição de produto, abaixo do campo "Descrição (opcional)". Tem o mesmo padrão visual do `CategoryAddonLinkManager`:
+- `useProductAddonExclusions(productId)` — retorna IDs dos grupos excluídos para o produto
+- `useExcludeAddonFromProduct()` — insere em `product_addon_exclusions` (bloqueia o grupo da categoria para esse produto)
+- `useRestoreAddonToProduct()` — remove de `product_addon_exclusions` (restaura o grupo)
 
-- Lista os grupos globais já vinculados ao produto com botão "Remover"
-- Lista os grupos disponíveis (ainda não vinculados) com botão "Adicionar"
-- Botão "Novo Grupo" que cria um grupo global e já vincula ao produto
+### 3. Atualizar `ProductAddonLinkManager.tsx`
 
-### 3. Modificar `ProductForm.tsx`
+O componente agora precisa saber a `categoryId` do produto para poder buscar os grupos da categoria. O layout passa a ter **3 seções**:
 
-- Adicionar props `establishmentId?: string` para passar ao `ProductAddonLinkManager`
-- Após o campo "Descrição (opcional)", renderizar o `ProductAddonLinkManager` — **apenas em modo de edição** (quando `product` está definido)
-- Em modo de criação, a seção não aparece (o produto ainda não existe para ser vinculado)
+```text
+[Adicionais do Produto]
 
-### 4. Modificar `Catalogo.tsx`
+--- DA CATEGORIA (herdados) ---
+  ✅ Complementos         [Excluir deste produto]
+  ✅ Tamanhos             [Excluir deste produto]
+  🚫 Molhos (excluído)    [Restaurar]
 
-Passar `establishmentId={establishmentId}` para o `ProductForm`.
+--- EXCLUSIVOS DESTE PRODUTO ---
+  ✅ Cobertura Extra      [Remover]
+  
+--- DISPONÍVEIS PARA ADICIONAR ---
+  ○ Bebidas               [Adicionar]
+```
 
-### 5. Atualizar `usePublicAddons.ts`
+**Regra visual:**
+- Grupos da categoria com status "ativo" → fundo verde-claro, botão "Excluir deste produto" (vermelho)
+- Grupos da categoria "excluídos" → fundo muted com tachado/badge "Excluído", botão "Restaurar"
+- Grupos exclusivos do produto → mesmo visual atual com botão "Remover"
+- Grupos disponíveis → mesmo visual atual com botão "Adicionar"
 
-Adicionar hook `usePublicAddonsForProduct(productId, categoryId)` que:
-- Busca grupos vinculados à categoria via `category_addon_groups`
-- Busca grupos vinculados ao produto via `product_addon_groups`
-- Mescla os resultados, removendo duplicatas por `id`
-- Retorna `{ groups, addons }` no mesmo formato que o hook atual
+### 4. Atualizar `ProductForm.tsx`
 
-### 6. Atualizar `ProductDetailModal.tsx` (loja pública)
+Passar `categoryId={product?.category_id}` para o `ProductAddonLinkManager`, além do `productId` e `establishmentId` já existentes.
 
-Substituir `usePublicAddonsForCategory(product?.category_id)` pelo novo `usePublicAddonsForProduct(product?.id, product?.category_id)`.
+### 5. Atualizar `usePublicAddonsForProduct` (`usePublicAddons.ts`)
+
+Adicionar a busca de exclusões ao hook:
+
+```typescript
+// Busca exclusões do produto
+const exclusions = await supabase
+  .from("product_addon_exclusions")
+  .select("addon_group_id")
+  .eq("product_id", productId);
+
+// Filtra os grupos da categoria removendo os excluídos
+const activeExclusionIds = new Set(exclusions.map(e => e.addon_group_id));
+const filteredCategoryGroups = categoryGroups.filter(g => !activeExclusionIds.has(g.id));
+```
+
+### 6. Novos hooks no `useProductAddonGroups.ts`
+
+```typescript
+export function useProductAddonExclusions(productId: string | undefined) { ... }
+export function useExcludeAddonFromProduct() { ... }  // INSERT em product_addon_exclusions
+export function useRestoreAddonToProduct() { ... }    // DELETE de product_addon_exclusions
+```
 
 ## Arquivos a Criar/Modificar
 
 | Arquivo | Ação |
 |---|---|
-| `src/hooks/useProductAddonGroups.ts` | Criar |
-| `src/components/catalogo/ProductAddonLinkManager.tsx` | Criar |
-| `src/components/catalogo/ProductForm.tsx` | Modificar — adicionar seção de adicionais abaixo de Descrição |
-| `src/pages/dashboard/Catalogo.tsx` | Modificar — passar `establishmentId` ao ProductForm |
-| `src/hooks/usePublicAddons.ts` | Modificar — adicionar `usePublicAddonsForProduct` |
-| `src/components/loja/ProductDetailModal.tsx` | Modificar — usar novo hook |
+| Migration SQL | Criar tabela `product_addon_exclusions` + RLS |
+| `src/hooks/useProductAddonGroups.ts` | Adicionar 3 novos hooks de exclusão |
+| `src/components/catalogo/ProductAddonLinkManager.tsx` | Adicionar seção "Da Categoria", lógica de exclusão/restauração |
+| `src/components/catalogo/ProductForm.tsx` | Passar `categoryId` ao `ProductAddonLinkManager` |
+| `src/hooks/usePublicAddons.ts` | Filtrar grupos excluídos em `usePublicAddonsForProduct` |
 
-## Comportamento Esperado
+## Comportamento Final Esperado
 
-**No dashboard (editar produto):**
-- Ao abrir o card de edição, abaixo de "Descrição (opcional)", aparece a seção "Adicionais do Produto"
-- Mostra os grupos já vinculados com botão "Remover"
-- Mostra grupos disponíveis para adicionar com botão "Adicionar"
-- Botão "Novo Grupo" cria e vincula imediatamente
-- Vínculos são salvos em tempo real (sem precisar salvar o produto)
+**No dashboard (editar produto "Açaí Pequeno" da categoria "Açaí"):**
+- Seção "Da Categoria" aparece automaticamente com todos os grupos vinculados à categoria "Açaí"
+- Cada grupo tem botão "Excluir deste produto" → bloqueia só para esse produto
+- Grupos excluídos ficam visíveis com badge "Excluído" e botão "Restaurar"
+- Seção "Exclusivos deste produto" mostra os grupos vinculados diretamente ao produto
 
-**Na loja pública (cliente):**
-- Ao abrir um produto, o cliente vê os adicionais da categoria + os adicionais exclusivos do produto
-- Mesclados de forma transparente, sem duplicatas
-
-## Nota sobre o Modo de Criação
-
-Quando o usuário clica em "Novo Produto", a seção de adicionais **não aparece** — o produto precisa existir no banco antes de poder vincular grupos. O fluxo correto é: criar o produto → depois editar para adicionar os adicionais específicos.
+**Na loja pública:**
+- Cliente vê os adicionais da categoria MENOS os excluídos + os exclusivos do produto
+- Transparente para o cliente — ele simplesmente não vê o que foi excluído
