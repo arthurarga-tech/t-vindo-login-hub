@@ -9,7 +9,7 @@ import { useStoreOpeningHours } from "@/hooks/useStoreOpeningHours";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScheduleSelector } from "@/components/loja/ScheduleSelector";
-import { hexToHSL } from "@/lib/formatters";
+import { buildThemeStyles } from "@/lib/formatters";
 import { useThemeColor } from "@/hooks/useThemeColor";
 
 export default function CheckoutPage() {
@@ -30,16 +30,13 @@ export default function CheckoutPage() {
   // Dynamically update browser theme-color based on establishment's primary color
   useThemeColor(establishment?.theme_primary_color);
 
-  // Generate custom CSS variables for theme
+  // Generate custom CSS variables for theme using centralized utility
   const customStyles = useMemo(() => {
-    const primaryColor = establishment?.theme_primary_color || "#ea580c";
-    const secondaryColor = establishment?.theme_secondary_color || "#1e293b";
-    
-    return {
-      "--store-primary": hexToHSL(primaryColor),
-      "--store-secondary": hexToHSL(secondaryColor),
-    } as React.CSSProperties;
-  }, [establishment]);
+    return buildThemeStyles(
+      establishment?.theme_primary_color,
+      establishment?.theme_secondary_color,
+    );
+  }, [establishment?.theme_primary_color, establishment?.theme_secondary_color]);
 
   if (isLoading) {
     return (

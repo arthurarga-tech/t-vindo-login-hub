@@ -10,7 +10,7 @@ import { CheckCircle, ArrowLeft, Copy, Link2, MessageCircle, QrCode } from "luci
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { usePublicEstablishment } from "@/hooks/usePublicStore";
-import { hexToHSL } from "@/lib/formatters";
+import { buildThemeStyles } from "@/lib/formatters";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { 
   getStatusDisplay, 
@@ -72,14 +72,12 @@ export default function OrderConfirmationPage() {
   // Dynamically update browser theme-color based on establishment's primary color
   useThemeColor(establishment?.theme_primary_color);
 
-  // Custom styles based on establishment theme colors
+  // Custom styles based on establishment theme colors (centralized utility)
   const customStyles = useMemo(() => {
-    const primaryColor = establishment?.theme_primary_color || "#ea580c";
-    const secondaryColor = establishment?.theme_secondary_color || "#1e293b";
-    return {
-      "--store-primary": hexToHSL(primaryColor),
-      "--store-secondary": hexToHSL(secondaryColor),
-    } as React.CSSProperties;
+    return buildThemeStyles(
+      establishment?.theme_primary_color,
+      establishment?.theme_secondary_color,
+    );
   }, [establishment?.theme_primary_color, establishment?.theme_secondary_color]);
 
   // Use secure RPC function instead of direct query
