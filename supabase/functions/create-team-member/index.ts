@@ -40,9 +40,13 @@ Deno.serve(async (req) => {
 
     const callerId = claimsData.claims.sub;
 
-    const { email, password, role, establishment_id, name, phone } = await req.json();
+    const body = await req.json();
+    const { email, password, role, establishment_id, name, phone } = body;
 
-    // Validate inputs
+    // --- Comprehensive input validation ---
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
     if (!email || !password || !role || !establishment_id || !name) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: email, password, role, establishment_id, name" }),
@@ -50,23 +54,74 @@ Deno.serve(async (req) => {
       );
     }
 
+    if (typeof email !== "string" || email.length > 254 || !EMAIL_REGEX.test(email.trim())) {
+      return new Response(
+        JSON.stringify({ error: "Invalid email address" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (typeof name !== "string" || name.trim().length === 0 || name.length > 100) {
+      return new Response(
+        JSON.stringify({ error: "Name must be between 1 and 100 characters" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (phone !== undefined && phone !== null && phone !== "") {
+      if (typeof phone !== "string" || phone.length > 20) {
+        return new Response(
+          JSON.stringify({ error: "Phone must be at most 20 characters" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    if (typeof establishment_id !== "string" || !UUID_REGEX.test(establishment_id)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid establishment ID" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const validRoles = ["manager", "attendant", "kitchen", "waiter"];
-    if (!validRoles.includes(role)) {
+    if (typeof role !== "string" || !validRoles.includes(role)) {
       return new Response(
         JSON.stringify({ error: `Invalid role. Must be one of: ${validRoles.join(", ")}` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (password.length < 6) {
+    if (typeof password !== "string" || password.length < 6 || password.length > 128) {
       return new Response(
-        JSON.stringify({ error: "Password must be at least 6 characters" }),
+        JSON.stringify({ error: "Password must be between 6 and 128 characters" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     // Admin client for privileged operations
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
+    // --- Rate limiting: max 5 team member creations per user per hour ---
+    const rateLimitWindow = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count: recentCount } = await supabaseAdmin
+      .from("rate_limit_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("identifier", callerId)
+      .eq("action", "create_team_member")
+      .gte("created_at", rateLimitWindow);
+
+    if ((recentCount ?? 0) >= 5) {
+      return new Response(
+        JSON.stringify({ error: "Limite de criação de membros atingido. Aguarde uma hora e tente novamente." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Log this attempt
+    await supabaseAdmin
+      .from("rate_limit_logs")
+      .insert({ identifier: callerId, action: "create_team_member" });
 
     // Verify caller is owner of this establishment
     const { data: establishment, error: estError } = await supabaseAdmin

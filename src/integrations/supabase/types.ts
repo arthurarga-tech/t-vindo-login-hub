@@ -917,6 +917,27 @@ export type Database = {
           },
         ]
       }
+      rate_limit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          identifier: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          identifier: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          identifier?: string
+        }
+        Relationships: []
+      }
       subscription_plans: {
         Row: {
           active: boolean | null

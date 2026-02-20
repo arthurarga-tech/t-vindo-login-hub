@@ -40,13 +40,52 @@ Deno.serve(async (req) => {
 
     const callerId = claimsData.claims.sub;
 
-    const { member_id, user_id, establishment_id, name, phone, role, email, password } = await req.json();
+    const body = await req.json();
+    const { member_id, user_id, establishment_id, name, phone, role, email, password } = body;
+
+    // --- Comprehensive input validation ---
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
     if (!member_id || !user_id || !establishment_id) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: member_id, user_id, establishment_id" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    if (!UUID_REGEX.test(member_id) || !UUID_REGEX.test(user_id) || !UUID_REGEX.test(establishment_id)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid ID format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (name !== undefined && name !== null) {
+      if (typeof name !== "string" || name.trim().length === 0 || name.length > 100) {
+        return new Response(
+          JSON.stringify({ error: "Name must be between 1 and 100 characters" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    if (phone !== undefined && phone !== null && phone !== "") {
+      if (typeof phone !== "string" || phone.length > 20) {
+        return new Response(
+          JSON.stringify({ error: "Phone must be at most 20 characters" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    if (email !== undefined && email !== null) {
+      if (typeof email !== "string" || email.length > 254 || !EMAIL_REGEX.test(email.trim())) {
+        return new Response(
+          JSON.stringify({ error: "Invalid email address" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
