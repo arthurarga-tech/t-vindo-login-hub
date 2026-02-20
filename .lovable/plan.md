@@ -1,78 +1,86 @@
 
-# Limpeza Final: Remoção dos Grupos Diretos e Refatoração da UI
+# Adicionais Exclusivos por Produto no Formulário de Edição
 
-## Estado Atual Confirmado
+## Contexto
 
-A migração anterior foi bem-sucedida:
-- **19 grupos globais** (category_id = NULL) foram criados com todos os addons copiados
-- **19 vínculos** em `category_addon_groups` estão funcionando corretamente
-- Os 19 grupos diretos originais (category_id preenchido) ainda existem e precisam ser removidos
+A tabela `product_addon_groups` já existe no banco de dados — ela cria um vínculo entre produtos e grupos de adicionais globais. Porém, ela não está sendo usada em nenhum lugar do frontend. O objetivo é:
 
-## O Que Será Feito
+1. No formulário de edição de produto, mostrar e gerenciar quais grupos de adicionais estão vinculados àquele produto específico.
+2. Atualizar a loja pública para que o cliente veja, ao abrir o detalhe de um produto, os adicionais da categoria **mais** os adicionais exclusivos daquele produto.
 
-### 1. Limpeza do Banco de Dados (SQL via migration)
+## Como Funciona Hoje vs. Como Ficará
 
-Deletar todos os `addon_groups` onde `category_id IS NOT NULL`. Quando um grupo é deletado, seus `addons` são deletados em cascata automaticamente (FK com ON DELETE CASCADE).
+**Hoje:** A loja carrega adicionais pela categoria do produto (`usePublicAddonsForCategory(product.category_id)`).
 
-Os 19 grupos diretos a serem removidos:
-- **Açaí da Jana (ff858aa6...)**: 5 grupos de "Açaí", 5 de "Açaí 1KG", 2 de "Milk shake", 1 de "Bebidas"
-- **Dom Burguer (8db7ea0f...)**: 1 de "Combos", 2 de "Lanches Artesanais", 2 de "Porções"
-- **LosHermAnos (cce7305a...)**: 1 de "Lanches"
+**Após a implementação:**
+- Adicionais da categoria (via `category_addon_groups`) → continuam aparecendo para todos os produtos da categoria.
+- Adicionais exclusivos do produto (via `product_addon_groups`) → aparecem **apenas** para aquele produto específico.
+- Ambos são mesclados e exibidos para o cliente no detalhe do produto.
 
-```sql
--- Deleta todos os grupos diretos (os globais têm category_id IS NULL)
-DELETE FROM addon_groups WHERE category_id IS NOT NULL;
-```
+## O Que Será Implementado
 
-### 2. Correção do `usePublicAddons.ts`
+### 1. Novo hook `useProductAddonGroups.ts`
 
-A função `usePublicAddonGroups` (usada em alguns lugares) ainda busca por `category_id = X`, o que retornará vazio após a limpeza. Ela será atualizada para buscar apenas via `category_addon_groups` (junction table). A função `usePublicAddonsForCategory` já está correta — após a limpeza, a query de "diretos" retornará vazio e a de "globais via junction" retornará tudo normalmente.
+Funções para gerenciar vínculos produto ↔ grupo de adicionais:
 
-### 3. Remoção do Código Legado
+- `useProductAddonLinks(productId)` — retorna os IDs dos grupos vinculados ao produto
+- `useLinkAddonGroupToProduct()` — insere em `product_addon_groups`
+- `useUnlinkAddonGroupFromProduct()` — remove de `product_addon_groups`
 
-**Aba "Adicionais Diretos"** (`Catalogo.tsx`):
-- Remover a tab `addons` ("Adicionais Diretos") e seu conteúdo `<AddonGroupManager>`
-- A tab `global-links` passa a se chamar **"Adicionais"** (sem o "Globais")
-- O botão "Novo Grupo" dentro desta aba abrirá um modal de seleção de grupos globais para vincular
+### 2. Novo componente `ProductAddonLinkManager.tsx`
 
-**Renomeação e mudança de comportamento** em `CategoryAddonLinkManager`:
-- Renomear para comportamento de "Adicionais" (sem mencionar "global")
-- Adicionar botão "Novo Grupo" que abre o `AddonGroupForm` para criar um novo grupo global e já vinculá-lo à categoria automaticamente
+Exibido dentro do formulário de edição de produto, abaixo do campo "Descrição (opcional)". Tem o mesmo padrão visual do `CategoryAddonLinkManager`:
 
-**Arquivos a remover ou simplificar**:
-- `src/components/catalogo/AddonGroupManager.tsx` — remover completamente (não é mais usado)
-- Hooks legados em `useAddons.ts`: `useAddonGroups`, `useCreateAddonGroup`, `useUpdateAddonGroup`, `useDeleteAddonGroup` — remover
+- Lista os grupos globais já vinculados ao produto com botão "Remover"
+- Lista os grupos disponíveis (ainda não vinculados) com botão "Adicionar"
+- Botão "Novo Grupo" que cria um grupo global e já vincula ao produto
 
-### 4. Nova UX da Aba "Adicionais" por Categoria
+### 3. Modificar `ProductForm.tsx`
 
-A tab que antes era "Grupos Globais" passa a ser **"Adicionais"** e terá um novo comportamento:
+- Adicionar props `establishmentId?: string` para passar ao `ProductAddonLinkManager`
+- Após o campo "Descrição (opcional)", renderizar o `ProductAddonLinkManager` — **apenas em modo de edição** (quando `product` está definido)
+- Em modo de criação, a seção não aparece (o produto ainda não existe para ser vinculado)
 
-```text
-[Aba: Adicionais]
-  - Lista dos grupos globais já vinculados à categoria (com botão Desvincular)
-  - Grupos globais disponíveis para vincular (com botão Vincular)
-  - Botão "Novo Grupo" → cria grupo global novo E já vincula à categoria
-```
+### 4. Modificar `Catalogo.tsx`
 
-O usuário vê apenas "Adicionais" — sem saber que são "globais" internamente.
+Passar `establishmentId={establishmentId}` para o `ProductForm`.
 
-### 5. Atualização da Tab Global no Catálogo
+### 5. Atualizar `usePublicAddons.ts`
 
-A aba principal "Adicionais" no nível do catálogo (fora das categorias) mantém o `GlobalAddonGroupManager` onde o dono vê e gerencia todos os grupos do estabelecimento.
+Adicionar hook `usePublicAddonsForProduct(productId, categoryId)` que:
+- Busca grupos vinculados à categoria via `category_addon_groups`
+- Busca grupos vinculados ao produto via `product_addon_groups`
+- Mescla os resultados, removendo duplicatas por `id`
+- Retorna `{ groups, addons }` no mesmo formato que o hook atual
 
-## Arquivos Modificados
+### 6. Atualizar `ProductDetailModal.tsx` (loja pública)
+
+Substituir `usePublicAddonsForCategory(product?.category_id)` pelo novo `usePublicAddonsForProduct(product?.id, product?.category_id)`.
+
+## Arquivos a Criar/Modificar
 
 | Arquivo | Ação |
 |---|---|
-| Migration SQL | `DELETE FROM addon_groups WHERE category_id IS NOT NULL` |
-| `src/hooks/usePublicAddons.ts` | Simplificar `usePublicAddonGroups` para buscar via junction |
-| `src/hooks/useAddons.ts` | Remover hooks legados diretos |
-| `src/components/catalogo/CategoryAddonLinkManager.tsx` | Novo botão "Novo Grupo", renomear labels |
-| `src/components/catalogo/GlobalAddonGroupManager.tsx` | Ajuste de texto (sem mencionar "global") |
-| `src/pages/dashboard/Catalogo.tsx` | Remover aba "Adicionais Diretos", renomear "Grupos Globais" para "Adicionais" |
-| `src/components/catalogo/AddonGroupManager.tsx` | Deletar arquivo |
+| `src/hooks/useProductAddonGroups.ts` | Criar |
+| `src/components/catalogo/ProductAddonLinkManager.tsx` | Criar |
+| `src/components/catalogo/ProductForm.tsx` | Modificar — adicionar seção de adicionais abaixo de Descrição |
+| `src/pages/dashboard/Catalogo.tsx` | Modificar — passar `establishmentId` ao ProductForm |
+| `src/hooks/usePublicAddons.ts` | Modificar — adicionar `usePublicAddonsForProduct` |
+| `src/components/loja/ProductDetailModal.tsx` | Modificar — usar novo hook |
 
-## Segurança da Limpeza
+## Comportamento Esperado
 
-- A loja pública (`usePublicAddonsForCategory`) já busca via junction: após deletar os diretos, continuará funcionando sem alteração
-- `order_item_addons` guarda `addon_id` dos addons — os addons dos grupos globais (copiados na migração anterior) são **diferentes** dos diretos; os pedidos existentes estão vinculados aos addons originais (diretos), que serão deletados — mas isso é seguro pois `order_item_addons` armazena `addon_name` e `addon_price` diretamente, sem depender do addon existir no futuro
+**No dashboard (editar produto):**
+- Ao abrir o card de edição, abaixo de "Descrição (opcional)", aparece a seção "Adicionais do Produto"
+- Mostra os grupos já vinculados com botão "Remover"
+- Mostra grupos disponíveis para adicionar com botão "Adicionar"
+- Botão "Novo Grupo" cria e vincula imediatamente
+- Vínculos são salvos em tempo real (sem precisar salvar o produto)
+
+**Na loja pública (cliente):**
+- Ao abrir um produto, o cliente vê os adicionais da categoria + os adicionais exclusivos do produto
+- Mesclados de forma transparente, sem duplicatas
+
+## Nota sobre o Modo de Criação
+
+Quando o usuário clica em "Novo Produto", a seção de adicionais **não aparece** — o produto precisa existir no banco antes de poder vincular grupos. O fluxo correto é: criar o produto → depois editar para adicionar os adicionais específicos.
