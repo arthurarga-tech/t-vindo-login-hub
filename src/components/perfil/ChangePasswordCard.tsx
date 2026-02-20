@@ -29,9 +29,14 @@ export function ChangePasswordCard() {
       return;
     }
 
+    if (newPassword === currentPassword) {
+      toast.error("A nova senha deve ser diferente da senha atual");
+      return;
+    }
+
     setLoading(true);
     try {
-      // Re-authenticate with current password first
+      // Verify current password by re-authenticating before allowing change
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.email) throw new Error("Usuário não encontrado");
 
@@ -45,8 +50,16 @@ export function ChangePasswordCard() {
         return;
       }
 
+      // Now update to the new password
       const { error } = await supabase.auth.updateUser({ password: newPassword });
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes("different")) {
+          toast.error("A nova senha deve ser diferente da atual");
+        } else {
+          throw error;
+        }
+        return;
+      }
 
       toast.success("Senha alterada com sucesso!");
       setCurrentPassword("");
@@ -54,7 +67,7 @@ export function ChangePasswordCard() {
       setConfirmPassword("");
     } catch (error: any) {
       console.error("Error changing password:", error);
-      toast.error(error.message || "Erro ao alterar senha. Tente novamente.");
+      toast.error("Erro ao alterar senha. Tente novamente.");
     } finally {
       setLoading(false);
     }

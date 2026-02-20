@@ -102,7 +102,18 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
+
+    // Map internal errors to safe user-facing messages
+    let userMessage = "Erro ao processar solicitação. Tente novamente.";
+    if (errorMessage.includes("not authenticated") || errorMessage.includes("Unauthorized") || errorMessage.includes("No authorization")) {
+      userMessage = "Acesso não autorizado.";
+    } else if (errorMessage.includes("not found") || errorMessage.includes("Establishment not found")) {
+      userMessage = "Estabelecimento não encontrado.";
+    } else if (errorMessage.includes("No Stripe customer")) {
+      userMessage = "Nenhuma assinatura ativa encontrada.";
+    }
+
+    return new Response(JSON.stringify({ error: userMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
