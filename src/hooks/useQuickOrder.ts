@@ -21,15 +21,25 @@ interface QuickOrderItem {
   }[];
 }
 
+interface QuickOrderCustomerAddress {
+  address?: string;
+  addressNumber?: string;
+  addressComplement?: string;
+  neighborhood?: string;
+  city?: string;
+}
+
 interface QuickOrderData {
   establishmentId: string;
   customer: QuickOrderCustomer;
+  customerAddress?: QuickOrderCustomerAddress;
   items: QuickOrderItem[];
   paymentMethod: string;
   notes?: string;
   changeFor?: number;
-  orderSubtype?: "counter" | "table";
+  orderSubtype?: "counter" | "table" | "delivery";
   tableNumber?: string;
+  deliveryFee?: number;
 }
 
 export function useCreateQuickOrder() {
@@ -39,6 +49,7 @@ export function useCreateQuickOrder() {
     mutationFn: async (data: QuickOrderData) => {
       const subtype = data.orderSubtype || "counter";
       const isTable = subtype === "table";
+      const isDelivery = subtype === "delivery";
 
       // 0. Validate duplicate table number
       if (isTable && data.tableNumber) {
@@ -58,18 +69,19 @@ export function useCreateQuickOrder() {
         }
       }
 
-      // 1. Create or update customer
+      // 1. Create or update customer (with address for delivery)
+      const addr = data.customerAddress;
       const { data: customerId, error: customerError } = await supabase.rpc(
         "create_or_update_public_customer",
         {
           p_establishment_id: data.establishmentId,
           p_name: data.customer.name,
           p_phone: data.customer.phone || "",
-          p_address: null,
-          p_address_number: null,
-          p_address_complement: null,
-          p_neighborhood: null,
-          p_city: null,
+          p_address: addr?.address || null,
+          p_address_number: addr?.addressNumber || null,
+          p_address_complement: addr?.addressComplement || null,
+          p_neighborhood: addr?.neighborhood || null,
+          p_city: addr?.city || null,
         }
       );
 
@@ -77,9 +89,10 @@ export function useCreateQuickOrder() {
 
       // Update customer order_origin
       if (customerId) {
+        const origin = isTable ? "table" : isDelivery ? "delivery" : "counter";
         await supabase
           .from("customers")
-          .update({ order_origin: subtype === "table" ? "table" : "counter" })
+          .update({ order_origin: origin })
           .eq("id", customerId);
       }
 
@@ -89,17 +102,21 @@ export function useCreateQuickOrder() {
         return sum + (item.productPrice + addonsTotal) * item.quantity;
       }, 0);
 
+      const deliveryFeeValue = isDelivery ? (data.deliveryFee || 0) : 0;
+      const totalAmount = subtotal + deliveryFeeValue;
+
       // 3. Create order
+      const orderType = isDelivery ? "delivery" : "dine_in";
       const { data: orderResult, error: orderError } = await supabase.rpc(
         "create_public_order",
         {
           p_establishment_id: data.establishmentId,
           p_customer_id: customerId,
           p_payment_method: data.paymentMethod,
-          p_order_type: "dine_in",
+          p_order_type: orderType,
           p_subtotal: subtotal,
-          p_delivery_fee: 0,
-          p_total: subtotal,
+          p_delivery_fee: deliveryFeeValue,
+          p_total: totalAmount,
           p_notes: data.notes || null,
           p_change_for: data.changeFor || null,
           p_scheduled_for: null,
@@ -113,13 +130,13 @@ export function useCreateQuickOrder() {
 
       // 4. Update order with subtype-specific fields
       const orderUpdate: Record<string, any> = {
-        order_subtype: subtype,
+        order_subtype: isDelivery ? null : subtype,
       };
       if (isTable) {
         orderUpdate.table_number = data.tableNumber || null;
         orderUpdate.is_open_tab = true;
       }
-      
+
       await supabase.from("orders").update(orderUpdate).eq("id", orderId);
 
       // 5. Create order items
@@ -181,11 +198,13 @@ export function useCreateQuickOrder() {
         if (addonsError) throw addonsError;
       }
 
-      return { orderId, orderNumber, isTable };
+      return { orderId, orderNumber, isTable, isDelivery };
     },
     onSuccess: (result, variables) => {
       if (result.isTable) {
         toast.success(`Comanda #${result.orderNumber} aberta - Mesa ${variables.tableNumber}`);
+      } else if (result.isDelivery) {
+        toast.success(`Pedido #${result.orderNumber} de entrega criado!`);
       } else {
         toast.success(`Pedido #${result.orderNumber} criado com sucesso!`);
       }

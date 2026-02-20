@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { User, ShoppingCart, CreditCard, ChevronLeft, ChevronRight, Loader2, UtensilsCrossed, ShoppingBag, Armchair } from "lucide-react";
+import { User, ShoppingCart, CreditCard, ChevronLeft, ChevronRight, Loader2, UtensilsCrossed, ShoppingBag, Armchair, Truck, MapPin } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,7 +67,7 @@ function MobileProductsStep({
   );
 }
 
-type OrderSubtype = "counter" | "table";
+type OrderSubtype = "counter" | "table" | "delivery";
 type Step = "type" | "customer" | "products" | "payment";
 type PaymentMethod = "pix" | "credit" | "debit" | "cash";
 
@@ -76,10 +76,12 @@ interface QuickOrderModalProps {
   onClose: () => void;
   establishmentId: string;
   serviceTableEnabled?: boolean;
+  serviceDeliveryEnabled?: boolean;
   paymentPixEnabled?: boolean;
   paymentCreditEnabled?: boolean;
   paymentDebitEnabled?: boolean;
   paymentCashEnabled?: boolean;
+  defaultDeliveryFee?: number;
   /** Pre-select table mode (used from Mesas page) */
   defaultSubtype?: OrderSubtype;
 }
@@ -89,14 +91,17 @@ export function QuickOrderModal({
   onClose,
   establishmentId,
   serviceTableEnabled = false,
+  serviceDeliveryEnabled = true,
   paymentPixEnabled = true,
   paymentCreditEnabled = true,
   paymentDebitEnabled = true,
   paymentCashEnabled = true,
+  defaultDeliveryFee = 0,
   defaultSubtype,
 }: QuickOrderModalProps) {
+  const hasMultipleTypes = serviceTableEnabled || serviceDeliveryEnabled;
   const [orderSubtype, setOrderSubtype] = useState<OrderSubtype>(defaultSubtype || "counter");
-  const [step, setStep] = useState<Step>(serviceTableEnabled && !defaultSubtype ? "type" : "customer");
+  const [step, setStep] = useState<Step>(hasMultipleTypes && !defaultSubtype ? "type" : "customer");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [tableNumber, setTableNumber] = useState("");
@@ -106,26 +111,35 @@ export function QuickOrderModal({
   const [notes, setNotes] = useState("");
   const [editingItem, setEditingItem] = useState<QuickOrderCartItem | null>(null);
 
+  // Delivery address fields
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [deliveryAddressNumber, setDeliveryAddressNumber] = useState("");
+  const [deliveryAddressComplement, setDeliveryAddressComplement] = useState("");
+  const [deliveryNeighborhood, setDeliveryNeighborhood] = useState("");
+  const [deliveryCity, setDeliveryCity] = useState("");
+  const [deliveryFee, setDeliveryFee] = useState(defaultDeliveryFee.toString());
+
   const createQuickOrder = useCreateQuickOrder();
 
   // Build steps dynamically based on subtype
   const getSteps = useCallback((): { key: Step; label: string; icon: typeof User }[] => {
     const steps: { key: Step; label: string; icon: typeof User }[] = [];
-    if (serviceTableEnabled && !defaultSubtype) {
+    if (hasMultipleTypes && !defaultSubtype) {
       steps.push({ key: "type", label: "Tipo", icon: UtensilsCrossed });
     }
     steps.push({ key: "customer", label: "Cliente", icon: User });
     steps.push({ key: "products", label: "Produtos", icon: ShoppingCart });
-    if (orderSubtype === "counter") {
+    // Payment step for counter and delivery (table pays at close)
+    if (orderSubtype === "counter" || orderSubtype === "delivery") {
       steps.push({ key: "payment", label: "Pagamento", icon: CreditCard });
     }
     return steps;
-  }, [orderSubtype, serviceTableEnabled, defaultSubtype]);
+  }, [orderSubtype, hasMultipleTypes, defaultSubtype]);
 
   const stepConfig = getSteps();
 
   const resetForm = useCallback(() => {
-    setStep(serviceTableEnabled && !defaultSubtype ? "type" : "customer");
+    setStep(hasMultipleTypes && !defaultSubtype ? "type" : "customer");
     setOrderSubtype(defaultSubtype || "counter");
     setCustomerName("");
     setCustomerPhone("");
@@ -135,7 +149,13 @@ export function QuickOrderModal({
     setChangeFor("");
     setNotes("");
     setEditingItem(null);
-  }, [serviceTableEnabled, defaultSubtype]);
+    setDeliveryAddress("");
+    setDeliveryAddressNumber("");
+    setDeliveryAddressComplement("");
+    setDeliveryNeighborhood("");
+    setDeliveryCity("");
+    setDeliveryFee(defaultDeliveryFee.toString());
+  }, [hasMultipleTypes, defaultSubtype, defaultDeliveryFee]);
 
   const handleClose = () => {
     resetForm();
@@ -181,12 +201,16 @@ export function QuickOrderModal({
     setCartItems((prev) => prev.filter((item) => item.id !== itemId));
   }, []);
 
-  const calculateTotal = () => {
+  const calculateSubtotal = () => {
     return cartItems.reduce((sum, item) => {
       const addonsTotal = item.addons.reduce((a, addon) => a + addon.price * addon.quantity, 0);
       return sum + (item.productPrice + addonsTotal) * item.quantity;
     }, 0);
   };
+
+  const parsedDeliveryFee = parseFloat(deliveryFee.replace(",", ".")) || 0;
+  const subtotal = calculateSubtotal();
+  const total = subtotal + (orderSubtype === "delivery" ? parsedDeliveryFee : 0);
 
   const validateStep = (currentStep: Step): boolean => {
     switch (currentStep) {
@@ -201,9 +225,13 @@ export function QuickOrderModal({
           toast.error("Informe o nome do cliente");
           return false;
         }
-        // When defaultSubtype is table, table number is in customer step
         if (defaultSubtype === "table" && !tableNumber.trim()) {
           toast.error("Informe o número da mesa");
+          return false;
+        }
+        // Delivery: require at least street address
+        if (orderSubtype === "delivery" && !deliveryAddress.trim()) {
+          toast.error("Informe o endereço de entrega");
           return false;
         }
         return true;
@@ -241,8 +269,8 @@ export function QuickOrderModal({
   };
 
   const handleSubmit = async () => {
-    // For table orders, last step is "products"
     if (orderSubtype === "counter" && !validateStep("payment")) return;
+    if (orderSubtype === "delivery" && !validateStep("payment")) return;
     if (orderSubtype === "table" && !validateStep("products")) return;
 
     const changeForValue = paymentMethod === "cash" ? parseFloat(changeFor.replace(",", ".")) || 0 : 0;
@@ -253,6 +281,13 @@ export function QuickOrderModal({
         name: customerName.trim(),
         phone: customerPhone || "",
       },
+      customerAddress: orderSubtype === "delivery" ? {
+        address: deliveryAddress.trim() || undefined,
+        addressNumber: deliveryAddressNumber.trim() || undefined,
+        addressComplement: deliveryAddressComplement.trim() || undefined,
+        neighborhood: deliveryNeighborhood.trim() || undefined,
+        city: deliveryCity.trim() || undefined,
+      } : undefined,
       items: cartItems.map((item) => ({
         productId: item.productId,
         productName: item.productName,
@@ -266,19 +301,19 @@ export function QuickOrderModal({
       changeFor: changeForValue > 0 ? changeForValue : undefined,
       orderSubtype,
       tableNumber: orderSubtype === "table" ? tableNumber.trim() : undefined,
+      deliveryFee: orderSubtype === "delivery" ? parsedDeliveryFee : undefined,
     });
 
     handleClose();
   };
 
   const currentStepIndex = stepConfig.findIndex((s) => s.key === step);
-  const total = calculateTotal();
   const changeForValue = parseFloat(changeFor.replace(",", ".")) || 0;
   const changeAmount = changeForValue > total ? changeForValue - total : 0;
   const isLastStep = currentStepIndex === stepConfig.length - 1;
 
   // Set default payment method
-  if (!paymentMethod && orderSubtype === "counter") {
+  if (!paymentMethod && (orderSubtype === "counter" || orderSubtype === "delivery")) {
     if (paymentPixEnabled) setPaymentMethod("pix");
     else if (paymentCreditEnabled) setPaymentMethod("credit");
     else if (paymentDebitEnabled) setPaymentMethod("debit");
@@ -287,7 +322,7 @@ export function QuickOrderModal({
 
   const handleSelectSubtype = (subtype: OrderSubtype) => {
     setOrderSubtype(subtype);
-    if (subtype === "counter") {
+    if (subtype !== "table") {
       setTableNumber("");
     }
   };
@@ -346,7 +381,7 @@ export function QuickOrderModal({
           {step === "type" && (
             <div className="max-w-md mx-auto space-y-4" data-testid="quick-order-type-step">
               <p className="text-sm text-muted-foreground text-center">Selecione o tipo de pedido</p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className={`grid gap-4 ${serviceTableEnabled && serviceDeliveryEnabled ? "grid-cols-3" : "grid-cols-2"}`}>
                 <button
                   onClick={() => handleSelectSubtype("counter")}
                   className={`flex flex-col items-center gap-3 p-6 rounded-lg border-2 transition-all ${
@@ -362,21 +397,42 @@ export function QuickOrderModal({
                     <p className="text-xs text-muted-foreground mt-1">Paga no ato</p>
                   </div>
                 </button>
-                <button
-                  onClick={() => handleSelectSubtype("table")}
-                  className={`flex flex-col items-center gap-3 p-6 rounded-lg border-2 transition-all ${
-                    orderSubtype === "table"
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50"
-                  }`}
-                  data-testid="quick-order-type-table"
-                >
-                  <Armchair className="h-10 w-10 text-primary" />
-                  <div className="text-center">
-                    <p className="font-semibold">Mesa</p>
-                    <p className="text-xs text-muted-foreground mt-1">Paga no final</p>
-                  </div>
-                </button>
+
+                {serviceDeliveryEnabled && (
+                  <button
+                    onClick={() => handleSelectSubtype("delivery")}
+                    className={`flex flex-col items-center gap-3 p-6 rounded-lg border-2 transition-all ${
+                      orderSubtype === "delivery"
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                    data-testid="quick-order-type-delivery"
+                  >
+                    <Truck className="h-10 w-10 text-primary" />
+                    <div className="text-center">
+                      <p className="font-semibold">Entrega</p>
+                      <p className="text-xs text-muted-foreground mt-1">Paga no ato</p>
+                    </div>
+                  </button>
+                )}
+
+                {serviceTableEnabled && (
+                  <button
+                    onClick={() => handleSelectSubtype("table")}
+                    className={`flex flex-col items-center gap-3 p-6 rounded-lg border-2 transition-all ${
+                      orderSubtype === "table"
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                    data-testid="quick-order-type-table"
+                  >
+                    <Armchair className="h-10 w-10 text-primary" />
+                    <div className="text-center">
+                      <p className="font-semibold">Mesa</p>
+                      <p className="text-xs text-muted-foreground mt-1">Paga no final</p>
+                    </div>
+                  </button>
+                )}
               </div>
 
               {orderSubtype === "table" && (
@@ -418,6 +474,7 @@ export function QuickOrderModal({
                   data-testid="quick-order-customer-phone"
                 />
               </div>
+
               {defaultSubtype === "table" && (
                 <div className="space-y-2">
                   <Label htmlFor="table-number-customer">Número da Mesa *</Label>
@@ -429,6 +486,71 @@ export function QuickOrderModal({
                     data-testid="quick-order-table-number-customer"
                   />
                 </div>
+              )}
+
+              {/* Delivery address fields */}
+              {orderSubtype === "delivery" && (
+                <>
+                  <Separator />
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    Endereço de Entrega
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-2 space-y-1">
+                      <Label htmlFor="delivery-address">Rua / Avenida *</Label>
+                      <Input
+                        id="delivery-address"
+                        value={deliveryAddress}
+                        onChange={(e) => setDeliveryAddress(e.target.value)}
+                        placeholder="Nome da rua"
+                        data-testid="quick-order-delivery-address"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="delivery-number">Número</Label>
+                      <Input
+                        id="delivery-number"
+                        value={deliveryAddressNumber}
+                        onChange={(e) => setDeliveryAddressNumber(e.target.value)}
+                        placeholder="Nº"
+                        data-testid="quick-order-delivery-number"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="delivery-complement">Complemento</Label>
+                    <Input
+                      id="delivery-complement"
+                      value={deliveryAddressComplement}
+                      onChange={(e) => setDeliveryAddressComplement(e.target.value)}
+                      placeholder="Apto, bloco, referência..."
+                      data-testid="quick-order-delivery-complement"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="delivery-neighborhood">Bairro</Label>
+                      <Input
+                        id="delivery-neighborhood"
+                        value={deliveryNeighborhood}
+                        onChange={(e) => setDeliveryNeighborhood(e.target.value)}
+                        placeholder="Bairro"
+                        data-testid="quick-order-delivery-neighborhood"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="delivery-city">Cidade</Label>
+                      <Input
+                        id="delivery-city"
+                        value={deliveryCity}
+                        onChange={(e) => setDeliveryCity(e.target.value)}
+                        placeholder="Cidade"
+                        data-testid="quick-order-delivery-city"
+                      />
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           )}
@@ -446,6 +568,20 @@ export function QuickOrderModal({
 
           {step === "payment" && (
             <div className="space-y-6 max-w-md mx-auto" data-testid="quick-order-payment-step">
+              {/* Delivery fee field */}
+              {orderSubtype === "delivery" && (
+                <div className="space-y-2">
+                  <Label htmlFor="delivery-fee">Taxa de Entrega (R$)</Label>
+                  <Input
+                    id="delivery-fee"
+                    value={deliveryFee}
+                    onChange={(e) => setDeliveryFee(e.target.value)}
+                    placeholder="0,00"
+                    data-testid="quick-order-delivery-fee"
+                  />
+                </div>
+              )}
+
               <div className="space-y-3">
                 <Label>Forma de Pagamento *</Label>
                 <RadioGroup
@@ -520,6 +656,18 @@ export function QuickOrderModal({
 
               <Separator />
 
+              {orderSubtype === "delivery" && parsedDeliveryFee > 0 && (
+                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                  <span>Subtotal:</span>
+                  <span>{formatPrice(subtotal)}</span>
+                </div>
+              )}
+              {orderSubtype === "delivery" && (
+                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                  <span>Taxa de entrega:</span>
+                  <span>{formatPrice(parsedDeliveryFee)}</span>
+                </div>
+              )}
               <div className="flex justify-between items-center text-lg font-semibold">
                 <span>Total:</span>
                 <span className="text-primary" data-testid="quick-order-total">
