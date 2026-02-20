@@ -89,6 +89,11 @@ export function ImageCropModal({
     canvas.width = cropWidth;
     canvas.height = cropHeight;
 
+    // Fill white background before drawing — prevents black pixels when
+    // converting transparent PNG areas to JPEG (canvas default is transparent = black in JPEG)
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, cropWidth, cropHeight);
+
     // Draw the cropped image with optional resizing
     ctx.drawImage(
       image,
