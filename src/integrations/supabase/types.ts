@@ -805,6 +805,42 @@ export type Database = {
           },
         ]
       }
+      product_addon_exclusions: {
+        Row: {
+          addon_group_id: string
+          created_at: string
+          id: string
+          product_id: string
+        }
+        Insert: {
+          addon_group_id: string
+          created_at?: string
+          id?: string
+          product_id: string
+        }
+        Update: {
+          addon_group_id?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_addon_exclusions_addon_group_id_fkey"
+            columns: ["addon_group_id"]
+            isOneToOne: false
+            referencedRelation: "addon_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_addon_exclusions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_addon_groups: {
         Row: {
           addon_group_id: string

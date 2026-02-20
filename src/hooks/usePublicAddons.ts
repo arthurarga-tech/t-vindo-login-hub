@@ -66,7 +66,8 @@ export function usePublicAddonsForCategory(categoryId: string | undefined) {
   });
 }
 
-// Hook that merges category-level addons + product-exclusive addons
+// Hook that merges category-level addons + product-exclusive addons,
+// filtering out any category groups explicitly excluded for this product.
 export function usePublicAddonsForProduct(
   productId: string | undefined,
   categoryId: string | undefined
@@ -76,7 +77,7 @@ export function usePublicAddonsForProduct(
     queryFn: async () => {
       if (!productId) return { groups: [], addons: [] };
 
-      // Fetch groups from category (via category_addon_groups)
+      // Run all three fetches in parallel
       const categoryGroupsPromise = categoryId
         ? supabase
             .from("category_addon_groups")
@@ -85,20 +86,31 @@ export function usePublicAddonsForProduct(
             .eq("addon_groups.active", true)
         : Promise.resolve({ data: [], error: null });
 
-      // Fetch groups from product (via product_addon_groups)
       const productGroupsPromise = supabase
         .from("product_addon_groups")
         .select("addon_groups!inner(*)")
         .eq("product_id", productId)
         .eq("addon_groups.active", true);
 
-      const [categoryResult, productResult] = await Promise.all([
+      const exclusionsPromise = supabase
+        .from("product_addon_exclusions" as any)
+        .select("addon_group_id")
+        .eq("product_id", productId);
+
+      const [categoryResult, productResult, exclusionsResult] = await Promise.all([
         categoryGroupsPromise,
         productGroupsPromise,
+        exclusionsPromise,
       ]);
 
       if (categoryResult.error) throw categoryResult.error;
       if (productResult.error) throw productResult.error;
+      // Non-critical: silently ignore exclusions errors (table might not exist yet)
+      const exclusionIds = new Set<string>(
+        exclusionsResult.error
+          ? []
+          : ((exclusionsResult.data || []) as any[]).map((row) => row.addon_group_id as string)
+      );
 
       const categoryGroups = (categoryResult.data || []).map(
         (row: any) => row.addon_groups as AddonGroup
@@ -107,10 +119,15 @@ export function usePublicAddonsForProduct(
         (row: any) => row.addon_groups as AddonGroup
       );
 
-      // Merge deduplicating by id
+      // Filter out excluded category groups
+      const filteredCategoryGroups = categoryGroups.filter(
+        (g) => !exclusionIds.has(g.id)
+      );
+
+      // Merge deduplicating by id (category first, then product-exclusive)
       const seen = new Set<string>();
       const allGroups: AddonGroup[] = [];
-      for (const g of [...categoryGroups, ...productGroups]) {
+      for (const g of [...filteredCategoryGroups, ...productGroups]) {
         if (!seen.has(g.id)) {
           seen.add(g.id);
           allGroups.push(g);
