@@ -57,6 +57,8 @@ export default function Pedidos() {
   const paymentCreditEnabled = establishment?.payment_credit_enabled ?? true;
   const paymentDebitEnabled = establishment?.payment_debit_enabled ?? true;
   const paymentCashEnabled = establishment?.payment_cash_enabled ?? true;
+  const serviceDeliveryEnabled = establishment?.service_delivery ?? true;
+  const defaultDeliveryFee = establishment?.delivery_fee ?? 0;
 
   // --- localStorage-based anti-duplicate tracking ---
   const getAutoPrintedIds = (): Record<string, number> => {
@@ -469,8 +471,9 @@ export default function Pedidos() {
           open={showQuickOrderModal}
           onClose={() => setShowQuickOrderModal(false)}
           establishmentId={establishment.id}
-          serviceTableEnabled={false}
-          defaultSubtype="counter"
+          serviceTableEnabled={establishment.service_table ?? false}
+          serviceDeliveryEnabled={serviceDeliveryEnabled}
+          defaultDeliveryFee={defaultDeliveryFee}
           paymentPixEnabled={paymentPixEnabled}
           paymentCreditEnabled={paymentCreditEnabled}
           paymentDebitEnabled={paymentDebitEnabled}
