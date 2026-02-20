@@ -1,156 +1,139 @@
 
-# Reordenação de Adicionais + Revisão Desktop/Mobile
+# Revisão Completa — Bugs, Inconsistências e Melhorias
 
-## Diagnóstico do Estado Atual
+## Resumo Executivo
 
-### Drag-and-drop já implementado:
-- **Categorias** (`CategoryList.tsx`): DnD completo com `@dnd-kit`, `GripVertical`, `useReorderCategories`
-- **Produtos** (`ProductList.tsx`): DnD completo com `@dnd-kit`, `GripVertical`, `useReorderProducts`
-- **Adicionais individuais** (`AddonList.tsx`): sem DnD, sem handle de arraste
-- **Grupos globais** (`GlobalAddonGroupManager.tsx`): sem DnD
-- **Grupos na categoria** (`CategoryAddonLinkManager.tsx`): sem DnD (apenas "vinculados/disponiveis")
-- **Grupos no produto** (`ProductAddonLinkManager.tsx`): sem DnD
-
-### Problema atual no DnD mobile:
-O `PointerSensor` do dnd-kit funciona em desktop mas pode ter conflito com scroll em mobile. O padrão correto para mobile é usar `PointerSensor` com `activationConstraint: { distance: 8 }` (evita ativar drag ao scroll) combinado com `TouchSensor`. **Isso afeta todos os DnDs existentes** (categorias e produtos também).
-
-### O que precisa ser implementado:
-1. Reordenação dos **adicionais individuais** dentro de um grupo (em `AddonList.tsx`)
-2. Reordenação dos **grupos globais** no gerenciador global (`GlobalAddonGroupManager.tsx`)
-3. Reordenação dos **grupos vinculados** na seção da categoria (`CategoryAddonLinkManager.tsx` — apenas os "Vinculados")
-4. Reordenação dos **grupos vinculados** na seção do produto (`ProductAddonLinkManager.tsx` — seções "Da Categoria" e "Exclusivos")
-5. Correção mobile em todos os DnDs existentes
-
-### Análise de compatibilidade da loja pública (Açaí da Jana):
-A loja usa `usePublicAddonsForProduct` (já implementado) que busca grupos por produto + categoria, filtra exclusões, e ordena addons por `order_position`. A loja está funcionando corretamente. O risco de regressão é baixo pois a loja apenas lê dados.
+A análise identificou **6 bugs reais** e **5 melhorias importantes** que precisam ser corrigidas antes da publicação. Nenhum bug é catastrófico, mas juntos comprometem a robustez do sistema de adicionais e a experiência mobile.
 
 ---
 
-## Arquitetura da Solução
+## Bugs Encontrados
 
-### Reordenação de grupos — onde salvar a ordem?
+### Bug 1 — CRÍTICO: DnD dentro do ProductForm causa conflito de contexto
 
-Os grupos de adicionais (`addon_groups`) têm `order_position`. Quando reordenados:
-- **No gerenciador global**: reordena diretamente `addon_groups.order_position`
-- **Na categoria**: a ordem dos grupos vinculados é definida pela ordem em `category_addon_groups`. Como essa tabela não tem `order_position`, a ordem virá do `addon_groups.order_position` (que já existe). Para reordenar grupos especificamente por categoria, precisaríamos de uma coluna na junction table. **Decisão de design**: reordenar via `addon_groups.order_position` (afeta globalmente), mais simples e consistente.
-- **No produto**: mesma lógica — reordenar via `addon_groups.order_position`.
+**Arquivo:** `ProductAddonLinkManager.tsx`
 
-### Hook novo: `useReorderAddons` e `useReorderAddonGroups`
+O `ProductForm` é um `Dialog` do Radix UI. Dentro dele, o `ProductAddonLinkManager` instancia **dois `DndContext` separados** (um para grupos da categoria, outro para grupos exclusivos). O dnd-kit não suporta bem múltiplos `DndContext` aninhados em portais do Radix — isso pode causar falha silenciosa no drag ou conflito de eventos de ponteiro/touch dentro do Dialog.
+
+**Correção:** Unificar os dois contextos DnD em um único `DndContext` usando prefixos nos IDs (`cat-` e `exc-`) já presentes, e separar os itens dentro do mesmo `SortableContext`.
+
+---
+
+### Bug 2 — ALTO: Cache miss ao reordenar grupos no ProductAddonLinkManager
+
+**Arquivo:** `ProductAddonLinkManager.tsx`, linhas 272–285
+
+Ao fazer drag-and-drop na seção "Da Categoria", o componente chama `reorderGroups.mutateAsync()` do hook `useReorderAddonGroups(establishmentId)`. Esse hook invalida somente a query `["global-addon-groups", establishmentId]`. Porém, a lista de grupos da categoria exibida vem de `usePublicAddonsForCategory(categoryId)` — query key `["public-addons-for-category", categoryId]`. Resultado: **a ordem visual muda temporariamente, mas ao refetch a lista volta à ordem antiga**.
+
+**Correção:** Após reordenar, invalidar também as queries `["public-addons-for-category", categoryId]` e `["public-addons-for-product", productId, categoryId]`.
+
+---
+
+### Bug 3 — ALTO: `usePublicAddonsForCategory` usada no dashboard com dados privados
+
+**Arquivo:** `ProductAddonLinkManager.tsx`, linha 197
+
+O componente usa `usePublicAddonsForCategory(categoryId)` — que só retorna grupos **ativos** (`addon_groups.active = true`). Se um grupo global estiver inativo, ele não aparece na seção "Da Categoria" para o administrador, mas ainda poderia estar configurado. Administradores deveriam ver todos os grupos (ativos e inativos) para poder gerenciá-los.
+
+**Correção:** No dashboard, usar `useCategoryAddonLinks(categoryId)` (que retorna IDs sem filtrar por `active`) combinado com o `globalGroups` já disponível (que inclui inativos) para montar a seção "Da Categoria".
+
+---
+
+### Bug 4 — MÉDIO: Reordenação de grupos colide com o escopo
+
+**Arquivo:** `CategoryAddonLinkManager.tsx`, linha 143; `ProductAddonLinkManager.tsx`, linhas 272, 283
+
+Ao arrastar grupos, o hook `useReorderAddonGroups` atualiza `addon_groups.order_position` **globalmente**. Isso é intencional por design, mas o problema é que ele invalida apenas `["global-addon-groups", establishmentId]`, enquanto outras queries que dependem da ordem (`["public-addons-for-category"]`, `["public-addons-for-product"]`) **não são invalidadas**. O cliente vê a ordem errada até o próximo refetch automático.
+
+**Correção:** O `useReorderAddonGroups` deve invalidar também as queries públicas relacionadas.
+
+---
+
+### Bug 5 — MÉDIO: `(as any)` no Supabase client para `product_addon_exclusions`
+
+**Arquivos:** `useProductAddonGroups.ts` (linhas 97, 120, 148), `usePublicAddons.ts` (linha 96)
+
+A tabela `product_addon_exclusions` existe no banco (migração executada e confirmada via schema), mas o `types.ts` não foi regenerado ainda. O cast `as any` é um workaround que elimina a segurança de tipo em runtime — qualquer erro de coluna ou resposta malformada seria silenciado.
+
+**Correção:** Os tipos já foram atualizados via `src/integrations/supabase/types.ts` automaticamente ao rodar a migração. Remover os `as any` e usar o tipo correto. Se o types.ts ainda não reflete a tabela, é necessário garantir a atualização.
+
+---
+
+### Bug 6 — MÉDIO: Race condition no `handleCreateAndLink`
+
+**Arquivo:** `ProductAddonLinkManager.tsx`, linha 237; `CategoryAddonLinkManager.tsx`, linha 125
 
 ```typescript
-// Em useAddons.ts
-export function useReorderAddons(addonGroupId: string | undefined) { ... }
-
-// Em useGlobalAddonGroups.ts
-export function useReorderAddonGroups(establishmentId: string | undefined) { ... }
+const handleCreateAndLink = async (data: AddonGroupFormData) => {
+  const result = await createGroup.mutateAsync(data);
+  if (result?.id) {
+    await linkMutation.mutateAsync({ productId, addonGroupId: result.id });
+  }
+  setFormOpen(false);
+};
 ```
 
-### Correção mobile — sensor unificado
+Se `createGroup.mutateAsync` retornar erro, `result` será `undefined` e a execução irá para `setFormOpen(false)` sem mostrar erro ao usuário. O formulário fecha sem feedback.
 
-Criar um hook reutilizável `useDndSensors()` com configuração que funciona em desktop e mobile:
-
-```typescript
-// src/hooks/useDndSensors.ts
-import { useSensor, useSensors, PointerSensor, KeyboardSensor, TouchSensor } from "@dnd-kit/core";
-import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-
-export function useDndSensors() {
-  return useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 }, // evita conflito com scroll mobile
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 200,        // tempo antes de ativar drag no touch
-        tolerance: 5,      // pixels de tolerância de movimento
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-}
-```
+**Correção:** Envolver em `try/catch` explícito — se falhar, não fechar o modal e exibir o toast de erro.
 
 ---
 
-## Arquivos a Criar/Modificar
+## Melhorias Propostas
 
-| Arquivo | Ação |
-|---|---|
-| `src/hooks/useDndSensors.ts` | Criar — sensores mobile-safe centralizados |
-| `src/hooks/useAddons.ts` | Adicionar `useReorderAddons` |
-| `src/hooks/useGlobalAddonGroups.ts` | Adicionar `useReorderAddonGroups` |
-| `src/components/catalogo/AddonList.tsx` | Adicionar DnD nos adicionais individuais |
-| `src/components/catalogo/GlobalAddonGroupManager.tsx` | Adicionar DnD nos grupos globais |
-| `src/components/catalogo/CategoryAddonLinkManager.tsx` | Adicionar DnD nos grupos vinculados |
-| `src/components/catalogo/ProductAddonLinkManager.tsx` | Adicionar DnD nas seções "Da Categoria" e "Exclusivos" |
-| `src/components/catalogo/CategoryList.tsx` | Usar `useDndSensors` (fix mobile) |
-| `src/components/catalogo/ProductList.tsx` | Usar `useDndSensors` (fix mobile) |
+### Melhoria 1 — Invalidação de cache do `useReorderAddonGroups`
 
----
+Centralizar a invalidação no próprio hook para incluir as queries `public-addons-for-category` e `public-addons-for-product`. Isso resolve os Bugs 2 e 4 de uma vez.
 
-## Detalhes de UX por Componente
+### Melhoria 2 — `CategoryList` e `ProductList`: handle invisível no mobile
 
-### AddonList — DnD nos itens
-```
-[≡] Paçoca          +R$ 0,00   [👁] [✏️] [🗑]
-[≡] Morango         +R$ 0,50   [👁] [✏️] [🗑]
-[≡] Chocolate       +R$ 1,00   [👁] [✏️] [🗑]
-```
-- Handle `GripVertical` à esquerda de cada addon
-- Em mobile: ícone sempre visível (sem `opacity-0 group-hover`)
-- Ao soltar: salva nova ordem em `addons.order_position` via `useReorderAddons`
+Em `CategoryList.tsx` linha 136: `opacity-0 group-hover:opacity-100` — **invisível em mobile** (sem hover). O handle de arrastar já foi corrigido em `ProductList.tsx` com `sm:opacity-0 sm:group-hover:opacity-100`, mas o `CategoryList.tsx` ainda tem o problema.
 
-### GlobalAddonGroupManager — DnD nos grupos
-```
-[≡] ▼ Complementos     [Obrig] [0-10]  [⚙] [🗑]
-[≡] ▼ Bebidas          [0-3]           [⚙] [🗑]
-```
-- Handle `GripVertical` antes do ícone de expand
-- Ao soltar: salva nova ordem em `addon_groups.order_position` via `useReorderAddonGroups`
+**Correção:** Aplicar o mesmo padrão de `ProductList.tsx` no `CategoryList.tsx`.
 
-### CategoryAddonLinkManager — DnD nos vinculados
-```
-Vinculados:
-[≡] Complementos     [Remover]
-[≡] Bebidas          [Remover]
-```
-- DnD apenas na seção "Vinculados" (os disponíveis ficam estáticos)
-- A ordem salva em `addon_groups.order_position` (impacto global — informar isso)
+### Melhoria 3 — Validação de `min_selections > 0` para grupos obrigatórios
 
-### ProductAddonLinkManager — DnD nas seções ativas
-```
-Da Categoria:
-[≡] Complementos (heredado)    [Excluir]
-[≡] Bebidas (heredado)         [Excluir]
+Em `validateAddonSelection` (`ProductAddonSelector.tsx`), se `group.required = true` mas `group.min_selections = 0`, a validação sempre passa mesmo sem seleção. Isso é inconsistente — um grupo marcado como obrigatório com `min_selections = 0` não faz sentido.
 
-Exclusivos deste produto:
-[≡] Cobertura Extra             [Remover]
-```
-- DnD separado para cada seção
-- A ordem também salva em `addon_groups.order_position`
+**Correção:** Na validação, tratar `min_selections = 0` como `min_selections = 1` quando `required = true`.
+
+### Melhoria 4 — Empty state quando produto não tem categoria definida
+
+Em `ProductAddonLinkManager.tsx`, se `categoryId` for `null` ou `undefined`, a seção "Da Categoria" simplesmente não aparece (sem mensagem). O usuário pode ficar confuso achando que não há adicionais disponíveis por outro motivo.
+
+**Correção:** Exibir uma mensagem como: *"Associe este produto a uma categoria para ver os adicionais herdados."*
+
+### Melhoria 5 — `Catalogo.tsx`: `establishmentId!` com non-null assertion
+
+Linha 243: `establishmentId={establishmentId!}` — já há uma guarda `if (!establishment)` antes, então o non-null assertion é seguro. Mas a prop do `ProductForm` usa `establishmentId?: string` (opcional) e na linha 289 passa sem `!`. Isso é inconsistente.
+
+**Correção:** Passar `establishmentId={establishmentId ?? ""}` de forma uniforme, ou tornar a prop obrigatória onde há certeza.
 
 ---
 
-## Compatibilidade Mobile — Revisão Geral
+## Arquivos a Modificar
 
-### Loja pública (já compatível):
-- `ProductDetailModal.tsx`: `sm:max-w-[500px] max-h-[90vh]` — OK
-- `ProductAddonSelector.tsx`: botões com `h-7 w-7` — OK para touch
-- `StoreHeader.tsx`: layout responsivo com `sm:` breakpoints — OK
-- `CartDrawer.tsx`, `CartBar.tsx` — verificar se têm paddings adequados para mobile
-
-### Dashboard (melhorias necessárias):
-- `ProductList.tsx`: handle de drag `opacity-0 group-hover:opacity-100` — **invisível em mobile** (sem hover). Será corrigido para mostrar sempre em telas touch
-- `CategoryList.tsx`: handle sempre visível — OK
-- `AddonList.tsx`: botões pequenos `h-6 w-6` — OK para touch mas podem ser aumentados para `h-7 w-7`
-
-### Sensor fix — impacto:
-Substituir o `useSensors` local em `CategoryList` e `ProductList` pelo novo `useDndSensors()` centralizado. O `activationConstraint: { distance: 8 }` previne que o drag se ative durante scroll no mobile.
+| Arquivo | Bugs Corrigidos | Melhorias |
+|---|---|---|
+| `src/hooks/useGlobalAddonGroups.ts` | Bug 2, Bug 4 | Melhoria 1 |
+| `src/components/catalogo/ProductAddonLinkManager.tsx` | Bug 1, Bug 3, Bug 6 | Melhoria 4 |
+| `src/components/catalogo/CategoryAddonLinkManager.tsx` | Bug 6 | — |
+| `src/hooks/useProductAddonGroups.ts` | Bug 5 | — |
+| `src/hooks/usePublicAddons.ts` | Bug 5 | — |
+| `src/components/catalogo/CategoryList.tsx` | — | Melhoria 2 |
+| `src/components/loja/ProductAddonSelector.tsx` | — | Melhoria 3 |
+| `src/pages/dashboard/Catalogo.tsx` | — | Melhoria 5 |
 
 ---
 
-## Nota sobre ordem global vs. por contexto
+## Ordem de Implementação Recomendada
 
-Quando o usuário reordena grupos no nível de categoria ou produto, a ordem salva em `addon_groups.order_position` é **global** — afeta a ordem em todos os outros contextos onde esse grupo aparece. Isso é aceitável e simplifica a implementação, já que é o mesmo comportamento que categorias e produtos têm (ordem global por estabelecimento).
+1. Corrigir invalidação de cache no `useReorderAddonGroups` (resolve Bugs 2 e 4 simultaneamente)
+2. Unificar DndContext no `ProductAddonLinkManager` (Bug 1)
+3. Substituir `usePublicAddonsForCategory` por dados privados na seção "Da Categoria" (Bug 3)
+4. Corrigir `handleCreateAndLink` com try/catch (Bug 6 — em ambos os managers)
+5. Remover `as any` desnecessários (Bug 5)
+6. Corrigir visibilidade do handle no `CategoryList` mobile (Melhoria 2)
+7. Corrigir validação de `min_selections` (Melhoria 3)
+8. Adicionar empty state para produto sem categoria (Melhoria 4)
+9. Uniformizar `establishmentId` no `Catalogo.tsx` (Melhoria 5)
