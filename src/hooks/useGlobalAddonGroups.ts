@@ -150,6 +150,26 @@ export function useDeleteGlobalAddonGroup(establishmentId: string | undefined) {
   });
 }
 
+// Reorder global addon groups
+export function useReorderAddonGroups(establishmentId: string | undefined) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (groups: { id: string; order_position: number }[]) => {
+      const updates = groups.map(({ id, order_position }) =>
+        supabase.from("addon_groups").update({ order_position }).eq("id", id)
+      );
+      await Promise.all(updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["global-addon-groups", establishmentId] });
+    },
+    onError: () => {
+      toast.error("Erro ao reordenar grupos");
+    },
+  });
+}
+
 // Link a global addon group to a category
 export function useLinkAddonGroupToCategory() {
   const queryClient = useQueryClient();

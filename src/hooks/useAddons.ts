@@ -148,6 +148,26 @@ export function useUpdateAddon(addonGroupId: string | undefined) {
   });
 }
 
+// Reorder addons within a group
+export function useReorderAddons(addonGroupId: string | undefined) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (addons: { id: string; order_position: number }[]) => {
+      const updates = addons.map(({ id, order_position }) =>
+        supabase.from("addons").update({ order_position }).eq("id", id)
+      );
+      await Promise.all(updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["addons", addonGroupId] });
+    },
+    onError: () => {
+      toast.error("Erro ao reordenar adicionais");
+    },
+  });
+}
+
 // Delete addon
 export function useDeleteAddon(addonGroupId: string | undefined) {
   const queryClient = useQueryClient();
