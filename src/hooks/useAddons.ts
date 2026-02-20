@@ -5,7 +5,7 @@ import { toast } from "sonner";
 export interface AddonGroup {
   id: string;
   establishment_id: string;
-  category_id: string;
+  category_id: string | null;
   name: string;
   min_selections: number;
   max_selections: number;
