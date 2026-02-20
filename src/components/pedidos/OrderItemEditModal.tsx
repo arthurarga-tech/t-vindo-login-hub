@@ -24,7 +24,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/formatters";
-import { useAddonGroups, useAddonsForGroups } from "@/hooks/useAddons";
+import { useAddonsForGroups } from "@/hooks/useAddons";
+import { usePublicAddonGroups } from "@/hooks/usePublicAddons";
 import { OrderItem } from "@/hooks/useOrders";
 import { useUpdateOrderItem, useDeleteOrderItem, OrderItemAddonInput } from "@/hooks/useOrderItemMutations";
 import { toast } from "sonner";
@@ -77,7 +78,7 @@ export function OrderItemEditModal({
     enabled: !!item && open,
   });
 
-  const { data: addonGroups } = useAddonGroups(product?.category_id ?? undefined);
+  const { data: addonGroups } = usePublicAddonGroups(product?.category_id ?? undefined);
   const activeGroupIds = useMemo(
     () => addonGroups?.filter((g) => g.active).map((g) => g.id) || [],
     [addonGroups]

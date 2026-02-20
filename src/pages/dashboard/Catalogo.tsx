@@ -7,7 +7,6 @@ import { CategoryList } from "@/components/catalogo/CategoryList";
 import { CategoryForm } from "@/components/catalogo/CategoryForm";
 import { ProductList } from "@/components/catalogo/ProductList";
 import { ProductForm } from "@/components/catalogo/ProductForm";
-import { AddonGroupManager } from "@/components/catalogo/AddonGroupManager";
 import { GlobalAddonGroupManager } from "@/components/catalogo/GlobalAddonGroupManager";
 import { CategoryAddonLinkManager } from "@/components/catalogo/CategoryAddonLinkManager";
 import { useEstablishment } from "@/hooks/useEstablishment";
@@ -228,8 +227,7 @@ export default function Catalogo() {
                   <Tabs defaultValue="products" data-testid="catalogo-tabs">
                     <TabsList className="mb-4">
                       <TabsTrigger value="products" data-testid="catalogo-tab-products">Produtos</TabsTrigger>
-                      <TabsTrigger value="addons" data-testid="catalogo-tab-addons">Adicionais Diretos</TabsTrigger>
-                      <TabsTrigger value="global-links" data-testid="catalogo-tab-global-links">Grupos Globais</TabsTrigger>
+                      <TabsTrigger value="addons" data-testid="catalogo-tab-addons">Adicionais</TabsTrigger>
                     </TabsList>
                     <TabsContent value="products" data-testid="catalogo-tab-products-content">
                       <ProductList
@@ -240,12 +238,6 @@ export default function Catalogo() {
                       />
                     </TabsContent>
                     <TabsContent value="addons" data-testid="catalogo-tab-addons-content">
-                      <AddonGroupManager
-                        categoryId={selectedCategory.id}
-                        establishmentId={establishmentId!}
-                      />
-                    </TabsContent>
-                    <TabsContent value="global-links" data-testid="catalogo-tab-global-links-content">
                       <CategoryAddonLinkManager
                         categoryId={selectedCategory.id}
                         establishmentId={establishmentId!}
@@ -264,10 +256,10 @@ export default function Catalogo() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Globe className="h-5 w-5 text-primary" />
-                <CardTitle>Grupos Globais de Adicionais</CardTitle>
+                <CardTitle>Grupos de Adicionais</CardTitle>
               </div>
               <CardDescription>
-                Crie grupos reutilizáveis que podem ser vinculados a múltiplas categorias sem duplicação.
+                Crie grupos reutilizáveis que podem ser vinculados a múltiplas categorias.
               </CardDescription>
             </CardHeader>
             <CardContent>
