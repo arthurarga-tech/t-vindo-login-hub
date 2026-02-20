@@ -74,3 +74,40 @@ export function formatPhone(value: string): string {
 export function extractPhoneDigits(value: string): string {
   return value.replace(/\D/g, "").slice(0, 11);
 }
+
+/**
+ * Build a complete theme style object with all CSS variables needed
+ * for consistent theming across the dashboard and public store.
+ *
+ * By overriding --primary and --ring (in addition to --store-primary),
+ * all Radix UI components (RadioGroup, Checkbox, Switch, etc.) and
+ * Tailwind utility classes automatically inherit the establishment color.
+ *
+ * @param primaryColor - Hex color string for the primary/brand color
+ * @param secondaryColor - Hex color string for the secondary color
+ * @returns React.CSSProperties object with all CSS custom properties set
+ */
+export function buildThemeStyles(
+  primaryColor?: string | null,
+  secondaryColor?: string | null,
+): React.CSSProperties & Record<string, string> {
+  const primary = primaryColor || "#ea580c";
+  const secondary = secondaryColor || "#1e293b";
+
+  const primaryHSL = hexToHSL(primary);
+  const secondaryHSL = hexToHSL(secondary);
+
+  return {
+    // Unified --primary: used by Tailwind bg-primary, text-primary AND all Radix UI components
+    "--primary": primaryHSL,
+    // Ring for focus states on inputs / interactive elements
+    "--ring": primaryHSL,
+    // Secondary for accents and sidebar
+    "--secondary": secondaryHSL,
+    "--sidebar-primary": primaryHSL,
+    "--sidebar-accent": secondaryHSL,
+    // Legacy store-specific vars kept for backwards compatibility
+    "--store-primary": primaryHSL,
+    "--store-secondary": secondaryHSL,
+  };
+}

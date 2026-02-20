@@ -11,7 +11,7 @@ import { CartBar } from "@/components/loja/CartBar";
 import { CartProvider } from "@/hooks/useCart";
 import { AlertCircle } from "lucide-react";
 import { useStoreOpeningHours } from "@/hooks/useStoreOpeningHours";
-import { hexToHSL } from "@/lib/formatters";
+import { buildThemeStyles } from "@/lib/formatters";
 import { useThemeColor } from "@/hooks/useThemeColor";
 
 export default function StorePage() {
@@ -34,16 +34,13 @@ export default function StorePage() {
 
   const isLoading = loadingEstablishment || loadingCategories || loadingProducts;
 
-  // Generate custom CSS variables for theme
+  // Generate custom CSS variables for theme using centralized utility
   const customStyles = useMemo(() => {
-    const primaryColor = establishment?.theme_primary_color || "#ea580c";
-    const secondaryColor = establishment?.theme_secondary_color || "#1e293b";
-    
-    return {
-      "--store-primary": hexToHSL(primaryColor),
-      "--store-secondary": hexToHSL(secondaryColor),
-    } as React.CSSProperties;
-  }, [establishment]);
+    return buildThemeStyles(
+      establishment?.theme_primary_color,
+      establishment?.theme_secondary_color,
+    );
+  }, [establishment?.theme_primary_color, establishment?.theme_secondary_color]);
 
   if (loadingEstablishment) {
     return (

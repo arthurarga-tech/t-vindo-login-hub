@@ -4,7 +4,7 @@ import { DashboardSidebar } from "./DashboardSidebar";
 import { SubscriptionBanner } from "@/components/subscription/SubscriptionBanner";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { useMemo } from "react";
-import { hexToHSL } from "@/lib/formatters";
+import { hexToHSL, buildThemeStyles } from "@/lib/formatters";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Menu, PanelLeftClose, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -56,32 +56,13 @@ export function DashboardLayout() {
   
   // Update mobile browser theme-color with establishment's primary color
   useThemeColor(establishment?.theme_primary_color);
-  // Generate custom CSS variables for theme
+  // Generate custom CSS variables for theme using centralized utility
   const customStyles = useMemo(() => {
-    const primaryColor = establishment?.theme_primary_color;
-    const secondaryColor = establishment?.theme_secondary_color;
-    
-    const styles: React.CSSProperties & { [key: string]: string } = {};
-    
-    if (primaryColor) {
-      const hsl = hexToHSL(primaryColor);
-      if (hsl) {
-        styles["--primary"] = hsl;
-        styles["--sidebar-primary"] = hsl;
-        styles["--ring"] = hsl;
-      }
-    }
-    
-    if (secondaryColor) {
-      const hsl = hexToHSL(secondaryColor);
-      if (hsl) {
-        styles["--secondary"] = hsl;
-        styles["--sidebar-accent"] = hsl;
-      }
-    }
-    
-    return styles;
-  }, [establishment]);
+    return buildThemeStyles(
+      establishment?.theme_primary_color,
+      establishment?.theme_secondary_color,
+    );
+  }, [establishment?.theme_primary_color, establishment?.theme_secondary_color]);
 
   return (
     <SidebarProvider>
