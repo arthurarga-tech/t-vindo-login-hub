@@ -71,8 +71,10 @@ export function ProductAddonSelector({
 
   const isGroupValid = (group: AddonGroup) => {
     const count = getSelectedCountForGroup(group.id);
-    if (group.required && count < group.min_selections) {
-      return false;
+    if (group.required) {
+      // Melhoria 3: treat min_selections=0 as 1 when group is required
+      const effectiveMin = group.min_selections > 0 ? group.min_selections : 1;
+      if (count < effectiveMin) return false;
     }
     return true;
   };
@@ -224,10 +226,13 @@ export function validateAddonSelection(
         .filter((sa) => sa.addon.addon_group_id === group.id)
         .reduce((sum, sa) => sum + sa.quantity, 0);
 
-      if (count < group.min_selections) {
+      // Melhoria 3: treat min_selections=0 as 1 when group is required
+      const effectiveMin = group.min_selections > 0 ? group.min_selections : 1;
+
+      if (count < effectiveMin) {
         return {
           valid: false,
-          message: `Selecione pelo menos ${group.min_selections} item(ns) em "${group.name}"`,
+          message: `Selecione pelo menos ${effectiveMin} item em "${group.name}"`,
         };
       }
     }

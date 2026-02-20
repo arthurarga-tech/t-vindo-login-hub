@@ -122,12 +122,17 @@ export function CategoryAddonLinkManager({
     }
   };
 
+  // Bug 6 fix: wrap in try/catch so form doesn't close on error
   const handleCreateAndLink = async (data: AddonGroupFormData) => {
-    const result = await createGroup.mutateAsync(data);
-    if (result?.id) {
-      await linkMutation.mutateAsync({ categoryId, addonGroupId: result.id });
+    try {
+      const result = await createGroup.mutateAsync(data);
+      if (result?.id) {
+        await linkMutation.mutateAsync({ categoryId, addonGroupId: result.id });
+      }
+      setFormOpen(false);
+    } catch {
+      // toast already shown by mutation onError; do NOT close the form
     }
-    setFormOpen(false);
   };
 
   const isMutating =

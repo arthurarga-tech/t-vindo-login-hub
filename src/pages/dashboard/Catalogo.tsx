@@ -185,7 +185,7 @@ export default function Catalogo() {
                     selectedCategory={selectedCategory}
                     onSelect={setSelectedCategory}
                     onEdit={handleEditCategory}
-                    establishmentId={establishmentId}
+                    establishmentId={establishmentId ?? ""}
                   />
                 )}
               </CardContent>
@@ -240,7 +240,7 @@ export default function Catalogo() {
                     <TabsContent value="addons" data-testid="catalogo-tab-addons-content">
                       <CategoryAddonLinkManager
                         categoryId={selectedCategory.id}
-                        establishmentId={establishmentId!}
+                        establishmentId={establishmentId ?? ""}
                       />
                     </TabsContent>
                   </Tabs>
@@ -263,7 +263,7 @@ export default function Catalogo() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <GlobalAddonGroupManager establishmentId={establishmentId!} />
+              <GlobalAddonGroupManager establishmentId={establishmentId ?? ""} />
             </CardContent>
           </Card>
         </TabsContent>
