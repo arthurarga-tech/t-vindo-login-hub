@@ -28,23 +28,45 @@ export function usePublicAddonsForCategory(categoryId: string | undefined) {
     queryFn: async () => {
       if (!categoryId) return { groups: [], addons: [] };
 
-      // Fetch active addon groups for the category
-      const { data: groups, error: groupsError } = await supabase
+      // Fetch active addon groups directly linked to the category
+      const { data: directGroups, error: directError } = await supabase
         .from("addon_groups")
         .select("*")
         .eq("category_id", categoryId)
         .eq("active", true)
         .order("order_position", { ascending: true });
 
-      if (groupsError) throw groupsError;
+      if (directError) throw directError;
 
-      if (!groups || groups.length === 0) {
+      // Fetch active global addon groups linked via category_addon_groups
+      const { data: linkedRows, error: linkedError } = await supabase
+        .from("category_addon_groups")
+        .select("addon_groups!inner(*)")
+        .eq("category_id", categoryId)
+        .eq("addon_groups.active", true);
+
+      if (linkedError) throw linkedError;
+
+      // Extract and deduplicate groups (direct + linked)
+      const linkedGroups = (linkedRows || []).map(
+        (row: any) => row.addon_groups as AddonGroup
+      );
+
+      const directGroupIds = new Set((directGroups || []).map((g) => g.id));
+      const uniqueLinkedGroups = linkedGroups.filter((g) => !directGroupIds.has(g.id));
+
+      const allGroups = [
+        ...(directGroups as AddonGroup[] || []),
+        ...uniqueLinkedGroups,
+      ];
+
+      if (allGroups.length === 0) {
         return { groups: [], addons: [] };
       }
 
-      const groupIds = groups.map((g) => g.id);
+      const groupIds = allGroups.map((g) => g.id);
 
-      // Fetch active addons for these groups
+      // Fetch active addons for all groups
       const { data: addons, error: addonsError } = await supabase
         .from("addons")
         .select("*")
@@ -55,7 +77,7 @@ export function usePublicAddonsForCategory(categoryId: string | undefined) {
       if (addonsError) throw addonsError;
 
       return {
-        groups: groups as AddonGroup[],
+        groups: allGroups,
         addons: (addons || []) as Addon[],
       };
     },
