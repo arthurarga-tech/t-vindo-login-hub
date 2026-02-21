@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Clock, User, MapPin, Phone, CreditCard, MessageSquare, X, Printer, Pencil, Plus } from "lucide-react";
+import { Clock, User, MapPin, Phone, CreditCard, MessageSquare, X, Printer, Pencil, Plus, Check } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -14,7 +14,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Order, OrderItem, useUpdateOrderStatus } from "@/hooks/useOrders";
+import { Order, OrderItem, useUpdateOrderStatus, useUpdateOrderPaymentMethod } from "@/hooks/useOrders";
+import { useEstablishment } from "@/hooks/useEstablishment";
 import { 
   OrderStatus, 
   OrderType, 
@@ -63,7 +64,10 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [editingItem, setEditingItem] = useState<OrderItem | null>(null);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
+  const [editingPayment, setEditingPayment] = useState(false);
   const updateStatus = useUpdateOrderStatus();
+  const updatePaymentMethod = useUpdateOrderPaymentMethod();
+  const { data: establishment } = useEstablishment();
   const { printOrder, printInWindow } = usePrintOrder();
   const { openWhatsApp } = useWhatsAppNotification();
   
@@ -322,12 +326,56 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
           <Separator />
 
           {/* Payment */}
-          <div className="space-y-1" data-testid="order-detail-payment">
+          <div className="space-y-2" data-testid="order-detail-payment">
             <div className="flex items-center gap-2">
               <CreditCard className="h-4 w-4 text-muted-foreground" />
               <span className="font-medium" data-testid="order-detail-payment-method">{paymentMethodLabels[order.payment_method] || order.payment_method}</span>
-              <span className="text-muted-foreground">• Pagamento na entrega</span>
+              {order.status !== "cancelled" && !editingPayment && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setEditingPayment(true)}
+                  aria-label="Editar forma de pagamento"
+                >
+                  <Pencil className="h-3 w-3" />
+                </Button>
+              )}
             </div>
+            {editingPayment && (
+              <div className="grid grid-cols-2 gap-2 pl-6">
+                {[
+                  { key: "pix", label: "Pix", enabled: establishment?.payment_pix_enabled },
+                  { key: "credit", label: "Crédito", enabled: establishment?.payment_credit_enabled },
+                  { key: "debit", label: "Débito", enabled: establishment?.payment_debit_enabled },
+                  { key: "cash", label: "Dinheiro", enabled: establishment?.payment_cash_enabled },
+                ].filter(m => m.enabled !== false).map(method => (
+                  <Button
+                    key={method.key}
+                    variant={order.payment_method === method.key ? "default" : "outline"}
+                    size="sm"
+                    className="h-8 text-xs"
+                    disabled={updatePaymentMethod.isPending}
+                    onClick={async () => {
+                      if (method.key === order.payment_method) {
+                        setEditingPayment(false);
+                        return;
+                      }
+                      try {
+                        await updatePaymentMethod.mutateAsync({ orderId: order.id, paymentMethod: method.key });
+                        toast.success("Forma de pagamento atualizada");
+                        setEditingPayment(false);
+                      } catch {
+                        toast.error("Erro ao atualizar pagamento");
+                      }
+                    }}
+                  >
+                    {order.payment_method === method.key && <Check className="h-3 w-3 mr-1" />}
+                    {method.label}
+                  </Button>
+                ))}
+              </div>
+            )}
             {order.payment_method === "cash" && (order as any).change_for && (order as any).change_for > 0 && (
               <div className="pl-6 text-sm space-y-0.5" data-testid="order-detail-change">
                 <p className="text-muted-foreground">
