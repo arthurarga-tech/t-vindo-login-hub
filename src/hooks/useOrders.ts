@@ -42,6 +42,7 @@ export interface Order {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  customer_display_name: string | null;
   customer: {
     id: string;
     name: string;

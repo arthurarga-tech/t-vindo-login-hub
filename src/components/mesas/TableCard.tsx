@@ -46,7 +46,7 @@ export function TableCard({ order, onClick, onCloseTab, onAddItem }: TableCardPr
       <CardContent className="space-y-3">
         <div className="flex items-center gap-2 text-sm">
           <User className="h-4 w-4 text-muted-foreground" />
-          <span className="truncate">{order.customer?.name}</span>
+          <span className="truncate">{order.customer_display_name || order.customer?.name}</span>
         </div>
 
         <div className="flex items-center gap-2 text-sm text-muted-foreground">

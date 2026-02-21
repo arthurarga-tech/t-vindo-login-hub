@@ -128,10 +128,14 @@ export function useCreateQuickOrder() {
       const orderId = (orderResult as any).id;
       const orderNumber = (orderResult as any).order_number;
 
-      // 4. Update order with subtype-specific fields
+      // 4. Update order with subtype-specific fields and display name
       const orderUpdate: Record<string, any> = {
         order_subtype: isDelivery ? null : subtype,
       };
+      // Store typed name for counter/table orders without phone
+      if (!data.customer.phone?.trim() && data.customer.name?.trim()) {
+        orderUpdate.customer_display_name = data.customer.name.trim();
+      }
       if (isTable) {
         orderUpdate.table_number = data.tableNumber || null;
         orderUpdate.is_open_tab = true;
