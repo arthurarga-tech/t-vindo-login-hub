@@ -240,7 +240,7 @@ ${formatInSaoPaulo((order as any).scheduled_for, "dd/MM 'às' HH:mm", { locale: 
 <div class="section">
 <div class="section-title">Cliente</div>
 <div class="customer-info">
-<div><strong>${(order.customer as any)?.name || "Cliente"}</strong></div>
+<div><strong>${(order as any).customer_display_name || (order.customer as any)?.name || "Cliente"}</strong></div>
 <div>${(order.customer as any)?.phone || "-"}</div>${safeOrder.order_type === "delivery" && (order.customer as any)?.address ? `
 <div>${(order.customer as any).address}${(order.customer as any).address_number ? `, ${(order.customer as any).address_number}` : ""}</div>${(order.customer as any).address_complement ? `<div>${(order.customer as any).address_complement}</div>` : ""}
 <div>${(order.customer as any).neighborhood || ""}${(order.customer as any).city ? ` - ${(order.customer as any).city}` : ""}</div>` : ""}
@@ -409,7 +409,7 @@ function generateReceiptText(opts: PrintOrderOptions): string {
 
   // Customer
   lines.push(ESC_BOLD_ON + 'CLIENTE' + ESC_BOLD_OFF);
-  lines.push(ESC_BOLD_ON + ((order.customer as any)?.name || 'Cliente') + ESC_BOLD_OFF);
+  lines.push(ESC_BOLD_ON + ((order as any).customer_display_name || (order.customer as any)?.name || 'Cliente') + ESC_BOLD_OFF);
   lines.push((order.customer as any)?.phone || '-');
 
   if (safeOrder.order_type === 'delivery' && (order.customer as any)?.address) {

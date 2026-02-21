@@ -724,6 +724,7 @@ export type Database = {
         Row: {
           change_for: number | null
           created_at: string
+          customer_display_name: string | null
           customer_id: string
           delivery_fee: number
           establishment_id: string
@@ -744,6 +745,7 @@ export type Database = {
         Insert: {
           change_for?: number | null
           created_at?: string
+          customer_display_name?: string | null
           customer_id: string
           delivery_fee?: number
           establishment_id: string
@@ -764,6 +766,7 @@ export type Database = {
         Update: {
           change_for?: number | null
           created_at?: string
+          customer_display_name?: string | null
           customer_id?: string
           delivery_fee?: number
           establishment_id?: string

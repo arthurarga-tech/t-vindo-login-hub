@@ -136,7 +136,7 @@ export function OrderCard({ order, onClick, onQuickStatusChange, onPrint, nextSt
           data-testid={`order-card-${order.id}-customer-name`}
         >
           <User className={compact ? "h-3 w-3" : "h-4 w-4"} text-muted-foreground />
-          <span className="font-medium truncate">{order.customer?.name}</span>
+          <span className="font-medium truncate">{order.customer_display_name || order.customer?.name}</span>
         </div>
 
         {!compact && (

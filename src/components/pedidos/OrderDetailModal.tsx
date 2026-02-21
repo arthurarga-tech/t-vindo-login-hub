@@ -215,7 +215,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
             <div className="space-y-1 text-sm">
               <div className="flex items-center gap-2" data-testid="order-detail-customer-name">
                 <User className="h-4 w-4 text-muted-foreground" />
-                <span>{order.customer?.name}</span>
+                <span>{order.customer_display_name || order.customer?.name}</span>
               </div>
               <div className="flex items-center gap-2" data-testid="order-detail-customer-phone">
                 <Phone className="h-4 w-4 text-muted-foreground" />
