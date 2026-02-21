@@ -1,59 +1,71 @@
 
-# Correção Urgente — "Loja não encontrada" para Todos os Clientes
+# Correção de Bugs: Nome de Clientes em Pedidos Rapidos + Edição de Pagamento
 
-## Diagnóstico Preciso
+## Problema 1: Nomes de clientes sendo sobrescritos
 
-### O que aconteceu
-Uma migração de segurança recente (`20260220115556`) removeu a policy `"Public can view establishments via view only"` que permitia leitura pública na tabela `establishments`. Ela foi substituída por policies que **exigem autenticação** (`auth.uid() IS NOT NULL`).
+### Causa raiz
+A função `create_or_update_public_customer` no banco de dados busca clientes pelo par `(phone, establishment_id)`. Quando o telefone é vazio (`""`), ela encontra o **primeiro** cliente sem telefone daquele estabelecimento e **sobrescreve o nome** dele com o nome do novo pedido.
 
-### Por que a loja quebrou
-A view `establishments_public` está configurada com `security_invoker=on`. Isso significa que, ao ser consultada por um usuário anônimo (cliente na loja), ela executa as queries internas com as permissões desse usuário anônimo — e as RLS da tabela `establishments` bloqueiam esse acesso.
+Exemplo: "João" faz pedido balcão sem telefone, cliente criado com `phone=""`. Depois "Maria" faz outro pedido balcão sem telefone, a função encontra o registro de "João" (mesmo `phone=""`) e renomeia para "Maria".
 
-```text
-Cliente anônimo consulta establishments_public
-  → view executa: SELECT ... FROM establishments WHERE slug = 'acaidajana'
-  → RLS da tabela establishments avalia:
-      - "Only authenticated members..." → requer auth.uid() IS NOT NULL → BLOQUEADO
-      - "Users can view their own..."  → requer auth.uid() → BLOQUEADO
-  → Nenhuma row retornada → establishment = null → "Loja não encontrada"
-```
-
-### Confirmação
-- `SELECT id, name, slug FROM establishments_public WHERE slug = 'acaidajana'` retorna dados corretos quando executado com permissão de serviço (pelo sistema de queries)
-- Mas quando executado com `anon` key (como o frontend faz), retorna vazio
-- O estabelecimento e seus dados estão intactos no banco
-
-## Solução
-
-Recriar a policy pública de SELECT na tabela `establishments` que permite leitura apenas quando o `slug IS NOT NULL` (mesmo critério que a view usa). Isso restaura o acesso anônimo via view sem expor dados sensíveis, pois:
-- Os campos sensíveis (`owner_id`, `card_credit_fee`, `card_debit_fee`, etc.) **não estão na view** — a view já filtra esses campos
-- O acesso direto à tabela ainda será bloqueado para campos não expostos pela view
-
-## Migration SQL a aplicar
+### Solução
+Alterar a função `create_or_update_public_customer` no banco para que, quando o telefone for vazio ou nulo, **sempre crie um novo cliente** ao invés de tentar atualizar um existente. A lógica de upsert por telefone só faz sentido quando o telefone de fato identifica alguém.
 
 ```sql
--- Restaura a policy pública de leitura na tabela establishments
--- Necessária para que a view establishments_public (security_invoker=on)
--- funcione corretamente para usuários anônimos (clientes na loja).
--- Dados sensíveis continuam protegidos pois a view não os expõe.
-
-CREATE POLICY "Public can view establishments via view"
-ON public.establishments
-FOR SELECT
-USING (slug IS NOT NULL);
+-- Se phone for vazio/nulo -> sempre INSERT novo cliente
+-- Se phone preenchido -> comportamento atual (busca e atualiza ou cria)
 ```
 
-## Por que essa solução é segura
-- A policy permite SELECT na tabela com `slug IS NOT NULL` — mas o cliente anônimo não acessa a tabela diretamente, acessa via view
-- A view `establishments_public` **não inclui**: `owner_id`, `card_credit_fee`, `card_debit_fee` — esses campos permanecem inacessíveis
-- As policies de INSERT e UPDATE continuam restritas a autenticados e owners
-- Essa era exatamente a policy que existia antes da migração de segurança
+Isso corrige tanto a impressão (que usa o nome do customer vinculado ao pedido) quanto o registro correto em clientes.
 
-## Arquivo a modificar
+---
 
-| Ação | Arquivo |
+## Problema 2: Editar forma de pagamento no pedido aberto
+
+### Estado atual
+O `OrderDetailModal` exibe a forma de pagamento mas **não permite editá-la**. É apenas texto estático. O financeiro registra a transação quando o status muda para finalizado (delivered/picked_up/served), usando o `payment_method` do pedido nesse momento.
+
+### Solução
+Adicionar um botão de edição ao lado da forma de pagamento no `OrderDetailModal`, que abre um seletor inline. Ao trocar:
+
+1. Atualiza `orders.payment_method` no banco
+2. Se o pedido **já tiver** uma transação financeira (já foi finalizado), atualiza também a `financial_transactions` correspondente recalculando a taxa conforme o novo método (crédito/débito tem taxas diferentes)
+3. Se o pedido ainda não foi finalizado, basta atualizar o campo no pedido -- o trigger `log_order_as_transaction` usará o método correto quando finalizar
+
+### Arquivos a modificar
+
+| Arquivo | Acao |
 |---|---|
-| Nova migration SQL | `supabase/migrations/...` |
+| Migration SQL | Alterar `create_or_update_public_customer` para ignorar upsert quando phone vazio |
+| `src/components/pedidos/OrderDetailModal.tsx` | Adicionar edição inline da forma de pagamento |
+| `src/hooks/useOrders.ts` | Adicionar mutation `useUpdateOrderPaymentMethod` |
 
-## Impacto esperado
-Imediato. Assim que a migration for aplicada, a view `establishments_public` voltará a funcionar para usuários anônimos. A Açaí da Jana e todos os outros estabelecimentos terão suas lojas restauradas sem necessidade de publicar o frontend.
+---
+
+## Detalhes Tecnicos
+
+### Migration: fix create_or_update_public_customer
+
+A funcao sera alterada para:
+- Se `p_phone` for `NULL`, vazio `""` ou somente espacos: sempre INSERT novo cliente (nunca busca por phone vazio)
+- Se `p_phone` tiver valor real: comportamento atual (busca existente, atualiza ou cria)
+
+### useUpdateOrderPaymentMethod (novo hook)
+
+```typescript
+// Atualiza payment_method no pedido
+// Se ja existe financial_transaction vinculada, recalcula fees e atualiza
+```
+
+Logica:
+1. `UPDATE orders SET payment_method = X WHERE id = Y`
+2. Busca `financial_transactions WHERE order_id = Y`
+3. Se existir, recalcula `fee_amount` e `net_amount` baseado nas taxas do estabelecimento para o novo metodo
+4. `UPDATE financial_transactions SET payment_method, fee_amount, net_amount`
+
+### OrderDetailModal: edição de pagamento
+
+- Botao de lapis ao lado da forma de pagamento (visivel apenas para pedidos nao cancelados)
+- Ao clicar, mostra grid 2x2 com as opcoes de pagamento habilitadas do estabelecimento
+- Ao selecionar, salva imediatamente e mostra toast de confirmacao
+- O componente precisara receber as props de pagamento habilitado (`paymentPixEnabled`, etc.) do estabelecimento
