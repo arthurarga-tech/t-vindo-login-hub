@@ -206,7 +206,6 @@ export function useUpdateOrderStatus() {
 
   return useMutation({
     mutationFn: async ({ orderId, status }: { orderId: string; status: OrderStatus }) => {
-      // Update order status
       const { error: orderError } = await supabase
         .from("orders")
         .update({ status, updated_at: getNowInSaoPaulo().toISOString() })
@@ -214,7 +213,6 @@ export function useUpdateOrderStatus() {
 
       if (orderError) throw orderError;
 
-      // Add to status history
       const { error: historyError } = await supabase
         .from("order_status_history")
         .insert({ order_id: orderId, status });
@@ -223,6 +221,58 @@ export function useUpdateOrderStatus() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders", establishment?.id] });
+    },
+  });
+}
+
+export function useUpdateOrderPaymentMethod() {
+  const queryClient = useQueryClient();
+  const { data: establishment } = useEstablishment();
+
+  return useMutation({
+    mutationFn: async ({ orderId, paymentMethod }: { orderId: string; paymentMethod: string }) => {
+      // 1. Update order payment_method
+      const { error: orderError } = await supabase
+        .from("orders")
+        .update({ payment_method: paymentMethod, updated_at: getNowInSaoPaulo().toISOString() })
+        .eq("id", orderId);
+
+      if (orderError) throw orderError;
+
+      // 2. Check if there's already a financial transaction for this order
+      const { data: transactions, error: txError } = await supabase
+        .from("financial_transactions")
+        .select("id, gross_amount")
+        .eq("order_id", orderId);
+
+      if (txError) throw txError;
+
+      if (transactions && transactions.length > 0) {
+        // Recalculate fees based on new payment method
+        const creditFee = establishment?.card_credit_fee ?? 0;
+        const debitFee = establishment?.card_debit_fee ?? 0;
+
+        for (const tx of transactions) {
+          let feeAmount = 0;
+          if (paymentMethod === "credit") {
+            feeAmount = tx.gross_amount * (creditFee / 100);
+          } else if (paymentMethod === "debit") {
+            feeAmount = tx.gross_amount * (debitFee / 100);
+          }
+          const netAmount = tx.gross_amount - feeAmount;
+
+          const { error: updateError } = await supabase
+            .from("financial_transactions")
+            .update({ payment_method: paymentMethod, fee_amount: feeAmount, net_amount: netAmount })
+            .eq("id", tx.id);
+
+          if (updateError) throw updateError;
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders", establishment?.id] });
+      queryClient.invalidateQueries({ queryKey: ["financial"] });
     },
   });
 }
