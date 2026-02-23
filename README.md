@@ -1,73 +1,146 @@
-# Welcome to your Lovable project
+T-Vindo Login Hub
+📌 Overview
 
-## Project info
+T-Vindo Login Hub is a multi-tenant SaaS authentication and business management core designed to support local commerce platforms.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+The system enables multiple businesses to operate independently within a shared infrastructure, ensuring secure data isolation, role-based access control and scalable architecture.
 
-## How can I edit this code?
+This project was built to solve real operational challenges faced by small cities without access to large marketplace platforms.
 
-There are several ways of editing your application.
+🎯 Business Objective
 
-**Use Lovable**
+The platform was created to:
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+Provide structured authentication and user management
 
-Changes made via Lovable will be committed automatically to this repo.
+Enable multi-tenant business separation
 
-**Use your preferred IDE**
+Support SaaS-ready subscription logic
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Establish a scalable digital foundation for local commerce
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+It serves as the authentication and tenant-control backbone of the T-Vindo ecosystem.
 
-Follow these steps:
+🏗 Architecture
+Multi-Tenant Design
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+Logical tenant isolation per business
+
+Role-based permission structure
+
+Secure data separation at database level
+
+Authentication & Authorization
+
+Secure login system
+
+Role-Based Access Control (RBAC)
+
+Permission validation per tenant
+
+Session handling and protected routes
+
+Database
+
+Supabase (PostgreSQL)
+
+Relational data modeling
+
+Tenant-aware queries
+
+Structured tables for users, roles and businesses
+
+Payment Integration
+
+Stripe API integration
+
+SaaS-ready subscription structure
+
+Secure transaction handling
+
+🛠 Tech Stack
+
+React
+
+TypeScript
+
+Vite
+
+Tailwind CSS
+
+shadcn-ui
+
+Supabase (PostgreSQL)
+
+Stripe API
+
+Git / GitHub
+
+🔐 Core Features
+
+Multi-tenant authentication system
+
+Role-based access control
+
+Business-level data isolation
+
+Secure login and session management
+
+Payment integration (Stripe)
+
+Production-ready environment
+
+🧠 Engineering Mindset
+
+This project reflects a business-oriented engineering approach.
+
+The focus was not only on implementing features, but on:
+
+Understanding operational workflows
+
+Designing scalable SaaS architecture
+
+Structuring secure authentication layers
+
+Ensuring long-term maintainability
+
+Preparing the system for expansion
+
+🚀 Local Development
+
+To run locally:
+
 git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+cd <PROJECT_NAME>
+npm install
 npm run dev
-```
 
-**Edit a file directly in GitHub**
+Requirements:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Node.js
 
-**Use GitHub Codespaces**
+npm
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+🌍 Deployment
 
-## What technologies are used for this project?
+Deployment is handled through Lovable's publishing system.
 
-This project is built with:
+The application can also support custom domains via project settings.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+📈 Roadmap
 
-## How can I deploy this project?
+Advanced administrative dashboard
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Usage analytics per tenant
 
-## Can I connect a custom domain to my Lovable project?
+Performance optimization
 
-Yes, you can!
+Subscription automation improvements
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Expanded reporting capabilities
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+👨‍💻 Author
+
+Arthur Guedes
+Civil Engineer transitioning into Software Development and QA
+Focused on building scalable business systems and solving operational problems through technology.
