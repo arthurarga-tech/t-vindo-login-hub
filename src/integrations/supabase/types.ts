@@ -1388,6 +1388,10 @@ export type Database = {
         Returns: undefined
       }
       create_public_order_items: { Args: { p_items: Json }; Returns: Json }
+      create_table_order: {
+        Args: { p_items: Json; p_table_id: string }
+        Returns: Json
+      }
       delete_customer_cascade: {
         Args: { p_customer_id: string }
         Returns: undefined
