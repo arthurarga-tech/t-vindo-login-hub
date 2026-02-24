@@ -1,30 +1,30 @@
-import { Clock, User, UtensilsCrossed, ShoppingBag, Receipt, Plus } from "lucide-react";
+import { Clock, User, UtensilsCrossed, ShoppingBag, Receipt, Plus, Package } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Order } from "@/hooks/useOrders";
-import { statusDisplayConfig, type OrderStatus } from "@/lib/orderStatus";
+import { TableRecord, getTableTotal, getTableItemStatusCounts } from "@/hooks/useTables";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toSaoPauloTime } from "@/lib/dateUtils";
 import { formatPrice } from "@/lib/formatters";
 
 interface TableCardProps {
-  order: Order;
+  table: TableRecord;
   onClick: () => void;
-  onCloseTab: () => void;
-  onAddItem?: () => void;
+  onCloseTable: () => void;
+  onAddOrder?: () => void;
 }
 
-export function TableCard({ order, onClick, onCloseTab, onAddItem }: TableCardProps) {
-  const status = statusDisplayConfig[order.status as OrderStatus] || statusDisplayConfig.pending;
-  const tableNumber = (order as any).table_number;
-  const timeAgo = formatDistanceToNow(toSaoPauloTime(order.created_at), {
+export function TableCard({ table, onClick, onCloseTable, onAddOrder }: TableCardProps) {
+  const timeAgo = formatDistanceToNow(toSaoPauloTime(table.opened_at), {
     addSuffix: true,
     locale: ptBR,
   });
 
-  const itemCount = order.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+  const total = getTableTotal(table);
+  const orderCount = table.orders.filter(o => o.status !== "cancelled").length;
+  const statusCounts = getTableItemStatusCounts(table);
+  const totalItems = statusCounts.pending + statusCounts.preparing + statusCounts.ready + statusCounts.delivered;
 
   return (
     <Card
@@ -37,16 +37,16 @@ export function TableCard({ order, onClick, onCloseTab, onAddItem }: TableCardPr
           <div className="flex items-center gap-2">
             <UtensilsCrossed className="h-5 w-5 text-primary" />
             <span className="font-bold text-lg">
-              Mesa {tableNumber || "—"}
+              Mesa {table.table_number}
             </span>
           </div>
-          <Badge variant={status.variant}>{status.label}</Badge>
+          <Badge variant="default">{orderCount} {orderCount === 1 ? "pedido" : "pedidos"}</Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex items-center gap-2 text-sm">
           <User className="h-4 w-4 text-muted-foreground" />
-          <span className="truncate">{order.customer_display_name || order.customer?.name}</span>
+          <span className="truncate">{table.customer_display_name || table.customer?.name || "—"}</span>
         </div>
 
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -56,31 +56,51 @@ export function TableCard({ order, onClick, onCloseTab, onAddItem }: TableCardPr
 
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <ShoppingBag className="h-4 w-4" />
-          <span>{itemCount} {itemCount === 1 ? "item" : "itens"}</span>
+          <span>{totalItems} {totalItems === 1 ? "item" : "itens"}</span>
+        </div>
+
+        {/* Item status badges */}
+        <div className="flex flex-wrap gap-1">
+          {statusCounts.preparing > 0 && (
+            <Badge variant="secondary" className="text-xs">
+              <Package className="h-3 w-3 mr-1" />
+              {statusCounts.preparing} preparando
+            </Badge>
+          )}
+          {statusCounts.ready > 0 && (
+            <Badge variant="default" className="text-xs">
+              {statusCounts.ready} {statusCounts.ready === 1 ? "pronto" : "prontos"}
+            </Badge>
+          )}
+          {statusCounts.pending > 0 && (
+            <Badge variant="destructive" className="text-xs">
+              {statusCounts.pending} {statusCounts.pending === 1 ? "pendente" : "pendentes"}
+            </Badge>
+          )}
         </div>
 
         <div className="flex items-center justify-between border-t pt-2">
           <span className="text-sm font-medium text-muted-foreground">
-            Pedido #{order.order_number}
+            Total acumulado
           </span>
           <span className="font-bold text-primary text-lg">
-            {formatPrice(order.total)}
+            {formatPrice(total)}
           </span>
         </div>
 
         <div className="flex gap-2">
-          {onAddItem && (
+          {onAddOrder && (
             <Button
               variant="outline"
               size="sm"
               className="flex-1 gap-1.5"
               onClick={(e) => {
                 e.stopPropagation();
-                onAddItem();
+                onAddOrder();
               }}
             >
               <Plus className="h-4 w-4" />
-              Adicionar
+              Novo Pedido
             </Button>
           )}
           <Button
@@ -89,7 +109,7 @@ export function TableCard({ order, onClick, onCloseTab, onAddItem }: TableCardPr
             className="flex-1 gap-1.5"
             onClick={(e) => {
               e.stopPropagation();
-              onCloseTab();
+              onCloseTable();
             }}
           >
             <Receipt className="h-4 w-4" />

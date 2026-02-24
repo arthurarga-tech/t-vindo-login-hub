@@ -22,6 +22,7 @@ export interface OrderItem {
   quantity: number;
   total: number;
   observation?: string | null;
+  item_status?: string;
   addons?: {
     id: string;
     addon_name: string;
@@ -43,6 +44,15 @@ export interface Order {
   created_at: string;
   updated_at: string;
   customer_display_name: string | null;
+  table_id?: string | null;
+  table_number?: string | null;
+  order_subtype?: string | null;
+  is_open_tab?: boolean | null;
+  table?: {
+    id: string;
+    table_number: string;
+    status: string;
+  } | null;
   customer: {
     id: string;
     name: string;
@@ -123,6 +133,7 @@ export function useOrders() {
         .select(`
           *,
           customer:customers(*),
+          table:tables(id, table_number, status),
           items:order_items(
             *,
             addons:order_item_addons(*)

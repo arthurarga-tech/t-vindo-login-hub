@@ -51,16 +51,16 @@ export function useCreateQuickOrder() {
       const isTable = subtype === "table";
       const isDelivery = subtype === "delivery";
 
-      // 0. Validate duplicate table number
+      // 0. For tables: validate duplicate AND create table entity
+      let tableId: string | null = null;
       if (isTable && data.tableNumber) {
+        // Check for duplicate open tables
         const { data: existingTables, error: tableCheckError } = await supabase
-          .from("orders")
-          .select("id, order_number")
+          .from("tables")
+          .select("id")
           .eq("establishment_id", data.establishmentId)
-          .eq("order_subtype", "table")
-          .eq("is_open_tab", true)
           .eq("table_number", data.tableNumber.trim())
-          .not("status", "eq", "cancelled");
+          .eq("status", "open");
 
         if (tableCheckError) throw tableCheckError;
 
@@ -128,7 +128,25 @@ export function useCreateQuickOrder() {
       const orderId = (orderResult as any).id;
       const orderNumber = (orderResult as any).order_number;
 
-      // 4. Update order with subtype-specific fields and display name
+      // 4. Create table entity for table orders
+      if (isTable) {
+        const { data: tableData, error: tableError } = await supabase
+          .from("tables")
+          .insert({
+            establishment_id: data.establishmentId,
+            table_number: data.tableNumber?.trim() || orderNumber.toString(),
+            customer_id: customerId,
+            customer_display_name: data.customer.name?.trim() || null,
+            status: "open",
+          })
+          .select("id")
+          .single();
+
+        if (tableError) throw tableError;
+        tableId = tableData.id;
+      }
+
+      // 5. Update order with subtype-specific fields and display name
       const orderUpdate: Record<string, any> = {
         order_subtype: isDelivery ? null : subtype,
       };
@@ -139,6 +157,7 @@ export function useCreateQuickOrder() {
       if (isTable) {
         orderUpdate.table_number = data.tableNumber || null;
         orderUpdate.is_open_tab = true;
+        orderUpdate.table_id = tableId;
       }
 
       await supabase.from("orders").update(orderUpdate).eq("id", orderId);
