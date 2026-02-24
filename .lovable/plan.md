@@ -1,204 +1,182 @@
 
 
-# Refatoracao Completa: Mesas como Entidade Independente
+# Analise Completa e Correcoes: Refatoracao de Mesas/Comandas
 
-## Visao Geral
+## Problemas Identificados
 
-Transformar o sistema atual (onde Mesa = Pedido com flags) em um modelo profissional onde Mesa e uma entidade independente que agrega multiplos pedidos, cada pedido e imutavel apos confirmacao, e itens possuem status individual de preparo.
+### Bug 1: Erro ao adicionar item depois da mesa ser aberta
+**Causa raiz**: Em `Mesas.tsx` linha 34-41, o botao "Novo Pedido" na mesa tenta abrir o `OrderAddItemModal` para inserir itens no pedido existente. Porem, o pedido ja foi confirmado (status != "pending"), e o trigger `prevent_confirmed_order_edit` bloqueia o INSERT em `order_items`.
 
----
+**Solucao**: Substituir a logica de "adicionar item ao pedido existente" por "criar um novo pedido vinculado a mesa". Isso segue o modelo ERP correto: cada novo pedido e imutavel apos confirmacao, e adicionar itens gera um novo pedido.
 
-## 1. Novas Tabelas no Banco de Dados
+### Bug 2: Erro ao excluir cliente (Cannot modify items of a confirmed order)
+**Causa raiz**: A funcao `delete_customer_cascade` executa `DELETE FROM order_items WHERE order_id IN (...)`. O trigger `prevent_confirmed_order_edit` intercepta esse DELETE e bloqueia porque os pedidos associados estao com status "served". O trigger nao diferencia entre uma edicao de usuario e uma exclusao administrativa em cascata.
 
-### Tabela `tables` (Mesas)
+**Solucao**: Alterar a funcao `delete_customer_cascade` para desabilitar temporariamente o trigger durante a operacao, ou usar uma abordagem que dropa e recria o trigger (complexo). A forma mais segura: desabilitar e reabilitar o trigger dentro da funcao SECURITY DEFINER.
 
-| Coluna | Tipo | Descricao |
-|---|---|---|
-| id | uuid PK | Identificador |
-| establishment_id | uuid FK | Estabelecimento |
-| table_number | text | Numero da mesa |
-| customer_id | uuid FK | Cliente vinculado |
-| customer_display_name | text | Nome para exibicao |
-| status | text | open, closing, closed |
-| opened_at | timestamptz | Hora de abertura |
-| closed_at | timestamptz | Hora de fechamento |
-| notes | text | Observacoes |
+### Melhoria 3: Impressao com "MESA X - Pedido #N"
+**Causa raiz**: O `usePrintOrder.ts` ja exibe `table_number` quando presente, mas nao formata como "MESA X - Pedido #N" no header principal.
 
-### Tabela `table_payments` (Pagamentos multiplos no fechamento)
+**Solucao**: Alterar `generateReceiptHtml` e `generateReceiptText` para exibir "MESA X - Pedido #N" quando o pedido pertence a uma mesa.
 
-| Coluna | Tipo | Descricao |
-|---|---|---|
-| id | uuid PK | Identificador |
-| table_id | uuid FK | Mesa |
-| payment_method | text | pix, credit, debit, cash |
-| amount | numeric | Valor pago neste metodo |
-| created_at | timestamptz | Data |
+### Bug 4: Trigger log_order_as_transaction duplica lancamentos financeiros
+**Causa raiz**: Quando `close_table` finaliza pedidos (muda status para "served"), o trigger `log_order_as_transaction` dispara e cria transacoes financeiras automaticas. Mas `close_table` JA registra transacoes financeiras por metodo de pagamento. Resultado: lancamentos duplicados.
 
-### Alteracoes na tabela `orders`
+**Solucao**: Modificar `log_order_as_transaction` para ignorar pedidos que pertencem a uma mesa (table_id IS NOT NULL), pois o financeiro sera gerido pelo `close_table`.
 
-- Adicionar coluna `table_id uuid` (FK para tables, nullable)
-- O campo `is_open_tab` continua existindo para compatibilidade, mas novos pedidos de mesa usarao `table_id`
+### Bug 5: handleAddOrder cria novo pedido mas nao tem modal adequado
+**Causa raiz**: `Mesas.tsx` precisa de um fluxo para criar um novo pedido vinculado a mesa existente (com selecao de produtos), nao apenas adicionar item a pedido existente.
 
-### Alteracoes na tabela `order_items`
-
-- Adicionar coluna `item_status text DEFAULT 'pending'` com valores: pending, preparing, ready, delivered
-
-### Politicas RLS
-
-- `tables`: Members/owners do establishment podem CRUD
-- `table_payments`: Members/owners do establishment podem CRUD
-- Realtime habilitado para `tables` e `order_items`
+**Solucao**: Criar um modal/fluxo que usa `QuickOrderModal` pre-configurado para a mesa existente, ou criar um hook `useCreateTableOrder` dedicado.
 
 ---
 
-## 2. Regras de Negocio (Banco)
+## Plano de Implementacao
 
-### Trigger: Pedido imutavel apos confirmacao
-- Criar trigger `prevent_confirmed_order_edit` na tabela `order_items` que bloqueia INSERT/UPDATE/DELETE quando o pedido vinculado tem status diferente de `pending`
-- Excecao: atualizacao do campo `item_status` (permitido para avancar status dos itens)
-
-### Funcao: Verificar finalizacao automatica de pedido
-- Trigger `check_order_completion` em `order_items` AFTER UPDATE
-- Quando todos os itens de um pedido estiverem com `item_status = 'delivered'`, o pedido automaticamente muda para o status final (served)
-
-### Funcao: Fechar mesa com multiplos pagamentos
-- `close_table(p_table_id, p_payments jsonb)`
-- Valida que soma dos pagamentos = total consumido
-- Registra cada pagamento em `table_payments`
-- Marca mesa como `closed`
-- Para cada pedido da mesa: marca como `served` se nao estiver ja finalizado
-- Cria transacoes financeiras separadas por metodo de pagamento (com taxas corretas)
-
----
-
-## 3. Fluxo de Operacao (Novo Modelo)
+### 1. Migration SQL
 
 ```text
-[Abrir Mesa]
-     |
-     v
-  Mesa (status: open)
-     |
-     +--> Pedido #1 (criado, impresso)
-     |       |
-     |       +--> Item A (pending -> preparing -> ready -> delivered)
-     |       +--> Item B (pending -> preparing -> ready -> delivered)
-     |
-     +--> Pedido #2 (cliente pediu mais, novo pedido, impresso)
-     |       |
-     |       +--> Item C (pending -> preparing -> ready -> delivered)
-     |
-     +--> [Fechar Mesa]
-              |
-              +--> Selecionar formas de pagamento (multiplas)
-              +--> Validar total = total consumido
-              +--> Registrar no financeiro
-              +--> Mesa fechada
+Arquivo: supabase/migrations/[timestamp]_fix_tables_refactor.sql
 ```
 
+**a) Corrigir `delete_customer_cascade`** para desabilitar o trigger antes de deletar order_items:
+
+```sql
+CREATE OR REPLACE FUNCTION public.delete_customer_cascade(p_customer_id uuid)
+  RETURNS void
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO 'public'
+AS $$
+DECLARE
+  v_establishment_id uuid;
+BEGIN
+  -- Verify caller is owner/member
+  SELECT c.establishment_id INTO v_establishment_id
+  FROM customers c WHERE c.id = p_customer_id
+    AND (is_establishment_owner(auth.uid(), c.establishment_id) 
+      OR is_establishment_member(auth.uid(), c.establishment_id));
+
+  IF v_establishment_id IS NULL THEN
+    RAISE EXCEPTION 'Unauthorized or customer not found';
+  END IF;
+
+  -- Temporarily disable the immutability trigger
+  ALTER TABLE order_items DISABLE TRIGGER prevent_confirmed_order_edit;
+
+  -- Delete financial transactions
+  DELETE FROM financial_transactions
+  WHERE order_id IN (SELECT id FROM orders WHERE customer_id = p_customer_id);
+
+  -- Delete order item addons
+  DELETE FROM order_item_addons
+  WHERE order_item_id IN (
+    SELECT oi.id FROM order_items oi
+    JOIN orders o ON o.id = oi.order_id
+    WHERE o.customer_id = p_customer_id
+  );
+
+  -- Delete order items (now allowed without trigger)
+  DELETE FROM order_items
+  WHERE order_id IN (SELECT id FROM orders WHERE customer_id = p_customer_id);
+
+  -- Re-enable the trigger
+  ALTER TABLE order_items ENABLE TRIGGER prevent_confirmed_order_edit;
+
+  -- Delete order status history
+  DELETE FROM order_status_history
+  WHERE order_id IN (SELECT id FROM orders WHERE customer_id = p_customer_id);
+
+  -- Delete orders
+  DELETE FROM orders WHERE customer_id = p_customer_id;
+
+  -- Delete customer
+  DELETE FROM customers WHERE id = p_customer_id;
+END;
+$$;
+```
+
+**b) Corrigir `log_order_as_transaction`** para ignorar pedidos de mesa:
+
+```sql
+-- Adicionar no inicio da funcao, apos verificar status:
+-- Se o pedido pertence a uma mesa, pular (close_table gerencia o financeiro)
+IF NEW.table_id IS NOT NULL THEN
+  RETURN NEW;
+END IF;
+```
+
+**c) Criar funcao `create_table_order`** para criar novo pedido vinculado a mesa existente:
+
+```sql
+CREATE OR REPLACE FUNCTION public.create_table_order(
+  p_table_id uuid,
+  p_items jsonb
+) RETURNS json ...
+-- Cria um novo pedido com payment_method='pending', order_type='dine_in',
+-- vinculado a mesa existente, insere items e addons
+```
+
+### 2. Frontend - Corrigir fluxo "Novo Pedido" na mesa
+
+**Arquivo**: `src/hooks/useCreateTableOrder.ts` (novo)
+
+Hook que:
+- Recebe table_id e lista de itens
+- Cria novo pedido via RPC ou diretamente, vinculado a mesa
+- Usa payment_method='pending' (sera definido no fechamento)
+- Imprime apenas o novo pedido
+
+**Arquivo**: `src/components/mesas/TableAddOrderModal.tsx` (novo)
+
+Modal que:
+- Mostra selector de produtos (reutiliza `ProductSelector`)
+- Permite adicionar multiplos itens
+- Confirma e cria novo pedido via `useCreateTableOrder`
+- Imprime automaticamente o novo pedido
+
+**Arquivo**: `src/pages/dashboard/Mesas.tsx` (modificar)
+
+- Substituir `OrderAddItemModal` por `TableAddOrderModal`
+- Passar `table` ao inves de `order`
+
+### 3. Frontend - Impressao com "MESA X - Pedido #N"
+
+**Arquivo**: `src/hooks/usePrintOrder.ts` (modificar)
+
+- Em `generateReceiptHtml`: quando `order.table_id` ou `order.table_number` existe, alterar o header de `PEDIDO #N` para `MESA X - PEDIDO #N`
+- Em `generateReceiptText`: mesma logica para o recibo texto (RawBT)
+
+### 4. Frontend - Melhorias no TableCard e detalhe
+
+**Arquivo**: `src/pages/dashboard/Mesas.tsx`
+
+- Ao clicar na mesa, mostrar lista de todos os pedidos da mesa (nao apenas o mais recente)
+- Permitir navegar entre pedidos da mesa
+
 ---
 
-## 4. Alteracoes no Frontend
+## Arquivos a Criar
 
-### Pagina de Mesas (`src/pages/dashboard/Mesas.tsx`)
-- Buscar entidade `tables` ao inves de `orders` com `is_open_tab`
-- Cada card de mesa mostra: numero, cliente, lista de pedidos com contagem de itens, total acumulado
-- Botao "Adicionar Pedido" cria um NOVO pedido vinculado a mesa (nao edita pedidos existentes)
-
-### Novo Hook `useTables`
-- Query para mesas abertas com pedidos e itens aninhados
-- Realtime subscription para `tables` e `orders` (com filter por establishment)
-
-### Novo Hook `useCreateTableOrder`
-- Cria novo pedido vinculado a uma mesa existente
-- Imprime APENAS o novo pedido (nunca os anteriores)
-
-### TableCard (refatorado)
-- Mostra quantidade de pedidos e total acumulado
-- Badge com contagem de itens por status (ex: "3 preparando, 2 prontos")
-
-### CloseTabModal (refatorado para `CloseTableModal`)
-- Lista todos os pedidos da mesa com subtotais
-- Mostra total acumulado
-- Interface para adicionar multiplas formas de pagamento
-- Campo de valor para cada forma selecionada
-- Validacao: total pago deve ser igual ao total consumido
-- Feedback visual do saldo restante
-
-### OrderDetailModal
-- Quando pedido esta confirmado ou adiante: campos de itens sao somente leitura
-- Exibir `item_status` por item com badge colorido
-- Botoes para avancar status individual do item (pending -> preparing -> ready -> delivered)
-
-### Kanban (`OrderKanban.tsx`)
-- Adicionar identificacao visual clara no OrderCard:
-  - Pedidos de mesa: badge "Mesa X" com icone de mesa
-  - Pedidos de delivery: badge "Entrega" com icone de caminhao
-  - Pedidos de retirada: badge "Retirada" com icone de pacote
-- Funciona com pedidos individuais (cada pedido da mesa aparece separadamente no kanban)
-
-### Impressao
-- Imprimir APENAS no momento da criacao do pedido
-- Cada novo pedido de mesa imprime somente seus itens, nunca os de pedidos anteriores
-- Header do recibo inclui "MESA X - Pedido #N"
-
----
-
-## 5. Migracao de Dados Legados
-
-Script SQL para converter dados existentes:
-1. Para cada `order` com `order_subtype = 'table'` e `is_open_tab = true`:
-   - Criar registro em `tables` com status `open`
-   - Setar `table_id` no pedido
-2. Para mesas ja fechadas (`is_open_tab = false`, `order_subtype = 'table'`):
-   - Criar registro em `tables` com status `closed`
-   - Setar `table_id` no pedido
-3. Todos os `order_items` existentes recebem `item_status = 'delivered'` (para pedidos finalizados) ou `'pending'` (para pedidos ativos)
-
----
-
-## 6. Arquivos a Criar/Modificar
-
-### Novos arquivos
 | Arquivo | Descricao |
 |---|---|
-| Migration SQL | Tabelas tables, table_payments, colunas, triggers, funcoes, migracao |
-| `src/hooks/useTables.ts` | Query + realtime para mesas |
-| `src/hooks/useCreateTableOrder.ts` | Mutation para novo pedido em mesa existente |
-| `src/hooks/useCloseTable.ts` | Mutation para fechar mesa com multiplos pagamentos |
-| `src/hooks/useItemStatus.ts` | Mutation para atualizar item_status |
-| `src/components/mesas/CloseTableModal.tsx` | Modal de fechamento com multiplos pagamentos |
+| `supabase/migrations/[timestamp].sql` | Fix delete_customer_cascade, log_order_as_transaction, create_table_order |
+| `src/hooks/useCreateTableOrder.ts` | Hook para criar novo pedido em mesa existente |
+| `src/components/mesas/TableAddOrderModal.tsx` | Modal de adicao de pedido a mesa |
 
-### Arquivos modificados
-| Arquivo | Descricao |
+## Arquivos a Modificar
+
+| Arquivo | Mudanca |
 |---|---|
-| `src/pages/dashboard/Mesas.tsx` | Usar useTables ao inves de useOpenTables |
-| `src/components/mesas/TableCard.tsx` | Mostrar info agregada de multiplos pedidos |
-| `src/components/pedidos/OrderCard.tsx` | Badge visual "Mesa X" / "Entrega" / "Retirada" |
-| `src/components/pedidos/OrderDetailModal.tsx` | Status por item, bloqueio de edicao apos confirmacao |
-| `src/components/pedidos/OrderKanban.tsx` | Sem mudanca estrutural (ja trabalha com pedidos individuais) |
-| `src/hooks/useQuickOrder.ts` | Criar mesa + primeiro pedido ao abrir mesa |
-| `src/hooks/useOpenTables.ts` | Deprecar ou redirecionar para useTables |
-| `src/lib/orderStatus.ts` | Adicionar item status types e configs |
-| `src/hooks/usePrintOrder.ts` | Garantir que so imprime o pedido atual |
-| `src/integrations/supabase/types.ts` | Auto-gerado apos migration |
+| `src/pages/dashboard/Mesas.tsx` | Usar TableAddOrderModal ao inves de OrderAddItemModal |
+| `src/hooks/usePrintOrder.ts` | Header "MESA X - Pedido #N" |
+| `src/integrations/supabase/types.ts` | Auto-atualizado |
 
----
+## Impacto
 
-## 7. O Que NAO Muda
-
-- Pedidos de delivery e retirada funcionam exatamente como hoje
-- Kanban continua mostrando pedidos individuais
-- Status flow de pedidos (pending -> confirmed -> preparing -> ...) permanece
-- Impressao de pedidos de delivery/retirada sem alteracao
-- Modulo financeiro: apenas o metodo de registro muda para mesas (multiplos pagamentos)
-
----
-
-## 8. Compatibilidade e Seguranca
-
-- Mesas antigas (com modelo `is_open_tab`) serao migradas automaticamente
-- Campos legados (`is_open_tab`, `order_subtype`, `table_number` na tabela orders) permanecem para compatibilidade
-- RLS policies seguem o mesmo padrao existente (is_establishment_member/owner)
-- Trigger de imutabilidade protege integridade dos pedidos confirmados
+- **Pedidos de delivery/retirada**: sem alteracao
+- **Kanban**: sem alteracao (ja mostra pedidos individuais)
+- **Financeiro**: corrigido para nao duplicar lancamentos de mesa
+- **Exclusao de clientes**: corrigido para funcionar com pedidos confirmados
+- **Impressao**: atualizada com identificacao de mesa
 
