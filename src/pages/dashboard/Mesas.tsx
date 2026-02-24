@@ -3,8 +3,8 @@ import { UtensilsCrossed, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuickOrderModal } from "@/components/pedidos/QuickOrderModal";
 import { OrderDetailModal } from "@/components/pedidos/OrderDetailModal";
-import { OrderAddItemModal } from "@/components/pedidos/OrderAddItemModal";
 import { TableCard } from "@/components/mesas/TableCard";
+import { TableAddOrderModal } from "@/components/mesas/TableAddOrderModal";
 import { CloseTableModal } from "@/components/mesas/CloseTableModal";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { useTables, type TableRecord } from "@/hooks/useTables";
@@ -16,7 +16,7 @@ export default function Mesas() {
   const [quickOrderOpen, setQuickOrderOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [closingTable, setClosingTable] = useState<TableRecord | null>(null);
-  const [addingItemOrder, setAddingItemOrder] = useState<Order | null>(null);
+  const [addingToTable, setAddingToTable] = useState<TableRecord | null>(null);
   const [selectedTable, setSelectedTable] = useState<TableRecord | null>(null);
 
   // When clicking a table card, show the most recent order detail
@@ -29,15 +29,9 @@ export default function Mesas() {
     }
   };
 
-  // When clicking "Novo Pedido" on a table, open the quick order modal
-  // with the table context pre-filled
+  // When clicking "Novo Pedido" on a table, open the add order modal
   const handleAddOrder = (table: TableRecord) => {
-    // For now, we open the add item modal on the most recent active order
-    // In the future, this will create a completely new order linked to the table
-    const activeOrders = table.orders.filter(o => o.status !== "cancelled");
-    if (activeOrders.length > 0) {
-      setAddingItemOrder(activeOrders[0]);
-    }
+    setAddingToTable(table);
   };
 
   return (
@@ -115,11 +109,11 @@ export default function Mesas() {
             paymentDebitEnabled={establishment.payment_debit_enabled ?? false}
             paymentCashEnabled={establishment.payment_cash_enabled ?? false}
           />
-          {addingItemOrder && (
-            <OrderAddItemModal
-              orderId={addingItemOrder.id}
-              open={!!addingItemOrder}
-              onClose={() => setAddingItemOrder(null)}
+          {addingToTable && (
+            <TableAddOrderModal
+              table={addingToTable}
+              open={!!addingToTable}
+              onClose={() => setAddingToTable(null)}
             />
           )}
         </>

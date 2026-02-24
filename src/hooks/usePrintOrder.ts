@@ -232,9 +232,8 @@ ${formatInSaoPaulo((order as any).scheduled_for, "dd/MM 'às' HH:mm", { locale: 
 </div>` : ''}
 <div class="header">${logoHtml}
 <div class="store-name">${establishmentName}</div>
-<div class="order-number">PEDIDO #${safeOrder.order_number}</div>
-<div class="order-type">${orderTypeLabels[safeOrder.order_type] || safeOrder.order_type}</div>${(order as any).table_number ? `
-<div style="font-size: ${Math.round(fontSize * 1.3)}px; font-weight: 900; margin-top: 4px; border: ${highContrast ? '2px' : '1px'} solid #000; padding: 4px;">MESA ${(order as any).table_number}</div>` : ''}
+<div class="order-number">${(order as any).table_number ? `MESA ${(order as any).table_number} - PEDIDO #${safeOrder.order_number}` : `PEDIDO #${safeOrder.order_number}`}</div>
+<div class="order-type">${orderTypeLabels[safeOrder.order_type] || safeOrder.order_type}</div>${(order as any).table_number ? '' : ''}
 <div>${formatInSaoPaulo(safeOrder.created_at, "dd/MM/yyyy HH:mm", { locale: ptBR })}</div>
 </div>
 <div class="section">
@@ -397,12 +396,13 @@ function generateReceiptText(opts: PrintOrderOptions): string {
 
   // Header
   lines.push(ESC_CENTER + ESC_BOLD_ON + opts.establishmentName.toUpperCase() + ESC_BOLD_OFF + ESC_LEFT);
-  lines.push(ESC_CENTER + ESC_DOUBLE_ON + `PEDIDO #${safeOrder.order_number}` + ESC_DOUBLE_OFF + ESC_LEFT);
-  lines.push(centerText(orderTypeLabels[safeOrder.order_type] || safeOrder.order_type));
-
   if ((order as any).table_number) {
     lines.push(ESC_CENTER + ESC_DOUBLE_ON + `MESA ${(order as any).table_number}` + ESC_DOUBLE_OFF + ESC_LEFT);
+    lines.push(ESC_CENTER + ESC_DOUBLE_ON + `PEDIDO #${safeOrder.order_number}` + ESC_DOUBLE_OFF + ESC_LEFT);
+  } else {
+    lines.push(ESC_CENTER + ESC_DOUBLE_ON + `PEDIDO #${safeOrder.order_number}` + ESC_DOUBLE_OFF + ESC_LEFT);
   }
+  lines.push(centerText(orderTypeLabels[safeOrder.order_type] || safeOrder.order_type));
 
   lines.push(centerText(formatInSaoPaulo(safeOrder.created_at, 'dd/MM/yyyy HH:mm', { locale: ptBR })));
   lines.push(SEPARATOR);
