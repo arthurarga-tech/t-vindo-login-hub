@@ -5,18 +5,40 @@ import { QuickOrderModal } from "@/components/pedidos/QuickOrderModal";
 import { OrderDetailModal } from "@/components/pedidos/OrderDetailModal";
 import { OrderAddItemModal } from "@/components/pedidos/OrderAddItemModal";
 import { TableCard } from "@/components/mesas/TableCard";
-import { CloseTabModal } from "@/components/mesas/CloseTabModal";
+import { CloseTableModal } from "@/components/mesas/CloseTableModal";
 import { useEstablishment } from "@/hooks/useEstablishment";
-import { useOpenTables } from "@/hooks/useOpenTables";
+import { useTables, type TableRecord } from "@/hooks/useTables";
 import type { Order } from "@/hooks/useOrders";
 
 export default function Mesas() {
   const { data: establishment } = useEstablishment();
-  const { data: openTables, isLoading } = useOpenTables();
+  const { data: tables, isLoading } = useTables();
   const [quickOrderOpen, setQuickOrderOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [closingOrder, setClosingOrder] = useState<Order | null>(null);
+  const [closingTable, setClosingTable] = useState<TableRecord | null>(null);
   const [addingItemOrder, setAddingItemOrder] = useState<Order | null>(null);
+  const [selectedTable, setSelectedTable] = useState<TableRecord | null>(null);
+
+  // When clicking a table card, show the most recent order detail
+  const handleTableClick = (table: TableRecord) => {
+    setSelectedTable(table);
+    const activeOrders = table.orders.filter(o => o.status !== "cancelled");
+    if (activeOrders.length > 0) {
+      // Show the most recent order
+      setSelectedOrder(activeOrders[0]);
+    }
+  };
+
+  // When clicking "Novo Pedido" on a table, open the quick order modal
+  // with the table context pre-filled
+  const handleAddOrder = (table: TableRecord) => {
+    // For now, we open the add item modal on the most recent active order
+    // In the future, this will create a completely new order linked to the table
+    const activeOrders = table.orders.filter(o => o.status !== "cancelled");
+    if (activeOrders.length > 0) {
+      setAddingItemOrder(activeOrders[0]);
+    }
+  };
 
   return (
     <div className="space-y-6" data-testid="mesas-page">
@@ -35,15 +57,15 @@ export default function Mesas() {
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
-      ) : openTables && openTables.length > 0 ? (
+      ) : tables && tables.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {openTables.map((order) => (
+          {tables.map((table) => (
             <TableCard
-              key={order.id}
-              order={order}
-              onClick={() => setSelectedOrder(order)}
-              onCloseTab={() => setClosingOrder(order)}
-              onAddItem={() => setAddingItemOrder(order)}
+              key={table.id}
+              table={table}
+              onClick={() => handleTableClick(table)}
+              onCloseTable={() => setClosingTable(table)}
+              onAddOrder={() => handleAddOrder(table)}
             />
           ))}
         </div>
@@ -73,7 +95,7 @@ export default function Mesas() {
           <OrderDetailModal
             order={selectedOrder}
             open={!!selectedOrder}
-            onClose={() => setSelectedOrder(null)}
+            onClose={() => { setSelectedOrder(null); setSelectedTable(null); }}
             establishmentName={establishment.name}
             logoUrl={establishment.logo_url}
             printMode={establishment.print_mode ?? "none"}
@@ -84,10 +106,10 @@ export default function Mesas() {
             printLineHeight={establishment.print_line_height ?? 1.4}
             printContrastHigh={establishment.print_contrast_high ?? false}
           />
-          <CloseTabModal
-            order={closingOrder}
-            open={!!closingOrder}
-            onClose={() => setClosingOrder(null)}
+          <CloseTableModal
+            table={closingTable}
+            open={!!closingTable}
+            onClose={() => setClosingTable(null)}
             paymentPixEnabled={establishment.payment_pix_enabled ?? false}
             paymentCreditEnabled={establishment.payment_credit_enabled ?? false}
             paymentDebitEnabled={establishment.payment_debit_enabled ?? false}

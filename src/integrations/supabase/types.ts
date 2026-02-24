@@ -644,6 +644,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          item_status: string
           observation: string | null
           order_id: string
           product_id: string
@@ -655,6 +656,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          item_status?: string
           observation?: string | null
           order_id: string
           product_id: string
@@ -666,6 +668,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          item_status?: string
           observation?: string | null
           order_id?: string
           product_id?: string
@@ -738,6 +741,7 @@ export type Database = {
           scheduled_for: string | null
           status: string
           subtotal: number
+          table_id: string | null
           table_number: string | null
           total: number
           updated_at: string
@@ -759,6 +763,7 @@ export type Database = {
           scheduled_for?: string | null
           status?: string
           subtotal?: number
+          table_id?: string | null
           table_number?: string | null
           total?: number
           updated_at?: string
@@ -780,6 +785,7 @@ export type Database = {
           scheduled_for?: string | null
           status?: string
           subtotal?: number
+          table_id?: string | null
           table_number?: string | null
           total?: number
           updated_at?: string
@@ -804,6 +810,13 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "tables"
             referencedColumns: ["id"]
           },
         ]
@@ -1134,6 +1147,102 @@ export type Database = {
           },
         ]
       }
+      table_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          payment_method: string
+          table_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          payment_method: string
+          table_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          payment_method?: string
+          table_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "table_payments_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tables: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          customer_display_name: string | null
+          customer_id: string | null
+          establishment_id: string
+          id: string
+          notes: string | null
+          opened_at: string
+          status: string
+          table_number: string
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          customer_display_name?: string | null
+          customer_id?: string | null
+          establishment_id: string
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          status?: string
+          table_number: string
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          customer_display_name?: string | null
+          customer_id?: string | null
+          establishment_id?: string
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          status?: string
+          table_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tables_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tables_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tables_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       establishments_public: {
@@ -1238,6 +1347,10 @@ export type Database = {
     }
     Functions: {
       auto_finalize_old_orders: { Args: never; Returns: number }
+      close_table: {
+        Args: { p_payments: Json; p_table_id: string }
+        Returns: undefined
+      }
       create_default_financial_categories: {
         Args: { est_id: string }
         Returns: undefined

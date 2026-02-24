@@ -37,6 +37,10 @@ export function OrderCard({ order, onClick, onQuickStatusChange, onPrint, nextSt
   const scheduledFor = (order as any).scheduled_for ? toSaoPauloTime((order as any).scheduled_for) : null;
 
   const getOrderTypeIcon = () => {
+    // Table orders get special badge
+    if (order.table_id || order.order_subtype === "table") {
+      return <UtensilsCrossed className="h-3 w-3" />;
+    }
     switch (orderType) {
       case "pickup":
         return <Package className="h-3 w-3" />;
@@ -45,6 +49,16 @@ export function OrderCard({ order, onClick, onQuickStatusChange, onPrint, nextSt
       default:
         return <Truck className="h-3 w-3" />;
     }
+  };
+
+  const getOrderTypeLabel = () => {
+    if (order.table_id || order.order_subtype === "table") {
+      const tableNum = order.table?.table_number || (order as any).table_number;
+      return tableNum ? `Mesa ${tableNum}` : "Mesa";
+    }
+    if (orderType === "pickup") return "Retirada";
+    if (orderType === "delivery") return "Entrega";
+    return typeInfo.label;
   };
 
   const handleQuickAction = (e: React.MouseEvent) => {
@@ -114,11 +128,11 @@ export function OrderCard({ order, onClick, onQuickStatusChange, onPrint, nextSt
             </Badge>
             <Badge 
               variant="outline" 
-              className={`flex items-center gap-0.5 ${compact ? "text-[10px] px-1 py-0" : "text-xs"}`}
+              className={`flex items-center gap-0.5 ${compact ? "text-[10px] px-1 py-0" : "text-xs"} ${(order.table_id || order.order_subtype === "table") ? "border-primary text-primary" : ""}`}
               data-testid={`order-card-${order.id}-type-badge`}
-              aria-label={`Tipo: ${typeInfo.label}`}
+              aria-label={`Tipo: ${getOrderTypeLabel()}`}
             >
-              {getOrderTypeIcon()} {typeInfo.label}
+              {getOrderTypeIcon()} {getOrderTypeLabel()}
             </Badge>
           </div>
           <div 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Clock, User, MapPin, Phone, CreditCard, MessageSquare, X, Printer, Pencil, Plus, Check } from "lucide-react";
+import { Clock, User, MapPin, Phone, CreditCard, MessageSquare, X, Printer, Pencil, Plus, Check, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -34,6 +34,7 @@ import { formatInSaoPaulo } from "@/lib/dateUtils";
 import { formatPrice } from "@/lib/formatters";
 import { OrderItemEditModal } from "./OrderItemEditModal";
 import { OrderAddItemModal } from "./OrderAddItemModal";
+import { useUpdateItemStatus, itemStatusConfig, itemStatusFlow, type ItemStatus } from "@/hooks/useItemStatus";
 
 // WhatsApp Icon Component
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -67,6 +68,7 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
   const [editingPayment, setEditingPayment] = useState(false);
   const updateStatus = useUpdateOrderStatus();
   const updatePaymentMethod = useUpdateOrderPaymentMethod();
+  const updateItemStatus = useUpdateItemStatus();
   const { data: establishment } = useEstablishment();
   const { printOrder, printInWindow } = usePrintOrder();
   const { openWhatsApp } = useWhatsAppNotification();
@@ -265,7 +267,13 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
               )}
             </div>
             <div className="space-y-3">
-              {order.items?.map((item) => (
+              {order.items?.map((item) => {
+                const currentItemStatus = (item.item_status || "pending") as ItemStatus;
+                const itemStatusConf = itemStatusConfig[currentItemStatus];
+                const currentIdx = itemStatusFlow.indexOf(currentItemStatus);
+                const nextItemStatus = currentIdx < itemStatusFlow.length - 1 ? itemStatusFlow[currentIdx + 1] : null;
+
+                return (
                 <div key={item.id} className="space-y-1 group" data-testid={`order-detail-item-${item.id}`}>
                   <div className="flex justify-between text-sm items-start">
                     <div className="flex items-start gap-2 flex-1">
@@ -284,6 +292,24 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
                     </div>
                     <span className="font-medium shrink-0" data-testid={`order-detail-item-${item.id}-total`}>{formatPrice(item.total)}</span>
                   </div>
+                  {/* Item status badge + advance button */}
+                  <div className="flex items-center gap-2 pl-4">
+                    <Badge variant={itemStatusConf.variant} className="text-xs">
+                      {itemStatusConf.label}
+                    </Badge>
+                    {nextItemStatus && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-xs gap-1 px-2"
+                        disabled={updateItemStatus.isPending}
+                        onClick={() => updateItemStatus.mutate({ itemId: item.id, status: nextItemStatus })}
+                      >
+                        <ChevronRight className="h-3 w-3" />
+                        {itemStatusConfig[nextItemStatus].label}
+                      </Button>
+                    )}
+                  </div>
                   {item.addons && item.addons.length > 0 && (
                     <div className="pl-4 space-y-0.5" data-testid={`order-detail-item-${item.id}-addons`}>
                       {item.addons.map((addon) => (
@@ -299,7 +325,8 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
                     </p>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
