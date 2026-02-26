@@ -69,31 +69,37 @@ export function useCreateQuickOrder() {
         }
       }
 
-      // 1. Create or update customer (with address for delivery)
-      const addr = data.customerAddress;
-      const { data: customerId, error: customerError } = await supabase.rpc(
-        "create_or_update_public_customer",
-        {
-          p_establishment_id: data.establishmentId,
-          p_name: data.customer.name,
-          p_phone: data.customer.phone || "",
-          p_address: addr?.address || null,
-          p_address_number: addr?.addressNumber || null,
-          p_address_complement: addr?.addressComplement || null,
-          p_neighborhood: addr?.neighborhood || null,
-          p_city: addr?.city || null,
+      // 1. Create or update customer (only when phone is provided)
+      let customerId: string | null = null;
+      const hasPhone = !!data.customer.phone?.trim();
+
+      if (hasPhone) {
+        const addr = data.customerAddress;
+        const { data: cid, error: customerError } = await supabase.rpc(
+          "create_or_update_public_customer",
+          {
+            p_establishment_id: data.establishmentId,
+            p_name: data.customer.name,
+            p_phone: data.customer.phone || "",
+            p_address: addr?.address || null,
+            p_address_number: addr?.addressNumber || null,
+            p_address_complement: addr?.addressComplement || null,
+            p_neighborhood: addr?.neighborhood || null,
+            p_city: addr?.city || null,
+          }
+        );
+
+        if (customerError) throw customerError;
+        customerId = cid;
+
+        // Update customer order_origin
+        if (customerId) {
+          const origin = isTable ? "table" : isDelivery ? "delivery" : "counter";
+          await supabase
+            .from("customers")
+            .update({ order_origin: origin })
+            .eq("id", customerId);
         }
-      );
-
-      if (customerError) throw customerError;
-
-      // Update customer order_origin
-      if (customerId) {
-        const origin = isTable ? "table" : isDelivery ? "delivery" : "counter";
-        await supabase
-          .from("customers")
-          .update({ order_origin: origin })
-          .eq("id", customerId);
       }
 
       // 2. Calculate totals
@@ -150,8 +156,8 @@ export function useCreateQuickOrder() {
       const orderUpdate: Record<string, any> = {
         order_subtype: isDelivery ? null : subtype,
       };
-      // Store typed name for counter/table orders without phone
-      if (!data.customer.phone?.trim() && data.customer.name?.trim()) {
+      // Always store display name for non-customer orders
+      if (data.customer.name?.trim()) {
         orderUpdate.customer_display_name = data.customer.name.trim();
       }
       if (isTable) {

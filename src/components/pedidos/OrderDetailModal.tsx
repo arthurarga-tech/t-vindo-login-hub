@@ -217,12 +217,14 @@ export function OrderDetailModal({ order, open, onClose, establishmentName, logo
             <div className="space-y-1 text-sm">
               <div className="flex items-center gap-2" data-testid="order-detail-customer-name">
                 <User className="h-4 w-4 text-muted-foreground" />
-                <span>{order.customer_display_name || order.customer?.name}</span>
+                <span>{order.customer_display_name || order.customer?.name || "Cliente"}</span>
               </div>
-              <div className="flex items-center gap-2" data-testid="order-detail-customer-phone">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span>{order.customer?.phone}</span>
-              </div>
+              {order.customer?.phone && (
+                <div className="flex items-center gap-2" data-testid="order-detail-customer-phone">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span>{order.customer.phone}</span>
+                </div>
+              )}
               {order.customer?.address && (
                 <div className="flex items-start gap-2" data-testid="order-detail-customer-address">
                   <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
