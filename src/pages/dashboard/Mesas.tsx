@@ -99,6 +99,7 @@ export default function Mesas() {
             printFontBold={establishment.print_font_bold ?? true}
             printLineHeight={establishment.print_line_height ?? 1.4}
             printContrastHigh={establishment.print_contrast_high ?? false}
+            printAddonPrices={establishment.print_addon_prices ?? true}
           />
           <CloseTableModal
             table={closingTable}

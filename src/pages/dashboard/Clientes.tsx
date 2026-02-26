@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Users, TrendingUp, ShoppingBag, UserCheck } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -7,6 +7,7 @@ import { CustomerTable } from "@/components/clientes/CustomerTable";
 import { CustomerFilters, CustomerFiltersState, SortOption } from "@/components/clientes/CustomerFilters";
 import { CustomerDetailModal } from "@/components/clientes/CustomerDetailModal";
 import { usePagination } from "@/hooks/usePagination";
+import { formatPrice } from "@/lib/formatters";
 import {
   Pagination,
   PaginationContent,
@@ -53,16 +54,11 @@ export default function Clientes() {
   });
 
   // Update total count when data changes
-  if (customersData && customersData.totalCount !== pagination.totalCount) {
-    setTotalCount(customersData.totalCount);
-  }
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(price);
-  };
+  useEffect(() => {
+    if (customersData && customersData.totalCount !== pagination.totalCount) {
+      setTotalCount(customersData.totalCount);
+    }
+  }, [customersData?.totalCount]);
 
   const renderPaginationItems = () => {
     const items = [];

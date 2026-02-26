@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { formatPrice, formatPhone, extractPhoneDigits } from "@/lib/formatters";
-import { QuickOrderProductList } from "./QuickOrderProductList";
+import { ProductSelector } from "./ProductSelector";
 import { QuickOrderCart, QuickOrderCartItem } from "./QuickOrderCart";
 import { QuickOrderEditItemModal } from "./QuickOrderEditItemModal";
 import { useCreateQuickOrder } from "@/hooks/useQuickOrder";
@@ -38,7 +38,7 @@ function MobileProductsStep({
   if (!isMobile) {
     return (
       <div className="grid grid-cols-2 gap-4" data-testid="quick-order-products-step">
-        <QuickOrderProductList establishmentId={establishmentId} onAddItem={onAddItem} />
+        <ProductSelector establishmentId={establishmentId} onSelectProduct={onAddItem} />
         <QuickOrderCart items={cartItems} onUpdateQuantity={onUpdateQuantity} onRemoveItem={onRemoveItem} onEditItem={onEditItem} />
       </div>
     );
@@ -58,7 +58,7 @@ function MobileProductsStep({
         </TabsTrigger>
       </TabsList>
       <TabsContent value="products">
-        <QuickOrderProductList establishmentId={establishmentId} onAddItem={onAddItem} />
+        <ProductSelector establishmentId={establishmentId} onSelectProduct={onAddItem} />
       </TabsContent>
       <TabsContent value="cart">
         <QuickOrderCart items={cartItems} onUpdateQuantity={onUpdateQuantity} onRemoveItem={onRemoveItem} onEditItem={onEditItem} />

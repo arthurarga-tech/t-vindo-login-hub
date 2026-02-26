@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEstablishment } from "./useEstablishment";
-import { useEffect, useRef, useCallback, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { getNowInSaoPaulo } from "@/lib/dateUtils";
 import { 
   orderTypeLabels, 
@@ -48,6 +48,8 @@ export interface Order {
   table_number?: string | null;
   order_subtype?: string | null;
   is_open_tab?: boolean | null;
+  scheduled_for?: string | null;
+  change_for?: number | null;
   table?: {
     id: string;
     table_number: string;
@@ -66,59 +68,10 @@ export interface Order {
   items: OrderItem[];
 }
 
-// Hook for playing notification sound
-function useOrderNotificationSound() {
-  const audioContextRef = useRef<AudioContext | null>(null);
-
-  const playSound = useCallback(() => {
-    try {
-      if (!audioContextRef.current) {
-        audioContextRef.current = new AudioContext();
-      }
-
-      const audioContext = audioContextRef.current;
-      
-      if (audioContext.state === "suspended") {
-        audioContext.resume();
-      }
-
-      // Create pleasant notification chime
-      const playNote = (frequency: number, startTime: number, duration: number) => {
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        oscillator.frequency.setValueAtTime(frequency, startTime);
-        oscillator.type = "sine";
-        
-        gainNode.gain.setValueAtTime(0, startTime);
-        gainNode.gain.linearRampToValueAtTime(0.25, startTime + 0.02);
-        gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
-        
-        oscillator.start(startTime);
-        oscillator.stop(startTime + duration);
-      };
-
-      const now = audioContext.currentTime;
-      // Play a pleasant 3-note chime
-      playNote(523, now, 0.15);        // C5
-      playNote(659, now + 0.12, 0.15); // E5
-      playNote(784, now + 0.24, 0.2);  // G5
-
-    } catch {
-      // Audio notification not supported in this browser
-    }
-  }, []);
-
-  return playSound;
-}
 
 export function useOrders() {
   const { data: establishment } = useEstablishment();
   const queryClient = useQueryClient();
-  const playNotificationSound = useOrderNotificationSound();
 
   const infiniteQuery = useInfiniteQuery({
     queryKey: ["orders", establishment?.id],
@@ -160,7 +113,7 @@ export function useOrders() {
     return infiniteQuery.data?.pages.flatMap(page => page.orders) ?? [];
   }, [infiniteQuery.data]);
 
-  // Set up realtime subscription with notification sound
+  // Set up realtime subscription
   useEffect(() => {
     if (!establishment?.id) return;
 
@@ -169,24 +122,7 @@ export function useOrders() {
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
-          schema: "public",
-          table: "orders",
-          filter: `establishment_id=eq.${establishment.id}`,
-        },
-        () => {
-          // Check if notification sound is enabled
-          const isSoundEnabled = establishment.notification_sound_enabled !== false;
-          if (isSoundEnabled) {
-            playNotificationSound();
-          }
-          queryClient.invalidateQueries({ queryKey: ["orders", establishment.id] });
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
+          event: "*",
           schema: "public",
           table: "orders",
           filter: `establishment_id=eq.${establishment.id}`,
@@ -200,7 +136,7 @@ export function useOrders() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [establishment?.id, queryClient, playNotificationSound, establishment]);
+  }, [establishment?.id, queryClient]);
 
   return {
     data: allOrders,

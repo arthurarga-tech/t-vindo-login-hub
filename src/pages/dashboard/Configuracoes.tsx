@@ -86,7 +86,7 @@ export default function Configuracoes() {
       setPrintFontBold(establishment.print_font_bold !== false);
       setPrintLineHeight(establishment.print_line_height ?? 1.4);
       setPrintContrastHigh(establishment.print_contrast_high === true);
-      setPrintAddonPrices((establishment as any).print_addon_prices !== false);
+      setPrintAddonPrices(establishment.print_addon_prices !== false);
       setThemePrimaryColor(establishment.theme_primary_color || "#ea580c");
       setThemeSecondaryColor(establishment.theme_secondary_color || "#1e293b");
       setCardCreditFee(String(establishment.card_credit_fee || 0));
@@ -334,6 +334,7 @@ export default function Configuracoes() {
                 printFontBold,
                 printLineHeight,
                 printContrastHigh,
+                printAddonPrices,
               );
               // Use window.open (same method as real printing) — works on mobile/Rawbt
               const printWindow = window.open("", "_blank");
