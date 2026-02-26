@@ -1,182 +1,144 @@
 
 
-# Analise Completa e Correcoes: Refatoracao de Mesas/Comandas
+# Estrategia Melhorada para Clientes sem Telefone
 
-## Problemas Identificados
+## Problema Atual
 
-### Bug 1: Erro ao adicionar item depois da mesa ser aberta
-**Causa raiz**: Em `Mesas.tsx` linha 34-41, o botao "Novo Pedido" na mesa tenta abrir o `OrderAddItemModal` para inserir itens no pedido existente. Porem, o pedido ja foi confirmado (status != "pending"), e o trigger `prevent_confirmed_order_edit` bloqueia o INSERT em `order_items`.
+Todos os pedidos sem telefone (balcao, mesa) sao vinculados a um unico registro "Balcao" por estabelecimento. Isso causa:
 
-**Solucao**: Substituir a logica de "adicionar item ao pedido existente" por "criar um novo pedido vinculado a mesa". Isso segue o modelo ERP correto: cada novo pedido e imutavel apos confirmacao, e adicionar itens gera um novo pedido.
+- **Estatisticas infladas**: O cliente "Balcao" do Acai da Jana tem 82 pedidos e soma todo o faturamento de balcao
+- **Perda de identidade**: Nao se sabe quem e "Fabi", "Maria", "Joao" — tudo vira "Balcao"
+- **Lista de clientes poluida**: Um registro gigante que nao representa ninguem de verdade
+- **Impossivel rastrear recorrencia**: Se a mesma pessoa volta ao balcao sem telefone, nao ha como saber
 
-### Bug 2: Erro ao excluir cliente (Cannot modify items of a confirmed order)
-**Causa raiz**: A funcao `delete_customer_cascade` executa `DELETE FROM order_items WHERE order_id IN (...)`. O trigger `prevent_confirmed_order_edit` intercepta esse DELETE e bloqueia porque os pedidos associados estao com status "served". O trigger nao diferencia entre uma edicao de usuario e uma exclusao administrativa em cascata.
+## Estrategia Proposta: Cliente Opcional
 
-**Solucao**: Alterar a funcao `delete_customer_cascade` para desabilitar temporariamente o trigger durante a operacao, ou usar uma abordagem que dropa e recria o trigger (complexo). A forma mais segura: desabilitar e reabilitar o trigger dentro da funcao SECURITY DEFINER.
+A abordagem profissional usada em ERPs de restaurante:
 
-### Melhoria 3: Impressao com "MESA X - Pedido #N"
-**Causa raiz**: O `usePrintOrder.ts` ja exibe `table_number` quando presente, mas nao formata como "MESA X - Pedido #N" no header principal.
+**Pedido sem telefone = pedido anonimo. Nao cria registro de cliente.**
 
-**Solucao**: Alterar `generateReceiptHtml` e `generateReceiptText` para exibir "MESA X - Pedido #N" quando o pedido pertence a uma mesa.
+- O campo `customer_id` na tabela `orders` passa a ser **nullable**
+- O nome digitado e salvo apenas em `customer_display_name` no pedido
+- Registro de cliente so e criado quando o telefone e informado (permite CRM real)
+- O registro "Balcao" e eliminado — nao tem mais sentido
 
-### Bug 4: Trigger log_order_as_transaction duplica lancamentos financeiros
-**Causa raiz**: Quando `close_table` finaliza pedidos (muda status para "served"), o trigger `log_order_as_transaction` dispara e cria transacoes financeiras automaticas. Mas `close_table` JA registra transacoes financeiras por metodo de pagamento. Resultado: lancamentos duplicados.
+### Logica de decisao:
 
-**Solucao**: Modificar `log_order_as_transaction` para ignorar pedidos que pertencem a uma mesa (table_id IS NOT NULL), pois o financeiro sera gerido pelo `close_table`.
+```text
+Telefone informado?
+  SIM → Cria/atualiza cliente (upsert por phone+establishment)
+       → Vincula customer_id ao pedido
+       → CRM funcional: historico, recorrencia, stats
+  NAO → Nao cria cliente
+       → customer_id = NULL
+       → Nome salvo em customer_display_name
+       → Pedido funciona normalmente, sem poluir base de clientes
+```
 
-### Bug 5: handleAddOrder cria novo pedido mas nao tem modal adequado
-**Causa raiz**: `Mesas.tsx` precisa de um fluxo para criar um novo pedido vinculado a mesa existente (com selecao de produtos), nao apenas adicionar item a pedido existente.
+### Por que isso e melhor:
 
-**Solucao**: Criar um modal/fluxo que usa `QuickOrderModal` pre-configurado para a mesa existente, ou criar um hook `useCreateTableOrder` dedicado.
+1. **Base de clientes limpa** — so clientes reais (com telefone) aparecem na lista
+2. **Estatisticas precisas** — cada cliente tem historico real
+3. **Sem registro fantasma** — nenhum "Balcao" com 82 pedidos
+4. **Compativel com o modelo ERP de mesas** — mesas ja usam `customer_display_name`
+5. **Pedidos anonimos continuam funcionando** — nome aparece no pedido, Kanban, impressao
 
 ---
 
-## Plano de Implementacao
+## Implementacao
 
 ### 1. Migration SQL
 
-```text
-Arquivo: supabase/migrations/[timestamp]_fix_tables_refactor.sql
-```
-
-**a) Corrigir `delete_customer_cascade`** para desabilitar o trigger antes de deletar order_items:
+**a) Tornar `customer_id` nullable na tabela `orders`:**
 
 ```sql
-CREATE OR REPLACE FUNCTION public.delete_customer_cascade(p_customer_id uuid)
-  RETURNS void
-  LANGUAGE plpgsql
-  SECURITY DEFINER
-  SET search_path TO 'public'
-AS $$
-DECLARE
-  v_establishment_id uuid;
-BEGIN
-  -- Verify caller is owner/member
-  SELECT c.establishment_id INTO v_establishment_id
-  FROM customers c WHERE c.id = p_customer_id
-    AND (is_establishment_owner(auth.uid(), c.establishment_id) 
-      OR is_establishment_member(auth.uid(), c.establishment_id));
-
-  IF v_establishment_id IS NULL THEN
-    RAISE EXCEPTION 'Unauthorized or customer not found';
-  END IF;
-
-  -- Temporarily disable the immutability trigger
-  ALTER TABLE order_items DISABLE TRIGGER prevent_confirmed_order_edit;
-
-  -- Delete financial transactions
-  DELETE FROM financial_transactions
-  WHERE order_id IN (SELECT id FROM orders WHERE customer_id = p_customer_id);
-
-  -- Delete order item addons
-  DELETE FROM order_item_addons
-  WHERE order_item_id IN (
-    SELECT oi.id FROM order_items oi
-    JOIN orders o ON o.id = oi.order_id
-    WHERE o.customer_id = p_customer_id
-  );
-
-  -- Delete order items (now allowed without trigger)
-  DELETE FROM order_items
-  WHERE order_id IN (SELECT id FROM orders WHERE customer_id = p_customer_id);
-
-  -- Re-enable the trigger
-  ALTER TABLE order_items ENABLE TRIGGER prevent_confirmed_order_edit;
-
-  -- Delete order status history
-  DELETE FROM order_status_history
-  WHERE order_id IN (SELECT id FROM orders WHERE customer_id = p_customer_id);
-
-  -- Delete orders
-  DELETE FROM orders WHERE customer_id = p_customer_id;
-
-  -- Delete customer
-  DELETE FROM customers WHERE id = p_customer_id;
-END;
-$$;
+ALTER TABLE orders ALTER COLUMN customer_id DROP NOT NULL;
 ```
 
-**b) Corrigir `log_order_as_transaction`** para ignorar pedidos de mesa:
+**b) Tornar `customer_id` nullable na tabela `tables`:**
 
-```sql
--- Adicionar no inicio da funcao, apos verificar status:
--- Se o pedido pertence a uma mesa, pular (close_table gerencia o financeiro)
-IF NEW.table_id IS NOT NULL THEN
-  RETURN NEW;
-END IF;
-```
+Ja e nullable — sem mudanca necessaria.
 
-**c) Criar funcao `create_table_order`** para criar novo pedido vinculado a mesa existente:
+**c) Atualizar `create_or_update_public_customer`:**
 
-```sql
-CREATE OR REPLACE FUNCTION public.create_table_order(
-  p_table_id uuid,
-  p_items jsonb
-) RETURNS json ...
--- Cria um novo pedido com payment_method='pending', order_type='dine_in',
--- vinculado a mesa existente, insere items e addons
-```
+Quando nao ha telefone, retornar NULL ao inves de criar/buscar o "Balcao".
 
-### 2. Frontend - Corrigir fluxo "Novo Pedido" na mesa
+**d) Atualizar `create_public_order`:**
 
-**Arquivo**: `src/hooks/useCreateTableOrder.ts` (novo)
+Aceitar `p_customer_id` como NULL.
 
-Hook que:
-- Recebe table_id e lista de itens
-- Cria novo pedido via RPC ou diretamente, vinculado a mesa
-- Usa payment_method='pending' (sera definido no fechamento)
-- Imprime apenas o novo pedido
+**e) Atualizar `create_table_order`:**
 
-**Arquivo**: `src/components/mesas/TableAddOrderModal.tsx` (novo)
+Funcionar mesmo quando `customer_id` da mesa e NULL.
 
-Modal que:
-- Mostra selector de produtos (reutiliza `ProductSelector`)
-- Permite adicionar multiplos itens
-- Confirma e cria novo pedido via `useCreateTableOrder`
-- Imprime automaticamente o novo pedido
+**f) Atualizar `delete_customer_cascade`:**
 
-**Arquivo**: `src/pages/dashboard/Mesas.tsx` (modificar)
+Pedidos com `customer_id = NULL` nao sao afetados (ja e o caso).
 
-- Substituir `OrderAddItemModal` por `TableAddOrderModal`
-- Passar `table` ao inves de `order`
+**g) Atualizar `log_order_as_transaction`:**
 
-### 3. Frontend - Impressao com "MESA X - Pedido #N"
+Nao depende de customer_id — sem mudanca.
 
-**Arquivo**: `src/hooks/usePrintOrder.ts` (modificar)
+**h) Atualizar `close_table`:**
 
-- Em `generateReceiptHtml`: quando `order.table_id` ou `order.table_number` existe, alterar o header de `PEDIDO #N` para `MESA X - PEDIDO #N`
-- Em `generateReceiptText`: mesma logica para o recibo texto (RawBT)
+Nao depende de customer_id — sem mudanca.
 
-### 4. Frontend - Melhorias no TableCard e detalhe
+**i) Atualizar `get_customers_with_stats` e `get_customer_stats_summary`:**
 
-**Arquivo**: `src/pages/dashboard/Mesas.tsx`
+Sem mudanca — ja filtram por establishment_id.
 
-- Ao clicar na mesa, mostrar lista de todos os pedidos da mesa (nao apenas o mais recente)
-- Permitir navegar entre pedidos da mesa
+**j) Migrar dados legados:**
 
----
+- Pedidos vinculados ao cliente "Balcao": setar `customer_display_name` com o nome salvo (ja feito anteriormente) e setar `customer_id = NULL`
+- Deletar os registros "Balcao" de cada estabelecimento
 
-## Arquivos a Criar
+### 2. Frontend
 
-| Arquivo | Descricao |
-|---|---|
-| `supabase/migrations/[timestamp].sql` | Fix delete_customer_cascade, log_order_as_transaction, create_table_order |
-| `src/hooks/useCreateTableOrder.ts` | Hook para criar novo pedido em mesa existente |
-| `src/components/mesas/TableAddOrderModal.tsx` | Modal de adicao de pedido a mesa |
+**`src/hooks/useQuickOrder.ts`:**
 
-## Arquivos a Modificar
+- Quando phone esta vazio: nao chamar `create_or_update_public_customer`, passar `null` como customer_id
+- Quando phone esta preenchido: manter logica atual
+
+**`src/hooks/useOrders.ts` (tipo Order):**
+
+- `customer` passa a ser `customer | null`
+
+**`src/components/pedidos/OrderCard.tsx`:**
+
+- Usar `order.customer_display_name || order.customer?.name || "Cliente"` (ja faz isso parcialmente)
+- Esconder telefone quando `order.customer` e null
+
+**`src/components/pedidos/OrderDetailModal.tsx`:**
+
+- Tratar `order.customer` como possivelmente null
+- Mostrar apenas `customer_display_name` quando nao ha customer vinculado
+
+**`src/hooks/useCreateTableOrder.ts`:**
+
+- Funcionar com `customer_id = null` na mesa
+
+**`src/components/loja/CheckoutForm.tsx`:**
+
+- Nao muda — loja publica sempre exige telefone
+
+### 3. Impacto Zero
+
+- **Loja publica**: Sempre exige telefone → sempre cria cliente → sem mudanca
+- **Delivery (dashboard)**: Sempre exige telefone → sem mudanca
+- **Kanban**: Ja usa `customer_display_name || customer?.name` → funciona
+- **Impressao**: Ja usa `customer_display_name` → funciona
+- **Financeiro**: Nao depende de customer_id → funciona
+- **Fechamento de mesa**: Nao depende de customer_id → funciona
+
+### 4. Arquivos a Modificar
 
 | Arquivo | Mudanca |
 |---|---|
-| `src/pages/dashboard/Mesas.tsx` | Usar TableAddOrderModal ao inves de OrderAddItemModal |
-| `src/hooks/usePrintOrder.ts` | Header "MESA X - Pedido #N" |
-| `src/integrations/supabase/types.ts` | Auto-atualizado |
-
-## Impacto
-
-- **Pedidos de delivery/retirada**: sem alteracao
-- **Kanban**: sem alteracao (ja mostra pedidos individuais)
-- **Financeiro**: corrigido para nao duplicar lancamentos de mesa
-- **Exclusao de clientes**: corrigido para funcionar com pedidos confirmados
-- **Impressao**: atualizada com identificacao de mesa
+| Migration SQL | `customer_id` nullable, atualizar RPCs, migrar dados |
+| `src/hooks/useQuickOrder.ts` | Pular criacao de cliente quando sem telefone |
+| `src/hooks/useOrders.ts` | Tipo `customer` como opcional |
+| `src/components/pedidos/OrderCard.tsx` | Safe access a `order.customer` |
+| `src/components/pedidos/OrderDetailModal.tsx` | Safe access a `order.customer` |
+| `src/hooks/useCreateTableOrder.ts` | Suportar `customer_id = null` |
+| `src/pages/dashboard/Configuracoes.tsx` | Preview de impressao: customer pode ser null |
 
