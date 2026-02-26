@@ -62,7 +62,7 @@ export interface Order {
     address_complement: string | null;
     neighborhood: string | null;
     city: string | null;
-  };
+  } | null;
   items: OrderItem[];
 }
 

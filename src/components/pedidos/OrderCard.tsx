@@ -153,13 +153,13 @@ export function OrderCard({ order, onClick, onQuickStatusChange, onPrint, nextSt
           <span className="font-medium truncate">{order.customer_display_name || order.customer?.name}</span>
         </div>
 
-        {!compact && (
+        {!compact && order.customer?.phone && (
           <div 
             className="flex items-center gap-2 text-sm text-muted-foreground"
             data-testid={`order-card-${order.id}-customer-phone`}
           >
             <Phone className="h-4 w-4" />
-            <span>{order.customer?.phone}</span>
+            <span>{order.customer.phone}</span>
           </div>
         )}
 

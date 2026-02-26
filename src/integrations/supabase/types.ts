@@ -728,7 +728,7 @@ export type Database = {
           change_for: number | null
           created_at: string
           customer_display_name: string | null
-          customer_id: string
+          customer_id: string | null
           delivery_fee: number
           establishment_id: string
           id: string
@@ -750,7 +750,7 @@ export type Database = {
           change_for?: number | null
           created_at?: string
           customer_display_name?: string | null
-          customer_id: string
+          customer_id?: string | null
           delivery_fee?: number
           establishment_id: string
           id?: string
@@ -772,7 +772,7 @@ export type Database = {
           change_for?: number | null
           created_at?: string
           customer_display_name?: string | null
-          customer_id?: string
+          customer_id?: string | null
           delivery_fee?: number
           establishment_id?: string
           id?: string
