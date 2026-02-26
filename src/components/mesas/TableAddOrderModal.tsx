@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ProductSelector, ProductSelectionResult } from "@/components/pedidos/ProductSelector";
 import { useCreateTableOrder } from "@/hooks/useCreateTableOrder";
 import { useEstablishment } from "@/hooks/useEstablishment";
+import { usePartialPrint } from "@/hooks/usePartialPrint";
 import { Loader2, ShoppingCart, Trash2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { TableRecord } from "@/hooks/useTables";
@@ -33,6 +34,7 @@ interface TableAddOrderModalProps {
 export function TableAddOrderModal({ table, open, onClose }: TableAddOrderModalProps) {
   const { data: establishment } = useEstablishment();
   const createOrder = useCreateTableOrder();
+  const { printPartial } = usePartialPrint();
   const [cart, setCart] = useState<CartItem[]>([]);
 
   const handleAddItem = (data: ProductSelectionResult) => {
@@ -68,10 +70,30 @@ export function TableAddOrderModal({ table, open, onClose }: TableAddOrderModalP
     if (cart.length === 0) return;
 
     try {
-      await createOrder.mutateAsync({
+      const result = await createOrder.mutateAsync({
         tableId: table.id,
         items: cart,
       });
+
+      // Print partial receipt with only the new items
+      printPartial({
+        tableNumber: table.table_number,
+        orderNumber: result.order_number,
+        items: cart.map((item) => ({
+          product_name: item.product_name,
+          product_price: item.product_price,
+          quantity: item.quantity,
+          observation: item.observation,
+          addons: item.addons.map((a) => ({
+            name: a.name,
+            price: a.price,
+            quantity: a.quantity,
+          })),
+          total: item.total,
+        })),
+        total: cartTotal,
+      });
+
       setCart([]);
       onClose();
     } catch {
@@ -96,7 +118,6 @@ export function TableAddOrderModal({ table, open, onClose }: TableAddOrderModalP
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col gap-3 min-h-0">
-          {/* Cart summary */}
           {cart.length > 0 && (
             <div className="border rounded-lg p-3 bg-muted/30 shrink-0">
               <div className="flex items-center gap-2 mb-2">
@@ -128,7 +149,6 @@ export function TableAddOrderModal({ table, open, onClose }: TableAddOrderModalP
             </div>
           )}
 
-          {/* Product selector */}
           <div className="flex-1 overflow-auto min-h-0">
             <ProductSelector
               establishmentId={establishment.id}
