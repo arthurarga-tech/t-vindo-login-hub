@@ -42,6 +42,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useDndSensors } from "@/hooks/useDndSensors";
 import { cn } from "@/lib/utils";
+import { formatPrice } from "@/lib/formatters";
 
 interface SortableAddonRowProps {
   addon: Addon;
@@ -197,8 +198,6 @@ export function AddonList({ addonGroupId }: AddonListProps) {
 
   const sensors = useDndSensors();
 
-  const formatPrice = (price: number) =>
-    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(price);
 
   const handleCreate = () => {
     setEditingAddon(undefined);

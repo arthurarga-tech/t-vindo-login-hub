@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { ImageUpload } from "@/components/catalogo/ImageUpload";
 import { TimePicker } from "@/components/ui/time-picker";
+import type { DayHours, OpeningHours } from "@/types/establishment";
+import { formatPhone } from "@/lib/formatters";
 import {
   Select,
   SelectContent,
@@ -20,21 +22,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface DayHours {
-  open: string;
-  close: string;
-  closed: boolean;
-}
-
-interface OpeningHours {
-  monday: DayHours;
-  tuesday: DayHours;
-  wednesday: DayHours;
-  thursday: DayHours;
-  friday: DayHours;
-  saturday: DayHours;
-  sunday: DayHours;
-}
 
 const defaultOpeningHours: OpeningHours = {
   monday: { open: "08:00", close: "22:00", closed: false },
@@ -158,12 +145,6 @@ export default function MeuNegocio() {
       .replace(/^-|-$/g, "");
   };
 
-  const formatPhone = (value: string) => {
-    const numbers = value.replace(/\D/g, "").slice(0, 11);
-    if (numbers.length <= 2) return numbers;
-    if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
-    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
-  };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPhone(formatPhone(e.target.value));

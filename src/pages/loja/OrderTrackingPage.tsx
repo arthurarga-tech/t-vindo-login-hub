@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { usePublicEstablishment } from "@/hooks/usePublicStore";
 import { formatInSaoPaulo } from "@/lib/dateUtils";
 import { ptBR } from "date-fns/locale";
-import { buildThemeStyles } from "@/lib/formatters";
+import { buildThemeStyles, formatPrice } from "@/lib/formatters";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { 
   getStatusDisplay, 
@@ -165,12 +165,6 @@ export default function OrderTrackingPage() {
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(price);
-  };
 
   const status = order ? getStatusDisplay(order.status) : null;
   const StatusIcon = status?.icon;

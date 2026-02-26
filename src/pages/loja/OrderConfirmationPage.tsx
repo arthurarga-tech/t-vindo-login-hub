@@ -10,7 +10,7 @@ import { CheckCircle, ArrowLeft, Copy, Link2, MessageCircle, QrCode } from "luci
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { usePublicEstablishment } from "@/hooks/usePublicStore";
-import { buildThemeStyles } from "@/lib/formatters";
+import { buildThemeStyles, formatPrice } from "@/lib/formatters";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { 
   getStatusDisplay, 
@@ -206,12 +206,6 @@ export default function OrderConfirmationPage() {
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(price);
-  };
 
   if (isLoading) {
     return (
@@ -429,7 +423,9 @@ export default function OrderConfirmationPage() {
         {/* Delivery Info */}
         <Card data-testid="order-confirmation-delivery-card">
           <CardHeader>
-            <CardTitle className="text-lg">Entrega</CardTitle>
+            <CardTitle className="text-lg">
+              {order.order_type === "pickup" ? "Retirada" : order.order_type === "dine_in" ? "Consumo Local" : "Entrega"}
+            </CardTitle>
           </CardHeader>
           <CardContent 
             className="space-y-2 text-sm"

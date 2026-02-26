@@ -324,7 +324,7 @@ export default function Pedidos() {
 
     // Show only scheduled orders
     if (filters.showScheduledOnly) {
-      result = result.filter((o) => !!(o as any).scheduled_for);
+      result = result.filter((o) => !!o.scheduled_for);
     }
 
     return result;
