@@ -73,9 +73,10 @@ export function SubscriptionStatus({ subscription }: SubscriptionStatusProps) {
       if (data?.url) {
         window.open(data.url, "_blank");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error opening portal:", error);
-      toast.error("Erro ao abrir portal de gerenciamento");
+      const msg = error?.message || error?.context?.body || "Erro ao abrir portal de gerenciamento";
+      toast.error(msg);
     } finally {
       setIsLoadingPortal(false);
     }
@@ -148,7 +149,7 @@ export function SubscriptionStatus({ subscription }: SubscriptionStatusProps) {
           )}
         </div>
 
-        {subscription.status === "active" && subscription.stripe_customer_id && (
+        {subscription.stripe_customer_id && (
           <Button
             variant="outline"
             className="w-full"
