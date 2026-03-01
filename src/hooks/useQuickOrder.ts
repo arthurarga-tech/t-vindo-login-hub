@@ -126,6 +126,7 @@ export function useCreateQuickOrder() {
           p_notes: data.notes || null,
           p_change_for: data.changeFor || null,
           p_scheduled_for: null,
+          p_customer_display_name: data.customer.name?.trim() || null,
         }
       );
 
@@ -152,21 +153,19 @@ export function useCreateQuickOrder() {
         tableId = tableData.id;
       }
 
-      // 5. Update order with subtype-specific fields and display name
+      // 5. Update order with subtype-specific fields
       const orderUpdate: Record<string, any> = {
         order_subtype: isDelivery ? null : subtype,
       };
-      // Always store display name for non-customer orders
-      if (data.customer.name?.trim()) {
-        orderUpdate.customer_display_name = data.customer.name.trim();
-      }
       if (isTable) {
         orderUpdate.table_number = data.tableNumber || null;
         orderUpdate.is_open_tab = true;
         orderUpdate.table_id = tableId;
       }
 
-      await supabase.from("orders").update(orderUpdate).eq("id", orderId);
+      if (Object.keys(orderUpdate).length > 1 || orderUpdate.order_subtype !== undefined) {
+        await supabase.from("orders").update(orderUpdate).eq("id", orderId);
+      }
 
       // 5. Create order items
       const orderItemsData = data.items.map((item, index) => {

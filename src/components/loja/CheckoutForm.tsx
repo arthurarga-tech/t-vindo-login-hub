@@ -327,6 +327,7 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
           p_notes: notes || null,
           p_change_for: paymentMethod === "cash" && changeForValue > 0 ? changeForValue : null,
           p_scheduled_for: scheduledFor?.toISOString() || null,
+          p_customer_display_name: customer.name,
         }
       );
 
