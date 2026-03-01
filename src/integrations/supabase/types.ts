@@ -1368,21 +1368,38 @@ export type Database = {
         }
         Returns: string
       }
-      create_public_order: {
-        Args: {
-          p_change_for?: number
-          p_customer_id: string
-          p_delivery_fee: number
-          p_establishment_id: string
-          p_notes?: string
-          p_order_type: string
-          p_payment_method: string
-          p_scheduled_for?: string
-          p_subtotal: number
-          p_total: number
-        }
-        Returns: Json
-      }
+      create_public_order:
+        | {
+            Args: {
+              p_change_for?: number
+              p_customer_id: string
+              p_delivery_fee: number
+              p_establishment_id: string
+              p_notes?: string
+              p_order_type: string
+              p_payment_method: string
+              p_scheduled_for?: string
+              p_subtotal: number
+              p_total: number
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_change_for?: number
+              p_customer_display_name?: string
+              p_customer_id: string
+              p_delivery_fee: number
+              p_establishment_id: string
+              p_notes?: string
+              p_order_type: string
+              p_payment_method: string
+              p_scheduled_for?: string
+              p_subtotal: number
+              p_total: number
+            }
+            Returns: Json
+          }
       create_public_order_item_addons: {
         Args: { p_addons: Json }
         Returns: undefined
