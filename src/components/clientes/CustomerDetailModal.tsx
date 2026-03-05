@@ -22,6 +22,7 @@ import { CustomerWithStats, useCustomerOrders, useDeleteCustomer, useUpdateCusto
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { formatInSaoPaulo } from "@/lib/dateUtils";
+import { openWhatsAppSafe } from "@/lib/utils";
 
 interface CustomerDetailModalProps {
   customer: CustomerWithStats | null;
@@ -76,10 +77,10 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
     ? customer.total_spent / customer.total_orders 
     : 0;
 
-  const openWhatsApp = () => {
+  const handleOpenWhatsApp = () => {
     const phone = customer.phone.replace(/\D/g, "");
     const phoneWithCountry = phone.startsWith("55") ? phone : `55${phone}`;
-    window.open(`https://wa.me/${phoneWithCountry}`, "_blank");
+    openWhatsAppSafe(`https://wa.me/${phoneWithCountry}`);
   };
 
   const startEditing = () => {
@@ -263,7 +264,7 @@ export function CustomerDetailModal({ customer, open, onClose }: CustomerDetailM
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        onClick={openWhatsApp}
+                        onClick={handleOpenWhatsApp}
                         data-testid="customer-detail-whatsapp-button"
                         aria-label="Abrir WhatsApp"
                       >

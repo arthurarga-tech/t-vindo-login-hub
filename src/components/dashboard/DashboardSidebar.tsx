@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import React, { useState } from "react";
 import { NavLink } from "@/components/NavLink";
+import { copyToClipboard } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useEstablishment } from "@/hooks/useEstablishment";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -77,12 +78,12 @@ export function DashboardSidebar() {
 
     const storeUrl = `${window.location.origin}/loja/${establishment.slug}`;
     
-    try {
-      await navigator.clipboard.writeText(storeUrl);
+    const success = await copyToClipboard(storeUrl);
+    if (success) {
       setCopied(true);
       toast.success("Link copiado para a área de transferência!");
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } else {
       toast.error("Erro ao copiar link");
     }
   };
