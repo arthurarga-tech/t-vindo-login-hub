@@ -1,6 +1,7 @@
 import { useEstablishment } from "./useEstablishment";
 import { Order } from "./useOrders";
 import { OrderStatus, statusToWhatsAppTemplateKey } from "@/lib/orderStatus";
+import { openWhatsAppSafe } from "@/lib/utils";
 
 const defaultTemplates: Record<string, string> = {
   confirmed: "✅ Olá {nome_cliente}! Seu pedido #{numero_pedido} foi confirmado! Valor: R$ {total}. Obrigado pela preferência! - {nome_estabelecimento}",
@@ -75,7 +76,8 @@ export function useWhatsAppNotification() {
   const openWhatsApp = (order: Order, status: OrderStatus): void => {
     const link = generateWhatsAppLink(order, status);
     if (link) {
-      window.open(link, "_blank");
+      // Use openWhatsAppSafe for iOS compatibility
+      openWhatsAppSafe(link);
     }
   };
 

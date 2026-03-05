@@ -1,4 +1,5 @@
 import { Building2, Link2, Check, Copy, Clock, MapPin, Phone, FileText, Truck, Package, Store, UtensilsCrossed, CalendarClock, CreditCard, Wallet, QrCode, Banknote, Armchair } from "lucide-react";
+import { copyToClipboard } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -260,12 +261,12 @@ export default function MeuNegocio() {
     }
 
     const storeUrl = `${window.location.origin}/loja/${slug}`;
-    try {
-      await navigator.clipboard.writeText(storeUrl);
+    const success = await copyToClipboard(storeUrl);
+    if (success) {
       setCopied(true);
       toast.success("Link copiado!");
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } else {
       toast.error("Erro ao copiar link");
     }
   };

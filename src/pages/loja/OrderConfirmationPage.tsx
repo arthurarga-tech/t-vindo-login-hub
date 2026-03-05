@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle, ArrowLeft, Copy, Link2, MessageCircle, QrCode } from "lucide-react";
+import { CheckCircle, ArrowLeft, Copy, Link2, MessageCircle, QrCode, Send } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { usePublicEstablishment } from "@/hooks/usePublicStore";
@@ -16,6 +16,7 @@ import {
   getStatusDisplay, 
   paymentMethodLabels 
 } from "@/lib/orderStatus";
+import { copyToClipboard, openWhatsAppSafe } from "@/lib/utils";
 
 interface OrderItemAddon {
   id: string;
@@ -65,6 +66,8 @@ export default function OrderConfirmationPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [sharedLocationViaWhatsApp, setSharedLocationViaWhatsApp] = useState(false);
+  const [pendingWhatsApp, setPendingWhatsApp] = useState<{ url: string; reason: string } | null>(null);
+  const [whatsAppSent, setWhatsAppSent] = useState(false);
 
   // Fetch establishment data for theme colors
   const { data: establishment } = usePublicEstablishment(slug || "");
@@ -108,6 +111,21 @@ export default function OrderConfirmationPage() {
           }
         } catch {
           // Ignore parse errors
+        }
+      }
+
+      // Check for pending WhatsApp message (saved by CheckoutForm for iOS compatibility)
+      const pendingWa = localStorage.getItem(`pendingWhatsApp_${slug}`);
+      if (pendingWa) {
+        try {
+          const parsed = JSON.parse(pendingWa);
+          if (parsed.orderId === order.id && Date.now() - parsed.timestamp < 300000) {
+            setPendingWhatsApp({ url: parsed.url, reason: parsed.reason });
+          }
+          // Clean up after reading
+          localStorage.removeItem(`pendingWhatsApp_${slug}`);
+        } catch {
+          localStorage.removeItem(`pendingWhatsApp_${slug}`);
         }
       }
 
@@ -157,7 +175,15 @@ export default function OrderConfirmationPage() {
     const message = `Olá! Estou enviando o comprovante do pagamento Pix.\n\nPedido #${order.order_number}\nCliente: ${order.customer?.name}\nValor: ${formatPrice(order.total)}`;
     const encodedMessage = encodeURIComponent(message);
     
-    window.open(`https://wa.me/${formattedPhone}?text=${encodedMessage}`, "_blank");
+    openWhatsAppSafe(`https://wa.me/${formattedPhone}?text=${encodedMessage}`);
+  };
+
+  const handlePendingWhatsApp = () => {
+    if (pendingWhatsApp) {
+      openWhatsAppSafe(pendingWhatsApp.url);
+      setWhatsAppSent(true);
+      setPendingWhatsApp(null);
+    }
   };
 
   // Real-time subscription for order status updates
@@ -198,10 +224,10 @@ export default function OrderConfirmationPage() {
     : '';
 
   const copyTrackingLink = async () => {
-    try {
-      await navigator.clipboard.writeText(trackingUrl);
+    const success = await copyToClipboard(trackingUrl);
+    if (success) {
       toast.success("Link copiado!");
-    } catch {
+    } else {
       toast.error("Erro ao copiar link");
     }
   };
@@ -288,6 +314,38 @@ export default function OrderConfirmationPage() {
         data-testid="order-confirmation-main"
         role="main"
       >
+        {/* WhatsApp Banner - iOS safe, shown after checkout */}
+        {pendingWhatsApp && !whatsAppSent && (
+          <Card 
+            className="border-green-300 bg-green-50 dark:bg-green-950/30"
+            data-testid="order-confirmation-whatsapp-banner"
+          >
+            <CardContent className="pt-6">
+              <div className="text-center space-y-3">
+                <Send className="h-10 w-10 text-green-600 mx-auto" />
+                <h3 className="font-semibold text-green-800 dark:text-green-400">
+                  {pendingWhatsApp.reason === "pix" 
+                    ? "Envie o comprovante PIX pelo WhatsApp" 
+                    : "Envie sua localização pelo WhatsApp"}
+                </h3>
+                <p className="text-sm text-green-700 dark:text-green-500">
+                  {pendingWhatsApp.reason === "pix"
+                    ? "Toque no botão abaixo para enviar o comprovante do pagamento Pix ao estabelecimento."
+                    : "Toque no botão abaixo para compartilhar sua localização com o estabelecimento."}
+                </p>
+                <Button
+                  onClick={handlePendingWhatsApp}
+                  className="bg-green-600 hover:bg-green-700 text-primary-foreground gap-2"
+                  data-testid="order-confirmation-whatsapp-banner-button"
+                >
+                  <MessageCircle className="h-5 w-5" />
+                  Abrir WhatsApp
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Success Message */}
         <Card 
           className="border-green-200 bg-green-50 dark:bg-green-950/20"

@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { usePublicEstablishment } from "@/hooks/usePublicStore";
 import { z } from "zod";
 import { formatInSaoPaulo } from "@/lib/dateUtils";
+import { copyToClipboard } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
 import { ScheduleSelector } from "./ScheduleSelector";
 import type { OpeningHours } from "@/types/establishment";
@@ -180,12 +181,12 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
   };
 
   const copyPixKey = async () => {
-    try {
-      await navigator.clipboard.writeText(pixKey);
+    const success = await copyToClipboard(pixKey);
+    if (success) {
       setPixKeyCopied(true);
       toast.success("Chave PIX copiada!");
       setTimeout(() => setPixKeyCopied(false), 2000);
-    } catch {
+    } else {
       toast.error("Erro ao copiar chave PIX");
     }
   };
@@ -434,7 +435,8 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
       clearCart();
       toast.success("Pedido enviado com sucesso!");
 
-      // Send unified WhatsApp message if needed (PIX payment or location sharing)
+      // Instead of opening WhatsApp here (blocked by iOS Safari after async),
+      // save the WhatsApp data to localStorage so the confirmation page can show a banner
       const needsWhatsApp = (shareLocationViaWhatsApp && needsAddress) || (paymentMethod === "pix" && pixKey);
       
       if (needsWhatsApp && establishmentPhone) {
@@ -444,7 +446,6 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
         let message = `Ola! Pedido #${orderNumber}\n`;
         message += `Cliente: ${customer.name}\n\n`;
         
-        // Helper to format PIX key type
         const formatPixKeyType = (type: string): string => {
           const types: Record<string, string> = {
             cpf: "CPF",
@@ -456,7 +457,6 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
           return types[type] || type;
         };
         
-        // Build PIX info block
         const buildPixInfo = () => {
           let pixInfo = `\n---\nDados para pagamento PIX:\n`;
           if (pixHolderName) pixInfo += `Titular: ${pixHolderName}\n`;
@@ -467,25 +467,30 @@ export function CheckoutForm({ scheduledFor, allowScheduling = false, onSchedule
         };
         
         if ((shareLocationViaWhatsApp && needsAddress) && (paymentMethod === "pix" && pixKey)) {
-          // Scenario 1: PIX + Location
           message += `Estou enviando:\n`;
           message += `* Minha localizacao para entrega (Numero: ${customer.addressNumber})\n`;
           message += `* Comprovante do pagamento Pix\n\n`;
           message += `Valor: ${formatPrice(orderTotal)}`;
           message += buildPixInfo();
         } else if (shareLocationViaWhatsApp && needsAddress) {
-          // Scenario 2: Location only
           message += `Estou enviando minha localizacao para entrega.\n`;
           message += `Numero da casa: ${customer.addressNumber}`;
         } else if (paymentMethod === "pix" && pixKey) {
-          // Scenario 3: PIX only
           message += `Estou enviando o comprovante do pagamento Pix.\n\n`;
           message += `Valor: ${formatPrice(orderTotal)}`;
           message += buildPixInfo();
         }
         
         const encodedMessage = encodeURIComponent(message);
-        window.open(`https://wa.me/${formattedPhone}?text=${encodedMessage}`, "_blank");
+        const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
+        
+        // Save WhatsApp URL to localStorage for the confirmation page banner
+        localStorage.setItem(`pendingWhatsApp_${slug}`, JSON.stringify({
+          url: whatsappUrl,
+          orderId: orderId,
+          reason: shareLocationViaWhatsApp ? "location" : "pix",
+          timestamp: Date.now(),
+        }));
       }
 
       navigate(`/loja/${slug}/pedido/${orderId}`);
